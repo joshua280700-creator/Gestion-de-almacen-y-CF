@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recepción y Trazabilidad de Mercancía</title>
+    <title>Recepción y Trazabilidad de Mercancía V2</title>
     <!-- Incluimos la librería qrcode.js desde CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
@@ -159,14 +159,16 @@
             <input type="date" id="fecha" name="fecha" required>
         </div>
 
+        <!-- CAMBIO: De 'Insumo' a 'Tipo de caja' -->
         <div class="form-group">
-            <label for="insumo">Insumo de Transporte</label>
-            <input type="text" id="insumo" name="insumo" list="insumosList" required placeholder="Selecciona o escribe">
-            <datalist id="insumosList">
-                <option value="Morelia">
-                <option value="Naylea">
+            <label for="tipoCaja">Tipo de caja</label>
+            <input type="text" id="tipoCaja" name="tipoCaja" list="tipoCajaList" required placeholder="Selecciona o escribe">
+            <datalist id="tipoCajaList">
+                <option value="Plástica RP (Morelia)">
+                <option value="Plástica (Naylea)">
                 <option value="Arpilla">
-                <option value="Caja Plástica">
+                <option value="Madera">
+                <option value="Cartón">
             </datalist>
         </div>
 
@@ -202,13 +204,14 @@
         submitBtn.innerText = "Registrando en Base de Datos...";
         submitBtn.disabled = true;
 
+        // Capturar los valores, incluyendo el nuevo campo
         const datos = {
             producto: document.getElementById('producto').value,
             folio: document.getElementById('folio').value,
             pesoBruto: document.getElementById('pesoBruto').value,
             pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value,
-            insumo: document.getElementById('insumo').value
+            tipoCaja: document.getElementById('tipoCaja').value // CAMBIO AQUÍ
         };
 
         const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
@@ -225,9 +228,9 @@
             qrcodeElement.innerHTML = "";
             folioDisplay.innerText = datos.folio;
             
-            // --- CÓDIGO CORREGIDO PARA FORMATO DE LISTA ---
-            const textoQrCompleto = `Producto: ${datos.producto}\nFolio: ${datos.folio}\nPeso bruto: ${datos.pesoBruto}\nPeso neto: ${datos.pesoNeto}\nFecha: ${datos.fecha}\nInsumo: ${datos.insumo}`;
-            // ----------------------------------------------
+            // --- ACTUALIZACIÓN DEL FORMATO DEL QR ---
+            const textoQrCompleto = `Producto: ${datos.producto}\nFolio: ${datos.folio}\nPeso bruto: ${datos.pesoBruto}\nPeso neto: ${datos.pesoNeto}\nFecha: ${datos.fecha}\nTipo de caja: ${datos.tipoCaja}`;
+            // ----------------------------------------
 
             qrGenerator = new QRCode(qrcodeElement, {
                 text: textoQrCompleto,
