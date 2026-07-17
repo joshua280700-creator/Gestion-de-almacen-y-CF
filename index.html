@@ -22,6 +22,8 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .container {
@@ -58,15 +60,15 @@
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 16px;
-            box-sizing: border-box; /* Importante para padding */
+            box-sizing: border-box;
         }
 
         input[type="number"] {
-            -moz-appearance: textfield; /* Quita flechas en Firefox */
+            -moz-appearance: textfield;
         }
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
-            -webkit-appearance: none; /* Quita flechas en Chrome/Safari */
+            -webkit-appearance: none;
             margin: 0;
         }
 
@@ -83,8 +85,13 @@
             transition: background-color 0.3s ease;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover:not(:disabled) {
             background-color: #153a5c;
+        }
+        
+        .submit-btn:disabled {
+            background-color: #999;
+            cursor: not-allowed;
         }
 
         /* Area del QR */
@@ -112,8 +119,12 @@
             font-size: 14px;
             border-radius: 4px;
             cursor: pointer;
-            text-decoration: none; /* Por si lo hacemos enlace */
+            text-decoration: none;
             display: inline-block;
+        }
+        
+        .download-btn:hover {
+            background-color: #218838;
         }
     </style>
 </head>
@@ -125,12 +136,12 @@
         
         <div class="form-group">
             <label for="producto">Nombre del Producto</label>
-            <input type="text" id="producto" name="producto" required placeholder="Ej. Papa Blanca">
+            <input type="text" id="producto" name="producto" required placeholder="Ej. Papas naturales en cubos">
         </div>
 
         <div class="form-group">
             <label for="folio">Folio</label>
-            <input type="text" id="folio" name="folio" required placeholder="Ej. A001-2023">
+            <input type="text" id="folio" name="folio" required placeholder="Ej. FOL-001">
         </div>
 
         <div class="form-group">
@@ -150,7 +161,6 @@
 
         <div class="form-group">
             <label for="insumo">Insumo de Transporte</label>
-            <!-- Puedes cambiar esto por un <select> si prefieres lista fija -->
             <input type="text" id="insumo" name="insumo" list="insumosList" required placeholder="Selecciona o escribe">
             <datalist id="insumosList">
                 <option value="Morelia">
@@ -163,7 +173,7 @@
         <button type="submit" class="submit-btn">Registrar y Generar QR</button>
     </form>
 
-    <!-- Contenedor del QR y Descarga, oculto inicialmente -->
+    <!-- Contenedor del QR y Descarga -->
     <div id="qr-container">
         <h3>Código QR Generado</h3>
         <p>Folio: <strong id="folio-display"></strong></p>
@@ -173,7 +183,7 @@
 </div>
 
 <script>
-    // Establecer la fecha de hoy por defecto al cargar
+    // 1. Establecer la fecha de hoy por defecto al cargar
     window.onload = function() {
         document.getElementById('fecha').valueAsDate = new Date();
     };
@@ -184,80 +194,101 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const folioDisplay = document.getElementById('folio-display');
     
-    let qrGenerator = null; // Variable para la instancia del QR
+    let qrGenerator = null;
 
+    // 2. Manejar el evento de enviar el formulario
     form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Evitar que el formulario recargue la página
+        event.preventDefault(); // Evita que la página se recargue
 
-        // Capturar los valores
-        const producto = document.getElementById('producto').value;
-        const folio = document.getElementById('folio').value;
-        const pb = document.getElementById('pesoBruto').value;
-        const pn = document.getElementById('pesoNeto').value;
-        const fecha = document.getElementById('fecha').value;
-        const insumo = document.getElementById('insumo').value;
+        // Cambiar el texto del botón mientras carga
+        const submitBtn = document.querySelector('.submit-btn');
+        const textoOriginal = submitBtn.innerText;
+        submitBtn.innerText = "Registrando en Base de Datos...";
+        submitBtn.disabled = true;
 
-        // --- EXPLICACIÓN CLAVE ---
-        // Aquí es donde en el futuro (si usáramos Google Apps Script)
-        // enviaríamos los datos a Google Sheets.
-        // Por ahora, solo generaremos el QR.
-        // ------------------------
+        // Capturar los valores del formulario
+        const datos = {
+            producto: document.getElementById('producto').value,
+            folio: document.getElementById('folio').value,
+            pesoBruto: document.getElementById('pesoBruto').value,
+            pesoNeto: document.getElementById('pesoNeto').value,
+            fecha: document.getElementById('fecha').value,
+            insumo: document.getElementById('insumo').value
+        };
 
-        // Limpiar QR anterior si existe
-        qrcodeElement.innerHTML = "";
-        folioDisplay.innerText = folio;
+        // URL proporcionada de Google Apps Script
+        const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
 
-        // Definir qué datos va a contener el QR.
-        // Lo ideal es que el QR solo contenga el FOLIO (o un enlace único)
-        // para que el encargado de almacén solo escanee y el sistema busque los datos.
-        // Si el QR contiene *todo* el texto, se vuelve más denso y difícil de leer.
-        
-        // Decisión: El QR contiene el FOLIO únicamente.
-        const textoQr = folio;
+        // Enviar los datos a Google Sheets sin interrumpir la navegación
+        fetch(urlGoogleScript, {
+            method: 'POST',
+            mode: 'no-cors', // Fundamental para enviar desde un HTML independiente
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datos)
+        })
+        .then(() => {
+            // Una vez que se envía a Sheets, generamos el código QR
+            qrcodeElement.innerHTML = "";
+            folioDisplay.innerText = datos.folio;
+            
+            // Generar el código solo con el folio
+            qrGenerator = new QRCode(qrcodeElement, {
+                text: datos.folio,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
 
-        // Generar el QR usando la librería
-        // Parámetros: elemento, {texto, ancho, alto, colores}
-        qrGenerator = new QRCode(qrcodeElement, {
-            text: textoQr,
-            width: 180,
-            height: 180,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H // Nivel alto de corrección de errores (útil en almacenes)
+            // Mostrar la sección del QR
+            qrContainer.style.display = 'block';
+            
+            // Restaurar el botón a su estado normal
+            submitBtn.innerText = textoOriginal;
+            submitBtn.disabled = false;
+            
+            // Limpiar el formulario para el siguiente registro, manteniendo la fecha de hoy
+            form.reset();
+            document.getElementById('fecha').valueAsDate = new Date(); 
+            
+            // Notificar al usuario (opcional, puedes quitarlo si es molesto)
+            // alert("¡Registro guardado exitosamente!"); 
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Hubo un error al guardar. Revisa tu conexión a internet.");
+            submitBtn.innerText = textoOriginal;
+            submitBtn.disabled = false;
         });
-
-        // Mostrar el contenedor del QR
-        qrContainer.style.display = 'block';
     });
 
-    // Función para descargar el QR como PNG
+    // 3. Manejar el evento de descargar el QR
     downloadBtn.addEventListener('click', function() {
-        // La librería genera un <canvas> o una <img> dentro del div #qrcode.
         const img = qrcodeElement.querySelector('img');
         const canvas = qrcodeElement.querySelector('canvas');
 
         let dataUrl;
         
-        // Intentar obtener la data URL de la imagen (más compatible)
         if (img && img.src) {
             dataUrl = img.src;
         } else if (canvas) {
-            // Si la librería usó canvas (a veces lo hace), convertir canvas a dataURL
             dataUrl = canvas.toDataURL("image/png");
         } else {
             alert("No se pudo descargar la imagen. Intenta regenerar el QR.");
             return;
         }
 
-        // Crear un enlace temporal de descarga
         const link = document.createElement('a');
-        const folio = document.getElementById('folio').value;
+        const folioTexto = folioDisplay.innerText;
         
-        link.download = `QR_${folio}.png`; // Nombre del archivo descargado
+        link.download = `QR_${folioTexto}.png`;
         link.href = dataUrl;
         document.body.appendChild(link);
-        link.click(); // Simular clic
-        document.body.removeChild(link); // Limpiar
+        link.click();
+        document.body.removeChild(link);
     });
 </script>
 
