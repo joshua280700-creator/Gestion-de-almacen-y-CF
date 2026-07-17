@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recepción y Trazabilidad de Mercancía</title>
+    <!-- Incluimos la librería qrcode.js desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #1F4E78; /* Azul corporativo logístico */
+            --background: #f4f7f6;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box; /* Importante para padding */
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield; /* Quita flechas en Firefox */
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none; /* Quita flechas en Chrome/Safari */
+            margin: 0;
+        }
+
+        .submit-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: #153a5c;
+        }
+
+        /* Area del QR */
+        #qr-container {
+            margin-top: 25px;
+            text-align: center;
+            padding: 20px;
+            background-color: #fafafa;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+            display: none; /* Oculto inicialmente */
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .download-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none; /* Por si lo hacemos enlace */
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Registro de Entrada</h2>
+    <form id="registroForm">
+        
+        <div class="form-group">
+            <label for="producto">Nombre del Producto</label>
+            <input type="text" id="producto" name="producto" required placeholder="Ej. Papa Blanca">
+        </div>
+
+        <div class="form-group">
+            <label for="folio">Folio</label>
+            <input type="text" id="folio" name="folio" required placeholder="Ej. A001-2023">
+        </div>
+
+        <div class="form-group">
+            <label for="pesoBruto">Peso Bruto (kg)</label>
+            <input type="number" id="pesoBruto" name="pesoBruto" step="0.01" required placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+            <label for="pesoNeto">Peso Neto (kg)</label>
+            <input type="number" id="pesoNeto" name="pesoNeto" step="0.01" required placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+            <label for="fecha">Fecha de Recepción</label>
+            <input type="date" id="fecha" name="fecha" required>
+        </div>
+
+        <div class="form-group">
+            <label for="insumo">Insumo de Transporte</label>
+            <!-- Puedes cambiar esto por un <select> si prefieres lista fija -->
+            <input type="text" id="insumo" name="insumo" list="insumosList" required placeholder="Selecciona o escribe">
+            <datalist id="insumosList">
+                <option value="Morelia">
+                <option value="Naylea">
+                <option value="Arpilla">
+                <option value="Caja Plástica">
+            </datalist>
+        </div>
+
+        <button type="submit" class="submit-btn">Registrar y Generar QR</button>
+    </form>
+
+    <!-- Contenedor del QR y Descarga, oculto inicialmente -->
+    <div id="qr-container">
+        <h3>Código QR Generado</h3>
+        <p>Folio: <strong id="folio-display"></strong></p>
+        <div id="qrcode"></div>
+        <button id="downloadBtn" class="download-btn">Descargar Imagen QR (PNG)</button>
+    </div>
+</div>
+
+<script>
+    // Establecer la fecha de hoy por defecto al cargar
+    window.onload = function() {
+        document.getElementById('fecha').valueAsDate = new Date();
+    };
+
+    const form = document.getElementById('registroForm');
+    const qrContainer = document.getElementById('qr-container');
+    const qrcodeElement = document.getElementById('qrcode');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const folioDisplay = document.getElementById('folio-display');
+    
+    let qrGenerator = null; // Variable para la instancia del QR
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Evitar que el formulario recargue la página
+
+        // Capturar los valores
+        const producto = document.getElementById('producto').value;
+        const folio = document.getElementById('folio').value;
+        const pb = document.getElementById('pesoBruto').value;
+        const pn = document.getElementById('pesoNeto').value;
+        const fecha = document.getElementById('fecha').value;
+        const insumo = document.getElementById('insumo').value;
+
+        // --- EXPLICACIÓN CLAVE ---
+        // Aquí es donde en el futuro (si usáramos Google Apps Script)
+        // enviaríamos los datos a Google Sheets.
+        // Por ahora, solo generaremos el QR.
+        // ------------------------
+
+        // Limpiar QR anterior si existe
+        qrcodeElement.innerHTML = "";
+        folioDisplay.innerText = folio;
+
+        // Definir qué datos va a contener el QR.
+        // Lo ideal es que el QR solo contenga el FOLIO (o un enlace único)
+        // para que el encargado de almacén solo escanee y el sistema busque los datos.
+        // Si el QR contiene *todo* el texto, se vuelve más denso y difícil de leer.
+        
+        // Decisión: El QR contiene el FOLIO únicamente.
+        const textoQr = folio;
+
+        // Generar el QR usando la librería
+        // Parámetros: elemento, {texto, ancho, alto, colores}
+        qrGenerator = new QRCode(qrcodeElement, {
+            text: textoQr,
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H // Nivel alto de corrección de errores (útil en almacenes)
+        });
+
+        // Mostrar el contenedor del QR
+        qrContainer.style.display = 'block';
+    });
+
+    // Función para descargar el QR como PNG
+    downloadBtn.addEventListener('click', function() {
+        // La librería genera un <canvas> o una <img> dentro del div #qrcode.
+        const img = qrcodeElement.querySelector('img');
+        const canvas = qrcodeElement.querySelector('canvas');
+
+        let dataUrl;
+        
+        // Intentar obtener la data URL de la imagen (más compatible)
+        if (img && img.src) {
+            dataUrl = img.src;
+        } else if (canvas) {
+            // Si la librería usó canvas (a veces lo hace), convertir canvas a dataURL
+            dataUrl = canvas.toDataURL("image/png");
+        } else {
+            alert("No se pudo descargar la imagen. Intenta regenerar el QR.");
+            return;
+        }
+
+        // Crear un enlace temporal de descarga
+        const link = document.createElement('a');
+        const folio = document.getElementById('folio').value;
+        
+        link.download = `QR_${folio}.png`; // Nombre del archivo descargado
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click(); // Simular clic
+        document.body.removeChild(link); // Limpiar
+    });
+</script>
+
+</body>
+</html>
