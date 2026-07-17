@@ -173,7 +173,6 @@
         <button type="submit" class="submit-btn">Registrar y Generar QR</button>
     </form>
 
-    <!-- Contenedor del QR y Descarga -->
     <div id="qr-container">
         <h3>Código QR Generado</h3>
         <p>Folio: <strong id="folio-display"></strong></p>
@@ -226,23 +225,10 @@
             qrcodeElement.innerHTML = "";
             folioDisplay.innerText = datos.folio;
             
-            // --- MODIFICACIÓN PARA GENERAR LA CADENA COMPLETA ---
-            // 1. Obtener fecha y hora actual para el inicio de la cadena
-            const ahora = new Date();
-            const dia = ahora.getDate();
-            const mes = ahora.getMonth() + 1; // Los meses empiezan en 0
-            const anio = ahora.getFullYear();
-            const hora = ahora.getHours().toString().padStart(2, '0') + ':' + 
-                         ahora.getMinutes().toString().padStart(2, '0') + ':' + 
-                         ahora.getSeconds().toString().padStart(2, '0');
-            
-            const timestampQR = `${dia}/${mes}/${anio} ${hora}`;
+            // --- CÓDIGO CORREGIDO PARA FORMATO DE LISTA ---
+            const textoQrCompleto = `Producto: ${datos.producto}\nFolio: ${datos.folio}\nPeso bruto: ${datos.pesoBruto}\nPeso neto: ${datos.pesoNeto}\nFecha: ${datos.fecha}\nInsumo: ${datos.insumo}`;
+            // ----------------------------------------------
 
-            // 2. Unir toda la información tal cual la pediste
-            // Ejemplo de resultado: "17/7/2026 13:59:48Serrano original7084C8997992026-07-17Morelia"
-            const textoQrCompleto = `${timestampQR}${datos.producto}${datos.folio}${datos.pesoBruto}${datos.pesoNeto}${datos.fecha}${datos.insumo}`;
-
-            // 3. Generar el QR con la cadena completa
             qrGenerator = new QRCode(qrcodeElement, {
                 text: textoQrCompleto,
                 width: 180,
@@ -251,7 +237,6 @@
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
-            // ----------------------------------------------------
 
             qrContainer.style.display = 'block';
             
