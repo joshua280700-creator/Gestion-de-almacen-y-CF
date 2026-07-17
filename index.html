@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --primary: #1F4E78; /* Azul corporativo logístico */
+            --primary: #1F4E78;
             --background: #f4f7f6;
             --text: #333;
         }
@@ -102,7 +102,7 @@
             background-color: #fafafa;
             border-radius: 8px;
             border: 1px dashed #ccc;
-            display: none; /* Oculto inicialmente */
+            display: none; 
         }
 
         #qrcode {
@@ -136,12 +136,12 @@
         
         <div class="form-group">
             <label for="producto">Nombre del Producto</label>
-            <input type="text" id="producto" name="producto" required placeholder="Ej. Papas naturales en cubos">
+            <input type="text" id="producto" name="producto" required placeholder="Ej. Serrano original">
         </div>
 
         <div class="form-group">
             <label for="folio">Folio</label>
-            <input type="text" id="folio" name="folio" required placeholder="Ej. FOL-001">
+            <input type="text" id="folio" name="folio" required placeholder="Ej. 7084C">
         </div>
 
         <div class="form-group">
@@ -183,7 +183,6 @@
 </div>
 
 <script>
-    // 1. Establecer la fecha de hoy por defecto al cargar
     window.onload = function() {
         document.getElementById('fecha').valueAsDate = new Date();
     };
@@ -196,17 +195,14 @@
     
     let qrGenerator = null;
 
-    // 2. Manejar el evento de enviar el formulario
     form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Evita que la página se recargue
+        event.preventDefault(); 
 
-        // Cambiar el texto del botón mientras carga
         const submitBtn = document.querySelector('.submit-btn');
         const textoOriginal = submitBtn.innerText;
         submitBtn.innerText = "Registrando en Base de Datos...";
         submitBtn.disabled = true;
 
-        // Capturar los valores del formulario
         const datos = {
             producto: document.getElementById('producto').value,
             folio: document.getElementById('folio').value,
@@ -216,46 +212,54 @@
             insumo: document.getElementById('insumo').value
         };
 
-        // URL proporcionada de Google Apps Script
         const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
 
-        // Enviar los datos a Google Sheets sin interrumpir la navegación
         fetch(urlGoogleScript, {
             method: 'POST',
-            mode: 'no-cors', // Fundamental para enviar desde un HTML independiente
+            mode: 'no-cors', 
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(datos)
         })
         .then(() => {
-            // Una vez que se envía a Sheets, generamos el código QR
             qrcodeElement.innerHTML = "";
             folioDisplay.innerText = datos.folio;
             
-            // Generar el código solo con el folio
+            // --- MODIFICACIÓN PARA GENERAR LA CADENA COMPLETA ---
+            // 1. Obtener fecha y hora actual para el inicio de la cadena
+            const ahora = new Date();
+            const dia = ahora.getDate();
+            const mes = ahora.getMonth() + 1; // Los meses empiezan en 0
+            const anio = ahora.getFullYear();
+            const hora = ahora.getHours().toString().padStart(2, '0') + ':' + 
+                         ahora.getMinutes().toString().padStart(2, '0') + ':' + 
+                         ahora.getSeconds().toString().padStart(2, '0');
+            
+            const timestampQR = `${dia}/${mes}/${anio} ${hora}`;
+
+            // 2. Unir toda la información tal cual la pediste
+            // Ejemplo de resultado: "17/7/2026 13:59:48Serrano original7084C8997992026-07-17Morelia"
+            const textoQrCompleto = `${timestampQR}${datos.producto}${datos.folio}${datos.pesoBruto}${datos.pesoNeto}${datos.fecha}${datos.insumo}`;
+
+            // 3. Generar el QR con la cadena completa
             qrGenerator = new QRCode(qrcodeElement, {
-                text: datos.folio,
+                text: textoQrCompleto,
                 width: 180,
                 height: 180,
                 colorDark : "#000000",
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
+            // ----------------------------------------------------
 
-            // Mostrar la sección del QR
             qrContainer.style.display = 'block';
             
-            // Restaurar el botón a su estado normal
             submitBtn.innerText = textoOriginal;
             submitBtn.disabled = false;
             
-            // Limpiar el formulario para el siguiente registro, manteniendo la fecha de hoy
             form.reset();
             document.getElementById('fecha').valueAsDate = new Date(); 
-            
-            // Notificar al usuario (opcional, puedes quitarlo si es molesto)
-            // alert("¡Registro guardado exitosamente!"); 
         })
         .catch(error => {
             console.error('Error:', error);
@@ -265,7 +269,6 @@
         });
     });
 
-    // 3. Manejar el evento de descargar el QR
     downloadBtn.addEventListener('click', function() {
         const img = qrcodeElement.querySelector('img');
         const canvas = qrcodeElement.querySelector('canvas');
