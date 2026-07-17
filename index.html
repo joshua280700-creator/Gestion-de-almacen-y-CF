@@ -159,13 +159,13 @@
             <input type="date" id="fecha" name="fecha" required>
         </div>
 
-        <!-- CAMBIO: De 'Insumo' a 'Tipo de caja' -->
+        <!-- CAMBIO: De 'Insumo' a 'Tipo de caja' y lista corregida -->
         <div class="form-group">
             <label for="tipoCaja">Tipo de caja</label>
             <input type="text" id="tipoCaja" name="tipoCaja" list="tipoCajaList" required placeholder="Selecciona o escribe">
             <datalist id="tipoCajaList">
-                <option value="Plástica RP (Morelia)">
-                <option value="Plástica (Naylea)">
+                <option value="Morelia"> <!-- Corregido: Solo el nombre -->
+                <option value="Naylea">  <!-- Corregido: Solo el nombre -->
                 <option value="Arpilla">
                 <option value="Madera">
                 <option value="Cartón">
@@ -211,11 +211,14 @@
             pesoBruto: document.getElementById('pesoBruto').value,
             pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value,
-            tipoCaja: document.getElementById('tipoCaja').value // CAMBIO AQUÍ
+            tipoCaja: document.getElementById('tipoCaja').value // Usando 'tipoCaja' consistentemente
         };
 
-        const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
+        // --- IMPORTANTE: PEGA AQUÍ TU URL ACTUALIZADA DEL PASO 1 ---
+        const urlGoogleScript = "https://script.google.com/macros/s/AKfycbx2WIm_a3Kq1XKLVSXuKRweMSZGiR-uKRdJxRthGavNuTry09b1rYxqyN8WvgRTyXHbjA/exec";
+        // --------------------------------------------------------
 
+        // Enviar los datos a Google Sheets sin interrumpir la navegación
         fetch(urlGoogleScript, {
             method: 'POST',
             mode: 'no-cors', 
@@ -225,6 +228,7 @@
             body: JSON.stringify(datos)
         })
         .then(() => {
+            // Una vez que se envía a Sheets con éxito, generamos el código QR
             qrcodeElement.innerHTML = "";
             folioDisplay.innerText = datos.folio;
             
@@ -241,17 +245,23 @@
                 correctLevel : QRCode.CorrectLevel.H
             });
 
+            // Mostrar la sección del QR
             qrContainer.style.display = 'block';
             
+            // Restaurar el botón a su estado normal
             submitBtn.innerText = textoOriginal;
             submitBtn.disabled = false;
             
+            // Limpiar el formulario para el siguiente registro, manteniendo la fecha de hoy
             form.reset();
             document.getElementById('fecha').valueAsDate = new Date(); 
+            
+            // Notificar al usuario (opcional, puedes quitarlo si es molesto)
+            // alert("¡Registro guardado exitosamente!"); 
         })
         .catch(error => {
             console.error('Error:', error);
-            alert("Hubo un error al guardar. Revisa tu conexión a internet.");
+            alert("Hubo un error al guardar. Revisa tu conexión a internet."); // <-- El error de image_0.png se atrapa aquí
             submitBtn.innerText = textoOriginal;
             submitBtn.disabled = false;
         });
