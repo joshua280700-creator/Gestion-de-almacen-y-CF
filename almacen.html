@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Almacenaje - Ubicación de Mercancía V3 (Híbrido QR/Barras)</title>
-    <!-- Librería Html5Qrcode -->
+    <title>Almacenaje - Ubicación de Mercancía V4 (Tabla Detallada)</title>
+    <!-- Librería JsBarcode (Solo lectura/soporte) y Scanner -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
@@ -14,6 +15,7 @@
             --success: #28a745;
             --warning: #ffc107;
             --muted: #999;
+            --rack-green: #548235; /* Verde oscuro de tu imagen */
         }
 
         body {
@@ -30,7 +32,7 @@
 
         .header {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -56,9 +58,9 @@
             border-radius: 12px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             display: grid;
-            grid-template-columns: 1fr 1.5fr;
+            grid-template-columns: 1fr 1.8fr;
             gap: 20px;
         }
 
@@ -68,13 +70,13 @@
             }
         }
 
+        /* --- SECCIÓN ESCÁNER Y FORMULARIO --- */
         .scan-section {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
 
-        /* CONTENEDOR DEL ESCÁNER HTML5-QRCODE */
         #reader-container {
             width: 100%;
             border-radius: 8px;
@@ -83,131 +85,15 @@
             background-color: #000;
         }
         
-        #reader {
-            width: 100%;
-        }
+        #reader { width: 100%; }
 
-        .form-group {
-            margin-bottom: 10px;
-        }
-
+        .form-group { margin-bottom: 10px; }
+        
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
             color: #555;
-        }
-
-        textarea#qrInput {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            border: 2px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-            box-sizing: border-box;
-            resize: none;
-            background-color: #fafafa;
-        }
-
-        textarea#qrInput:focus {
-            border-color: var(--primary);
-            background-color: #fff;
-        }
-
-        .rack-map-section {
-            border-left: 1px solid #eee;
-            padding-left: 20px;
-        }
-
-        h2.map-title {
-            color: var(--primary);
-            margin-top: 0;
-            font-size: 18px;
-            text-align: center;
-        }
-
-        .capacity-legend {
-            font-size: 12px;
-            color: #777;
-            background-color: #f9f9f9;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-
-        .rack-grid {
-            display: grid;
-            grid-template-columns: 100px repeat(5, 1fr);
-            gap: 5px;
-            margin-bottom: 15px;
-        }
-
-        .level-label {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            font-weight: bold;
-            font-size: 12px;
-            color: #fff;
-            padding-right: 10px;
-            height: 60px;
-        }
-
-        .depth-label {
-            grid-column: span 1;
-            text-align: center;
-            font-weight: bold;
-            font-size: 12px;
-            color: #555;
-            padding: 5px 0;
-        }
-
-        .level-3 .level-label { background-color: #2196F3; } 
-        .level-2 .level-label { background-color: #4CAF50; } 
-        .level-1 .level-label { background-color: #8BC34A; } 
-        .level-front .level-label { background-color: #FFC107; color: #333; } 
-
-        .rack-slot {
-            background-color: #fff;
-            border: 2px solid #ccc;
-            border-radius: 4px;
-            height: 60px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: var(--muted);
-            text-align: center;
-            padding: 2px;
-        }
-
-        .rack-slot:hover {
-            border-color: var(--primary);
-            background-color: #f0f8ff;
-        }
-
-        .rack-slot.selected {
-            border-color: var(--success);
-            border-width: 4px;
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-            color: var(--success);
-            font-weight: bold;
-        }
-
-        .rack-slot.disabled {
-            background-color: #f0f0f0;
-            border-color: #ddd;
-            color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .rack-slot.occupied {
-            background-color: #e3f2fd;
-            border-color: #90caf9;
-            color: #1e88e5;
         }
 
         input[type="text"], select {
@@ -217,7 +103,7 @@
             border-radius: 6px;
             font-size: 16px;
             box-sizing: border-box;
-            margin-bottom: 10px;
+            background-color: #fff;
         }
 
         .submit-btn {
@@ -233,22 +119,93 @@
             transition: background-color 0.3s ease;
             margin-top: 15px;
         }
-
-        .submit-btn:hover:not(:disabled) {
-            background-color: #218838;
-        }
+        .submit-btn:hover:not(:disabled) { background-color: #218838; }
+        .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
         
-        .submit-btn:disabled {
-            background-color: #999;
-            cursor: not-allowed;
-        }
-
         #status-area {
             margin-top: 20px;
             text-align: center;
             font-weight: bold;
             display: none;
         }
+
+        /* --- SECCIÓN MAPA: TABLA DETALLADA --- */
+        .rack-map-section {
+            border-left: 1px solid #eee;
+            padding-left: 20px;
+            overflow-x: auto; /* Por si la tabla es muy ancha en celular */
+        }
+
+        h2.map-title {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .rack-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .rack-table th, .rack-table td {
+            border: 1px solid #ddd;
+            padding: 8px 5px;
+        }
+
+        .rack-table th {
+            background-color: #fff;
+            color: var(--text);
+            font-weight: bold;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        /* Franjas verdes que separan los niveles */
+        .level-separator td {
+            background-color: var(--rack-green);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 4px;
+            border: 1px solid var(--rack-green);
+        }
+
+        /* Filas interactivas */
+        .rack-row.empty {
+            background-color: #fff;
+            cursor: pointer;
+            height: 35px; /* Altura mínima para que se vea el espacio */
+        }
+
+        .rack-row.empty:hover {
+            background-color: #f0f8ff;
+        }
+
+        /* Estado Seleccionado */
+        .rack-row.selected td {
+            background-color: #e8f5e9;
+            border-top: 2px solid var(--success);
+            border-bottom: 2px solid var(--success);
+        }
+        .rack-row.selected td:first-child { border-left: 2px solid var(--success); }
+        .rack-row.selected td:last-child { border-right: 2px solid var(--success); }
+
+        /* Filas ya ocupadas (con datos) */
+        .rack-row.filled {
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        
+        /* Simular el recuadro punteado azul de tu imagen para un folio específico */
+        .rack-row.highlighted td {
+            border-top: 2px dashed #007bff;
+            border-bottom: 2px dashed #007bff;
+        }
+        .rack-row.highlighted td:first-child { border-left: 2px dashed #007bff; }
+        .rack-row.highlighted td:last-child { border-right: 2px dashed #007bff; }
+
     </style>
 </head>
 <body>
@@ -259,6 +216,7 @@
 </div>
 
 <div class="container">
+    <!-- SECCIÓN IZQUIERDA: ESCÁNER Y FORMULARIO -->
     <div class="scan-section">
         
         <div id="reader-container">
@@ -267,81 +225,88 @@
 
         <form id="almacenForm">
             <div class="form-group">
-                <label for="qrInput">Pegar/Escanear Texto (QR o Barras)</label>
-                <textarea id="qrInput" name="qrInput" placeholder="Iniciando cámara..."></textarea>
+                <label for="qrInput">Escanear Etiqueta (Code 128)</label>
+                <!-- Usamos input en vez de textarea ya que es código de barras simple -->
+                <input type="text" id="qrInput" name="qrInput" placeholder="Iniciando cámara...">
             </div>
 
             <div class="form-group">
-                <label for="folioDisplay">Folio Único Extraído</label>
+                <label for="folioDisplay">Folio Extraído</label>
                 <input type="text" id="folioDisplay" name="folioDisplay" readonly placeholder="Esperando escaneo...">
             </div>
 
             <div class="form-group">
                 <label for="cuartoFrio">Seleccionar Cuarto Frío</label>
                 <select id="cuartoFrio" name="cuartoFrio" required>
-                    <option value="" disabled selected>Selecciona...</option>
-                    <option value="Cuarto 1 (Congelado)">Cuarto 1 (Congelado)</option>
-                    <option value="Cuarto 2 (Refrigerado)">Cuarto 2 (Refrigerado)</option>
-                    <option value="Pre-enfriado">Pre-enfriado</option>
+                    <option value="" disabled selected>Selecciona un Cuarto...</option>
+                    <option value="Cuarto 1 (Producto Terminado)">Cuarto 1 (Producto Terminado)</option>
+                    <option value="Cuarto 2 (General)">Cuarto 2 (General)</option>
+                    <option value="Cuarto 3 (General)">Cuarto 3 (General)</option>
+                    <option value="Cuarto 4 (General)">Cuarto 4 (General)</option>
+                    <option value="Cuarto 5 (Tomatillo/Mixto)">Cuarto 5 (Tomatillo/Mixto)</option>
                 </select>
             </div>
 
+            <!-- Inputs ocultos para enviar la ubicación seleccionada en la tabla -->
             <input type="hidden" id="levelSelected" name="levelSelected">
             <input type="hidden" id="depthSelected" name="depthSelected">
 
-            <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Ubicación y Almacenar</button>
+            <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Ubicación</button>
         </form>
     </div>
 
-    <!-- Sección Derecha: Mapa Interactivo de Rack Drive-In -->
+    <!-- SECCIÓN DERECHA: TABLA DETALLADA DE RACK -->
     <div class="rack-map-section">
-        <h2 class="map-title">Mapa de Andén Profundo (Drive-In)</h2>
+        <h2 class="map-title">Vista de Rack / Andén</h2>
+        <p style="font-size: 11px; color: #777; margin-top:-5px; text-align:center;">Selecciona una fila vacía para asignar la ubicación (Fila superior = Fondo del rack).</p>
         
-        <div class="capacity-legend">
-            <strong>Capacidad Drive-In (Tarima):</strong><br>
-            - Niveles Altos/Intermedios: Max 3 Plastic, >3 Segunda<br>
-            - Nivel Suelo (4): 4 Plastic / 4 Segunda
-        </div>
+        <table class="rack-table" id="rackTable">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Producto</th>
+                    <th>Peso neto</th>
+                    <th>Tipo de caja</th>
+                    <th>Tipo de tarima</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <!-- NIVEL 3 -->
+                <tr class="level-separator"><td colspan="5">Nivel 3 (Alto)</td></tr>
+                
+                <!-- Posición 5 (Fondo) - Ocupada -->
+                <tr class="rack-row filled highlighted" data-level="3" data-depth="5">
+                    <td>7084C</td><td>Serrano original</td><td>6</td><td>Morelia</td><td>Segunda</td>
+                </tr>
+                <!-- Posición 4 a 1 (Frente) - Vacías -->
+                <tr class="rack-row empty" data-level="3" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
 
-        <div class="rack-grid" id="rackGrid">
-            
-            <div class="depth-label">Nivel</div>
-            <div class="depth-label">Pos. 1<br>(Frontal)</div>
-            <div class="depth-label">Pos. 2</div>
-            <div class="depth-label">Pos. 3</div>
-            <div class="depth-label">Pos. 4</div>
-            <div class="depth-label">Pos. 5<br>(Posterior)</div>
+                <!-- NIVEL 2 -->
+                <tr class="level-separator"><td colspan="5">Nivel 2 (Medio)</td></tr>
+                <tr class="rack-row filled" data-level="2" data-depth="5">
+                    <td>8099C</td><td>Serrano original</td><td>7777</td><td>Morelia</td><td>Plástico</td>
+                </tr>
+                <tr class="rack-row filled" data-level="2" data-depth="4">
+                    <td>7086C</td><td>Serrano original</td><td>6668</td><td>Morelia</td><td>Plástico</td>
+                </tr>
+                <tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
 
-            <div class="level-label level-3">Nivel 3</div>
-            <div class="rack-slot occupied" data-level="3" data-depth="1" title="Posición 1">FOL:7084C</div>
-            <div class="rack-slot occupied" data-level="3" data-depth="2" title="Posición 2">FOL:7084C</div>
-            <div class="rack-slot occupied" data-level="3" data-depth="3" title="Posición 3">FOL:7084C</div>
-            <div class="rack-slot disabled" data-level="3" data-depth="4" title="Posición 4">---</div>
-            <div class="rack-slot" data-level="3" data-depth="5" title="Posición 5 (Posterior)">Vacío</div>
+                <!-- NIVEL 1 -->
+                <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="5"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
 
-            <div class="level-label level-2">Nivel 2</div>
-            <div class="rack-slot occupied" data-level="2" data-depth="1" title="Posición 1">FOL:7084C</div>
-            <div class="rack-slot occupied" data-level="2" data-depth="2" title="Posición 2">FOL:7084C</div>
-            <div class="rack-slot occupied" data-level="2" data-depth="3" title="Posición 3">FOL:7084C</div>
-            <div class="rack-slot" data-level="2" data-depth="4" title="Posición 4">Vacío</div>
-            <div class="rack-slot" data-level="2" data-depth="5" title="Posición 5 (Posterior)">Vacío</div>
-
-            <div class="level-label level-1">Nivel 1</div>
-            <div class="rack-slot occupied" data-level="1" data-depth="1" title="Posición 1">FOL:7084C</div>
-            <div class="rack-slot" data-level="1" data-depth="2" title="Posición 2">Vacío</div>
-            <div class="rack-slot disabled" data-level="1" data-depth="3" title="Posición 3">---</div>
-            <div class="rack-slot disabled" data-level="1" data-depth="4" title="Posición 4">---</div>
-            <div class="rack-slot disabled" data-level="1" data-depth="5" title="Posición 5">---</div> 
-
-            <div class="level-label level-front">Frente Suelo</div>
-            <div class="rack-slot disabled" data-level="front" data-depth="1" title="Frente 1 (Estorba)">---</div>
-            <div class="rack-slot disabled" data-level="front" data-depth="2" title="Frente 2 (Estorba)">---</div>
-            <div class="rack-slot disabled" data-level="front" data-depth="3" title="Frente 3 (Estorba)">---</div>
-            <div class="rack-slot disabled" data-level="front" data-depth="4" title="Frente 4 (Estorba)">---</div>
-            <div class="rack-slot disabled" data-level="front" data-depth="5" title="Frente 5 (Estorba)">---</div>
-
-        </div>
-        <p style="font-size: 12px; color: #777; text-align: center;">Haz clic en un hueco vacío para seleccionar la ubicación.</p>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -354,107 +319,73 @@
     
     const levelInput = document.getElementById('levelSelected');
     const depthInput = document.getElementById('depthSelected');
-    const rackGrid = document.getElementById('rackGrid');
+    const rackTable = document.getElementById('rackTable');
     const form = document.getElementById('almacenForm');
 
-    // Inicializar el escáner
+    // Inicializar Escáner de Código de Barras
     const html5QrCode = new Html5Qrcode("reader");
 
     function onScanSuccess(decodedText, decodedResult) {
+        // Al detectar el código, detener la cámara y llenar los datos
         html5QrCode.stop().then(() => {
             document.getElementById('reader-container').style.display = 'none';
-        }).catch(err => {
-            console.log("No se pudo detener la cámara", err);
-        });
+        }).catch(err => console.log(err));
 
         qrInput.value = decodedText;
-
-        if (decodedText.includes("Folio:")) {
-            const regex = /Folio:\s*(\S+)/;
-            const match = decodedText.match(regex);
-
-            if (match && match[1]) {
-                folioDisplay.value = match[1];
-                folioDisplay.style.borderColor = "#28a745"; 
-                habilitarBotonGuardar();
-            } else {
-                folioDisplay.value = "Folio no encontrado en QR";
-                folioDisplay.style.borderColor = "red";
-                deshabilitarBotonGuardar();
-            }
-        } else {
-            folioDisplay.value = decodedText.trim();
-            folioDisplay.style.borderColor = "#28a745"; 
-            habilitarBotonGuardar();
-        }
+        folioDisplay.value = decodedText.trim();
+        folioDisplay.style.borderColor = "var(--success)"; 
+        habilitarBotonGuardar();
     }
 
-    // --- CÁMARA CON ENCUADRE Y MEJOR ENFOQUE ---
+    // Encender cámara con enfoque (Code128)
     window.addEventListener('load', () => {
         qrInput.placeholder = "Buscando cámara...";
-        
-        // AQUÍ ESTÁ EL ENCUADRE: qrbox genera el cuadrado de escaneo.
-        const config = { 
-            fps: 30,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0 // Ayuda a que el cuadrado no se deforme
-        }; 
+        const config = { fps: 30, qrbox: { width: 300, height: 150 } }; 
         
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) {
                 let cameraIdToUse = devices[0].id; 
-                
-                // Filtramos la cámara para evitar la ultra angular
                 for (let i = 0; i < devices.length; i++) {
-                    let nombreCamara = devices[i].label.toLowerCase();
-                    if (nombreCamara.includes("back") || nombreCamara.includes("trasera") || nombreCamara.includes("environment") || nombreCamara.includes("0")) {
-                        if (!nombreCamara.includes("ultra") && !nombreCamara.includes("macro") && !nombreCamara.includes("depth") && !nombreCamara.includes("0.5") && !nombreCamara.includes("wide")) {
+                    let nombre = devices[i].label.toLowerCase();
+                    if (nombre.includes("back") || nombre.includes("trasera") || nombre.includes("environment")) {
+                        if (!nombre.includes("ultra") && !nombre.includes("macro") && !nombre.includes("wide") && !nombre.includes("0.5")) {
                             cameraIdToUse = devices[i].id;
                             break; 
                         }
                     }
                 }
-
                 html5QrCode.start(cameraIdToUse, config, onScanSuccess)
-                .catch((err) => {
-                    console.error("Fallo al iniciar cámara específica:", err);
-                    // Fallback nativo
-                    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-                });
+                .catch(() => html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess));
             } else {
-                qrInput.placeholder = "No se detectaron cámaras.";
+                qrInput.placeholder = "Sin cámara. Escribe el Folio.";
             }
-        }).catch(err => {
-            console.error("Error al listar cámaras:", err);
-            qrInput.placeholder = "Cámara falló. Pega el texto manualmente.";
-        });
+        }).catch(err => qrInput.placeholder = "Cámara falló. Escribe manual.");
     });
 
+    // Ingreso manual por si falla la cámara
     qrInput.addEventListener('input', () => {
-        const text = qrInput.value;
-        if (text.includes("Folio:")) {
-            const regex = /Folio:\s*(\S+)/;
-            const match = text.match(regex);
-            if (match && match[1]) {
-                folioDisplay.value = match[1];
-                habilitarBotonGuardar();
-            }
-        } else {
-            folioDisplay.value = text.trim();
-            habilitarBotonGuardar();
-        }
+        folioDisplay.value = qrInput.value.trim();
+        habilitarBotonGuardar();
     });
 
-    rackGrid.addEventListener('click', function(event) {
-        const slot = event.target;
-        if (!slot.classList.contains('rack-slot') || slot.classList.contains('disabled') || slot.classList.contains('occupied')) return; 
+    // --- LÓGICA DE SELECCIÓN EN LA TABLA ---
+    rackTable.addEventListener('click', function(event) {
+        // Buscar la fila (<tr>) que fue clickeada
+        const row = event.target.closest('.rack-row');
+        
+        // Si no se hizo clic en una fila, o la fila ya tiene producto, no hacer nada
+        if (!row || row.classList.contains('filled')) return; 
 
-        const slots = document.querySelectorAll('.rack-slot');
-        slots.forEach(s => s.classList.remove('selected'));
-        slot.classList.add('selected');
+        // Quitar la selección anterior
+        const rows = document.querySelectorAll('.rack-row');
+        rows.forEach(r => r.classList.remove('selected'));
+        
+        // Seleccionar la nueva fila
+        row.classList.add('selected');
 
-        levelInput.value = slot.getAttribute('data-level');
-        depthInput.value = slot.getAttribute('data-depth');
+        // Guardar nivel y profundidad para el envío
+        levelInput.value = row.getAttribute('data-level');
+        depthInput.value = row.getAttribute('data-depth');
 
         habilitarBotonGuardar();
     });
@@ -463,10 +394,6 @@
         if (folioDisplay.value && levelInput.value && depthInput.value) {
             saveBtn.disabled = false;
         }
-    }
-
-    function deshabilitarBotonGuardar() {
-        saveBtn.disabled = true;
     }
 
     form.addEventListener('submit', function(event) {
@@ -494,26 +421,32 @@
         fetch(urlGoogleScript, {
             method: 'POST',
             mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)
         })
         .then(() => {
             statusArea.style.display = 'block';
-            statusArea.innerHTML = `<span style="color:var(--success)">¡MERCANCÍA ${folio} ALMACENADA CON ÉXITO!<br>Ubicación: Andén J, Nivel ${level}, Pos. ${depth}</span>`;
+            statusArea.innerHTML = `<span style="color:var(--success)">¡MERCANCÍA ${folio} ALMACENADA!<br>Ubicación: Andén J, Nivel ${level}, Pos. ${depth}</span>`;
+            
+            // Simular visualmente que se llenó la fila en la tabla
+            const selectedRow = document.querySelector('.rack-row.selected');
+            if(selectedRow) {
+                selectedRow.classList.remove('selected', 'empty');
+                selectedRow.classList.add('filled', 'highlighted');
+                const tds = selectedRow.querySelectorAll('td');
+                tds[0].innerText = folio;
+                tds[1].innerText = "Producto Reciente";
+            }
+
             form.reset();
-            const slots = document.querySelectorAll('.rack-slot');
-            slots.forEach(s => s.classList.remove('selected'));
-            saveBtn.innerText = "Confirmar Ubicación y Almacenar";
-            deshabilitarBotonGuardar();
+            saveBtn.innerText = "Confirmar Ubicación";
+            saveBtn.disabled = true;
         })
         .catch(error => {
             console.error('Error:', error);
             statusArea.style.display = 'block';
             statusArea.innerHTML = `<span style="color:red">Error al guardar. Revisa la conexión.</span>`;
-            saveBtn.innerText = "Confirmar Ubicación y Almacenar";
-            deshabilitarBotonGuardar();
+            saveBtn.innerText = "Confirmar Ubicación";
         });
     });
 </script>
