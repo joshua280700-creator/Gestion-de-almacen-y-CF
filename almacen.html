@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Almacenaje drive-in (Escaner QR)</title>
+    <title>WMS - Almacenaje drive-in (Escaner QR Automático)</title>
     <!-- Incluimos la librería jsQR desde CDN -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
@@ -12,7 +12,8 @@
             --background: #f4f7f6;
             --text: #333;
             --success: #28a745;
-            --warning: #ffc107;
+            --muted: #ddd;
+            --form-bg: #fff;
         }
 
         body {
@@ -27,6 +28,7 @@
             min-height: 100vh;
         }
 
+        /* --- ESTILOS DEL ENCABEZADO (Idéntico a image_8.png) --- */
         .header {
             width: 100%;
             max-width: 800px;
@@ -49,19 +51,30 @@
             color: #555;
         }
 
-        .container {
-            background-color: #fff;
+        .user-info a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        /* ----------------------------------------------------- */
+
+        /* --- ESTILOS DEL CONTENEDOR DE FORMULARIO (image_8.png) --- */
+        .wms-card {
+            background-color: var(--form-bg);
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 800px;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
         }
+        /* --------------------------------------------------------- */
 
         .form-group {
+            width: 100%;
             margin-bottom: 15px;
         }
 
@@ -70,9 +83,10 @@
             margin-bottom: 5px;
             font-weight: 600;
             color: #555;
+            text-align: left;
         }
 
-        /* --- ESTILOS DEL ESCANER DE CÁMARA (NUEVO) --- */
+        /* --- ESTILOS DE LA CÁMARA (AUTOMÁTICA Y CENTRADA) --- */
         #scanner-container {
             width: 100%;
             height: 300px;
@@ -81,7 +95,9 @@
             overflow: hidden;
             position: relative;
             margin-bottom: 15px;
-            display: none; /* Oculto por defecto */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         #scanner-video {
@@ -90,7 +106,7 @@
             object-fit: cover;
         }
 
-        /* Marco de enfoque visual */
+        /* Marco de enfoque visual (Círculo de éxito) */
         #scanner-overlay {
             position: absolute;
             top: 50%;
@@ -99,42 +115,19 @@
             width: 200px;
             height: 200px;
             border: 4px solid var(--success);
-            border-radius: 12px;
+            border-radius: 50%; /* Forma circular para éxito */
             box-sizing: border-box;
             pointer-events: none;
             box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
         }
+        /* ----------------------------------------------------- */
 
-        .scan-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.3s ease;
-            margin-bottom: 10px;
-        }
-
-        .scan-btn:hover {
-            background-color: #153a5c;
-        }
-
-        .scan-btn.scanning {
-            background-color: #ffc107;
-            color: #333;
-        }
-        /* ------------------------------------------- */
-
-        /* El campo de texto de image_7.png */
+        /* Campos de texto y selector (Idénticos a image_8.png) */
         textarea#qrInput {
             width: 100%;
             height: 100px;
             padding: 10px;
-            border: 2px solid #ccc; /* Borde más grueso para resaltar */
+            border: 2px solid var(--muted); 
             border-radius: 6px;
             font-size: 14px;
             box-sizing: border-box;
@@ -151,25 +144,27 @@
         input[type="text"] {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--muted);
             border-radius: 6px;
             font-size: 16px;
             box-sizing: border-box;
+            background-color: #fafafa;
         }
 
         select {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--muted);
             border-radius: 6px;
             font-size: 16px;
             box-sizing: border-box;
             background-color: #fff;
         }
 
+        /* Botón de Confirmación Gris (Idéntico a image_8.png) */
         .submit-btn {
-            background-color: var(--success);
-            color: white;
+            background-color: var(--muted);
+            color: #333;
             border: none;
             padding: 12px 20px;
             font-size: 18px;
@@ -182,11 +177,12 @@
         }
 
         .submit-btn:hover:not(:disabled) {
-            background-color: #218838;
+            background-color: #ccc;
         }
         
         .submit-btn:disabled {
-            background-color: #999;
+            background-color: #eee;
+            color: #ccc;
             cursor: not-allowed;
         }
 
@@ -206,12 +202,10 @@
     <div class="user-info">Joshua0700 | <a href="index.html">Ir a Recepción</a></div>
 </div>
 
-<div class="container">
+<div class="wms-card">
     <form id="almacenForm">
         
-        <!-- NUEVA SECCIÓN DE ESCANEO DE CÁMARA -->
-        <button type="button" id="toggleScanBtn" class="scan-btn">Iniciar Escáner de Cámara</button>
-        
+        <!-- SECCIÓN DE CÁMARA (AUTOMÁTICA) -->
         <div id="scanner-container">
             <video id="scanner-video" autoplay playsinline></video>
             <div id="scanner-overlay"></div>
@@ -220,7 +214,6 @@
 
         <div class="form-group">
             <label for="qrInput">Pegar/Escanear Texto QR Completo</label>
-            <!-- Este es el campo de image_7.png -->
             <textarea id="qrInput" name="qrInput" placeholder="Producto: Papas\nFolio: 7084C\n..."></textarea>
         </div>
 
@@ -245,21 +238,20 @@
 
 <div id="status-area"></div>
 
-<!-- Lógica del Escáner y Formulario -->
+<!-- Lógica del Escáner Automático y Formulario -->
 <script>
     const video = document.getElementById('scanner-video');
     const canvas = document.createElement('canvas'); // Canvas oculto para procesar frames
     const ctx = canvas.getContext('2d');
     const qrInput = document.getElementById('qrInput');
     const folioDisplay = document.getElementById('folioDisplay');
-    const toggleScanBtn = document.getElementById('toggleScanBtn');
     const scannerContainer = document.getElementById('scanner-container');
     const saveBtn = document.getElementById('saveBtn');
 
-    let isScanning = false;
     let stream = null;
+    let isScanning = false;
 
-    // --- FUNCIONES DEL ESCÁNER ---
+    // --- FUNCIONES DEL ESCÁNER AUTOMÁTICO ---
     async function startScanning() {
         try {
             // Solicitar acceso a la cámara trasera (si está disponible)
@@ -268,18 +260,16 @@
             });
             video.srcObject = stream;
             
-            toggleScanBtn.innerText = "Detener Escáner";
-            toggleScanBtn.classList.add('scanning');
-            scannerContainer.style.display = 'block';
-            qrInput.classList.add('active-scan');
-            qrInput.placeholder = "Escaneando... Apunta al código QR";
             isScanning = true;
+            qrInput.placeholder = "Escaneando... Apunta al código QR";
             
             // Iniciar el bucle de detección
             requestAnimationFrame(tick);
         } catch (err) {
             console.error('Error al acceder a la cámara:', err);
-            alert('No se pudo acceder a la cámara. Por favor, revisa los permisos.');
+            // alert('No se pudo acceder a la cámara. Por favor, revisa los permisos.');
+            // Si la cámara falla, el usuario puede pegar manualmente
+            qrInput.placeholder = "Cámara no disponible. Pega el texto del QR aquí.";
         }
     }
 
@@ -288,13 +278,8 @@
             stream.getTracks().forEach(track => track.stop());
             stream = null;
         }
-        
-        toggleScanBtn.innerText = "Iniciar Escáner de Cámara";
-        toggleScanBtn.classList.remove('scanning');
-        scannerContainer.style.display = 'none';
-        qrInput.classList.remove('active-scan');
-        qrInput.placeholder = "Producto: Papas\\nFolio: 7084C\\n...";
         isScanning = false;
+        qrInput.placeholder = "Producto: Papas\\nFolio: 7084C\\n...";
     }
 
     // El "tick" del reloj de detección de QR
@@ -320,7 +305,7 @@
                 const qrText = code.data;
                 console.log('QR Detectado:', qrText);
                 
-                // 1. Escribir el texto completo en el campo de texto (image_7.png)
+                // 1. Escribir el texto completo en el campo de texto
                 qrInput.value = qrText;
                 
                 // 2. Extraer el Folio (7084C) usando Regex
@@ -329,7 +314,7 @@
                 // 3. Detener escaneo para ahorrar batería
                 stopScanning();
                 
-                // Feedback visual breve
+                // Feedback visual breve (borde verde)
                 folioDisplay.style.borderColor = var(--success);
                 setTimeout(() => { folioDisplay.style.borderColor = ''; }, 2000);
             }
@@ -353,7 +338,6 @@
         if (match && match[1]) {
             const folio = match[1];
             folioDisplay.value = folio;
-            // folioDisplay.style.borderColor = var(--success);
             saveBtn.disabled = false;
         } else {
             folioDisplay.value = "Folio no encontrado en QR";
@@ -364,13 +348,9 @@
 
     // --- EVENT LISTENERS ---
     
-    // Botón de encender/apagar cámara
-    toggleScanBtn.addEventListener('click', () => {
-        if (isScanning) {
-            stopScanning();
-        } else {
-            startScanning();
-        }
+    // Iniciar el escáner AUTOMÁTICAMENTE al cargar la página
+    window.addEventListener('load', () => {
+        startScanning();
     });
 
     // Escuchar cambios manuales en el campo de texto (respaldo)
