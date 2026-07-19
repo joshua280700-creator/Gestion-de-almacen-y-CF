@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --primary: #1F4E78; /* Azul corporativo logístico */
+            --primary: #1F4E78;
             --background: #f4f7f6;
             --text: #333;
             --success: #28a745;
@@ -72,6 +72,26 @@
         .form-group {
             margin-bottom: 15px;
         }
+
+        /* --- NUEVOS ESTILOS PARA LA FILA DIVIDIDA --- */
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-group.half {
+            flex: 1;
+            margin-bottom: 15px;
+        }
+
+        /* En celulares pequeños, los campos se pondrán uno debajo del otro */
+        @media (max-width: 480px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+        /* ------------------------------------------- */
 
         label {
             display: block;
@@ -188,16 +208,31 @@
             <input type="date" id="fecha" name="fecha" required>
         </div>
 
-        <div class="form-group">
-            <label for="tipoCaja">Tipo de caja</label>
-            <input type="text" id="tipoCaja" name="tipoCaja" list="tipoCajaList" required placeholder="Selecciona o escribe">
-            <datalist id="tipoCajaList">
-                <option value="Morelia">
-                <option value="Naylea">
-                <option value="Arpilla">
-                <option value="Madera">
-                <option value="Cartón">
-            </datalist>
+        <!-- FILA DIVIDIDA: Tipo de Caja y Tipo de Tarima -->
+        <div class="form-row">
+            <div class="form-group half">
+                <label for="tipoCaja">Tipo de caja</label>
+                <input type="text" id="tipoCaja" name="tipoCaja" list="tipoCajaList" required placeholder="Ej. Morelia">
+                <datalist id="tipoCajaList">
+                    <option value="Morelia">
+                    <option value="Naylea">
+                    <option value="Arpilla">
+                    <option value="Madera">
+                    <option value="Cartón">
+                </datalist>
+            </div>
+
+            <div class="form-group half">
+                <label for="tipoTarima">Tipo de Tarima</label>
+                <select id="tipoTarima" name="tipoTarima" required>
+                    <option value="" disabled selected>Selecciona...</option>
+                    <option value="Plástico">Plástico</option>
+                    <option value="Madera 1ra">Madera 1ra</option>
+                    <option value="Madera 2da">Madera 2da</option>
+                    <option value="Chep">Chep</option>
+                    <option value="Sin Tarima">Sin Tarima</option>
+                </select>
+            </div>
         </div>
 
         <button type="submit" class="submit-btn">Registrar y Generar QR</button>
@@ -232,16 +267,19 @@
         submitBtn.innerText = "Registrando en Base de Datos...";
         submitBtn.disabled = true;
 
+        // Se agregó la lectura del nuevo campo tipoTarima
         const datos = {
             producto: document.getElementById('producto').value,
             folio: document.getElementById('folio').value,
             pesoBruto: document.getElementById('pesoBruto').value,
             pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value,
-            tipoCaja: document.getElementById('tipoCaja').value
+            tipoCaja: document.getElementById('tipoCaja').value,
+            tarima: document.getElementById('tipoTarima').value // NUEVO
         };
 
-        const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
+        // IMPORTANTE: RECUERDA PEGAR TU URL DE GOOGLE APPS SCRIPT AQUÍ
+        const urlGoogleScript = "AQUI_TU_URL";
 
         fetch(urlGoogleScript, {
             method: 'POST',
@@ -255,9 +293,9 @@
             qrcodeElement.innerHTML = "";
             folioDisplay.innerText = datos.folio;
             
-            const textoQrCompleto = `Producto: ${datos.producto}\nFolio: ${datos.folio}\nPeso bruto: ${datos.pesoBruto}\nPeso neto: ${datos.pesoNeto}\nFecha: ${datos.fecha}\nTipo de caja: ${datos.tipoCaja}`;
+            // Se actualizó el texto para que incluya la Tarima en el código QR
+            const textoQrCompleto = `Producto: ${datos.producto}\nFolio: ${datos.folio}\nPeso bruto: ${datos.pesoBruto}\nPeso neto: ${datos.pesoNeto}\nFecha: ${datos.fecha}\nTipo de caja: ${datos.tipoCaja}\nTarima: ${datos.tarima}`;
             
-            // GENERACIÓN DE QR CON NIVEL DE CORRECCIÓN 'M' (Más fácil de leer)
             qrGenerator = new QRCode(qrcodeElement, {
                 text: textoQrCompleto,
                 width: 180,
