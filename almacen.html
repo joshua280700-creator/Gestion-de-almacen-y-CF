@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Almacenaje - Ubicación de Mercancía V3 (Híbrido QR/Barras)</title>
-    <!-- Librería Html5Qrcode (La misma del Control de Salidas) -->
+    <!-- Librería Html5Qrcode -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
@@ -74,7 +74,7 @@
             gap: 15px;
         }
 
-        /* --- CONTENEDOR DEL ESCÁNER HTML5-QRCODE --- */
+        /* CONTENEDOR DEL ESCÁNER HTML5-QRCODE */
         #reader-container {
             width: 100%;
             border-radius: 8px;
@@ -86,7 +86,6 @@
         #reader {
             width: 100%;
         }
-        /* ------------------------------------------- */
 
         .form-group {
             margin-bottom: 10px;
@@ -373,13 +372,12 @@
 
         // Lógica Híbrida: ¿Es un QR formateado o un código de barras normal?
         if (decodedText.includes("Folio:")) {
-            // Es un QR tuyo con formato de texto
             const regex = /Folio:\s*(\S+)/;
             const match = decodedText.match(regex);
 
             if (match && match[1]) {
                 folioDisplay.value = match[1];
-                folioDisplay.style.borderColor = "#28a745"; // Corregido: Color en comillas
+                folioDisplay.style.borderColor = "#28a745"; 
                 habilitarBotonGuardar();
             } else {
                 folioDisplay.value = "Folio no encontrado en QR";
@@ -387,22 +385,47 @@
                 deshabilitarBotonGuardar();
             }
         } else {
-            // Es un código de barras normal o un QR con solo el número
             folioDisplay.value = decodedText.trim();
-            folioDisplay.style.borderColor = "#28a745"; // Corregido
+            folioDisplay.style.borderColor = "#28a745"; 
             habilitarBotonGuardar();
         }
     }
 
-    // Encender la cámara automáticamente
+    // --- NUEVO INICIO DE CÁMARA (EVITANDO ULTRA-ANGULAR) ---
     window.addEventListener('load', () => {
-        qrInput.placeholder = "Encendiendo cámara...";
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        qrInput.placeholder = "Buscando cámara principal (1.0x)...";
+        const config = { fps: 30 }; // Sin restricciones de tamaño (qrbox) para leer en toda la pantalla
         
-        // Priorizamos cámara trasera
-        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-        .catch((err) => {
-            console.error("Fallo al iniciar cámara:", err);
+        // Obtenemos la lista de TODAS las cámaras del celular
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                let cameraIdToUse = devices[0].id; // Por defecto la primera
+                
+                // Buscamos específicamente la cámara trasera normal (1.0x)
+                for (let i = 0; i < devices.length; i++) {
+                    let nombreCamara = devices[i].label.toLowerCase();
+                    // Si es trasera (back/environment)...
+                    if (nombreCamara.includes("back") || nombreCamara.includes("trasera") || nombreCamara.includes("environment")) {
+                        // ...Y NO es ultra angular, macro o de profundidad
+                        if (!nombreCamara.includes("ultra") && !nombreCamara.includes("macro") && !nombreCamara.includes("depth") && !nombreCamara.includes("0.5")) {
+                            cameraIdToUse = devices[i].id;
+                            break; // Encontramos la buena, salimos del ciclo
+                        }
+                    }
+                }
+
+                // Iniciamos con la cámara seleccionada
+                html5QrCode.start(cameraIdToUse, config, onScanSuccess)
+                .catch((err) => {
+                    console.error("Fallo al iniciar cámara específica:", err);
+                    // Si falla, intentamos el método genérico
+                    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+                });
+            } else {
+                qrInput.placeholder = "No se detectaron cámaras.";
+            }
+        }).catch(err => {
+            console.error("Error al listar cámaras:", err);
             qrInput.placeholder = "Cámara falló. Pega el texto manualmente.";
         });
     });
