@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Almacenaje drive-in (Escaner QR Automático)</title>
-    <!-- Incluimos la librería jsQR desde CDN -->
+    <title>Almacenaje - Ubicación de Mercancía V3 (Drive-In)</title>
+    <!-- Incluimos la librería jsQR desde CDN para el escaneo -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
         :root {
@@ -12,8 +12,8 @@
             --background: #f4f7f6;
             --text: #333;
             --success: #28a745;
-            --muted: #ddd;
-            --form-bg: #fff;
+            --warning: #ffc107;
+            --muted: #999;
         }
 
         body {
@@ -28,7 +28,6 @@
             min-height: 100vh;
         }
 
-        /* --- ESTILOS DEL ENCABEZADO (Idéntico a image_8.png) --- */
         .header {
             width: 100%;
             max-width: 800px;
@@ -51,42 +50,32 @@
             color: #555;
         }
 
-        .user-info a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: bold;
-        }
-        /* ----------------------------------------------------- */
-
-        /* --- ESTILOS DEL CONTENEDOR DE FORMULARIO (image_8.png) --- */
-        .wms-card {
-            background-color: var(--form-bg);
+        .container {
+            background-color: #fff;
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sección Izquierda: Escaneo (Integración de Cámara) */
+        .scan-section {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            align-items: center;
-        }
-        /* --------------------------------------------------------- */
-
-        .form-group {
-            width: 100%;
-            margin-bottom: 15px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-            text-align: left;
-        }
-
-        /* --- ESTILOS DE LA CÁMARA (AUTOMÁTICA Y CENTRADA) --- */
+        /* --- ESTILOS DEL ESCÁNER DE CÁMARA (NUEVO) --- */
         #scanner-container {
             width: 100%;
             height: 300px;
@@ -106,7 +95,7 @@
             object-fit: cover;
         }
 
-        /* Marco de enfoque visual (Círculo de éxito) */
+        /* Marco de enfoque visual (Círculo de éxito como en image_3.png) */
         #scanner-overlay {
             position: absolute;
             top: 50%;
@@ -115,19 +104,30 @@
             width: 200px;
             height: 200px;
             border: 4px solid var(--success);
-            border-radius: 50%; /* Forma circular para éxito */
+            border-radius: 50%; /* Forma circular */
             box-sizing: border-box;
             pointer-events: none;
             box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
         }
-        /* ----------------------------------------------------- */
+        /* ------------------------------------------- */
 
-        /* Campos de texto y selector (Idénticos a image_8.png) */
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        /* Input de escaneo de image_7.png, se rellenará automáticamente */
         textarea#qrInput {
             width: 100%;
             height: 100px;
             padding: 10px;
-            border: 2px solid var(--muted); 
+            border: 2px solid #ccc;
             border-radius: 6px;
             font-size: 14px;
             box-sizing: border-box;
@@ -135,36 +135,139 @@
             background-color: #fafafa;
         }
 
-        textarea#qrInput.active-scan {
-            border-color: var(--success);
+        textarea#qrInput:focus {
+            border-color: var(--primary);
             background-color: #fff;
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+        }
+
+        /* Sección de Mapa de Rack (Se mantiene intacta) */
+        .rack-map-section {
+            border-left: 1px solid #eee;
+            padding-left: 20px;
+        }
+
+        h2.map-title {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        /* Leyendas de capacidad */
+        .capacity-legend {
+            font-size: 12px;
+            color: #777;
+            background-color: #f9f9f9;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        /* Estructura Visual del Rack Drive-In */
+        .rack-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(5, 1fr); /* 5 profundidades */
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Etiquetas de Nivel */
+        .level-label {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-weight: bold;
+            font-size: 12px;
+            color: #fff;
+            padding-right: 10px;
+            height: 60px; /* Altura de cada hueco */
+        }
+
+        /* Etiquetas de Profundidad (H-L) */
+        .depth-label {
+            grid-column: span 1;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #555;
+            padding: 5px 0;
+        }
+
+        /* Colores por Nivel (según diagrama) */
+        .level-3 .level-label { background-color: #2196F3; } /* Azul Alto */
+        .level-2 .level-label { background-color: #4CAF50; } /* Verde Medio */
+        .level-1 .level-label { background-color: #8BC34A; } /* Verde Suelo */
+        .level-front .level-label { background-color: #FFC107; color: #333; } /* Amarillo Frente */
+
+        /* Estilo de los slots (huecos) del rack */
+        .rack-slot {
+            background-color: #fff;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            height: 60px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            padding: 2px;
+        }
+
+        .rack-slot:hover {
+            border-color: var(--primary);
+            background-color: #f0f8ff;
+        }
+
+        /* Estado Seleccionado (Borde verde grueso como en image_3.png) */
+        .rack-slot.selected {
+            border-color: var(--success);
+            border-width: 4px;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* Estado "No Disponible" o Inconveniente */
+        .rack-slot.disabled {
+            background-color: #f0f0f0;
+            border-color: #ddd;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Slots que simulan estar ocupados */
+        .rack-slot.occupied {
+            background-color: #e3f2fd;
+            border-color: #90caf9;
+            color: #1e88e5;
         }
 
         input[type="text"] {
             width: 100%;
             padding: 10px;
-            border: 1px solid var(--muted);
+            border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 16px;
             box-sizing: border-box;
-            background-color: #fafafa;
+            margin-bottom: 10px;
         }
 
         select {
             width: 100%;
             padding: 10px;
-            border: 1px solid var(--muted);
+            border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 16px;
             box-sizing: border-box;
             background-color: #fff;
         }
 
-        /* Botón de Confirmación Gris (Idéntico a image_8.png) */
         .submit-btn {
-            background-color: var(--muted);
-            color: #333;
+            background-color: var(--success);
+            color: white;
             border: none;
             padding: 12px 20px;
             font-size: 18px;
@@ -177,12 +280,11 @@
         }
 
         .submit-btn:hover:not(:disabled) {
-            background-color: #ccc;
+            background-color: #218838;
         }
         
         .submit-btn:disabled {
-            background-color: #eee;
-            color: #ccc;
+            background-color: #999;
             cursor: not-allowed;
         }
 
@@ -198,47 +300,113 @@
 <body>
 
 <div class="header">
-    <h1>WMS: Ubicación de Almacén</h1>
-    <div class="user-info">Joshua0700 | <a href="index.html">Ir a Recepción</a></div>
+    <h1>WMS: Ubicación de Almacén (Drive-In) V3</h1>
+    <div class="user-info">Joshua0700 | <a href="recepcion.html">Ir a Recepción</a></div>
 </div>
 
-<div class="wms-card">
-    <form id="almacenForm">
+<div class="container">
+    
+    <!-- Sección Izquierda: Escaneo y Confirmación de Datos (Integrada) -->
+    <div class="scan-section">
         
-        <!-- SECCIÓN DE CÁMARA (AUTOMÁTICA) -->
+        <!-- SECCIÓN DE CÁMARA AUTOMÁTICA (NUEVO) -->
         <div id="scanner-container">
             <video id="scanner-video" autoplay playsinline></video>
             <div id="scanner-overlay"></div>
         </div>
         <!-- --------------------------------- -->
 
-        <div class="form-group">
-            <label for="qrInput">Pegar/Escanear Texto QR Completo</label>
-            <textarea id="qrInput" name="qrInput" placeholder="Producto: Papas\nFolio: 7084C\n..."></textarea>
+        <form id="almacenForm">
+            
+            <div class="form-group">
+                <label for="qrInput">Pegar/Escanear Texto QR Completo</label>
+                <!-- Este campo se rellenará automáticamente al escanear, o manualmente -->
+                <textarea id="qrInput" name="qrInput" placeholder="Producto: Papas\nFolio: 7084C\n..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="folioDisplay">Folio Único Extraído</label>
+                <input type="text" id="folioDisplay" name="folioDisplay" readonly placeholder="Esperando escaneo...">
+            </div>
+
+            <div class="form-group">
+                <label for="cuartoFrio">Seleccionar Cuarto Frío</label>
+                <select id="cuartoFrio" name="cuartoFrio" required>
+                    <option value="" disabled selected>Selecciona...</option>
+                    <option value="Cuarto 1 (Congelado)">Cuarto 1 (Congelado)</option>
+                    <option value="Cuarto 2 (Refrigerado)">Cuarto 2 (Refrigerado)</option>
+                    <option value="Pre-enfriado">Pre-enfriado</option>
+                </select>
+            </div>
+
+            <!-- Inputs ocultos para enviar la ubicación seleccionada -->
+            <input type="hidden" id="levelSelected" name="levelSelected">
+            <input type="hidden" id="depthSelected" name="depthSelected">
+
+            <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Ubicación y Almacenar</button>
+        </form>
+    </div>
+
+    <!-- Sección Derecha: Mapa Interactivo de Rack Drive-In (Intacta) -->
+    <div class="rack-map-section">
+        <h2 class="map-title">Mapa de Andén Profundo (Drive-In)</h2>
+        
+        <div class="capacity-legend">
+            <strong>Capacidad Drive-In (Tarima):</strong><br>
+            - Niveles Altos/Intermedios: Max 3 Plastic, >3 Segunda<br>
+            - Nivel Suelo (4): 4 Plastic / 4 Segunda
         </div>
 
-        <div class="form-group">
-            <label for="folioDisplay">Folio Único Extraído</label>
-            <input type="text" id="folioDisplay" name="folioDisplay" readonly placeholder="Esperando escaneo...">
-        </div>
+        <div class="rack-grid" id="rackGrid">
+            
+            <!-- Fila de Profundidad L-H -->
+            <div class="depth-label">Nivel</div>
+            <div class="depth-label">Pos. 1<br>(Frontal)</div>
+            <div class="depth-label">Pos. 2</div>
+            <div class="depth-label">Pos. 3</div>
+            <div class="depth-label">Pos. 4</div>
+            <div class="depth-label">Pos. 5<br>(Posterior)</div>
 
-        <div class="form-group">
-            <label for="cuartoFrio">Seleccionar Cuarto Frío</label>
-            <select id="cuartoFrio" name="cuartoFrio" required>
-                <option value="" disabled selected>Selecciona...</option>
-                <option value="Cuarto 1 (Congelado)">Cuarto 1 (Congelado)</option>
-                <option value="Cuarto 2 (Refrigerado)">Cuarto 2 (Refrigerado)</option>
-                <option value="Pre-enfriado">Pre-enfriado</option>
-            </select>
-        </div>
+            <!-- Nivel 3 (Alto) -->
+            <div class="level-label level-3">Nivel 3</div>
+            <div class="rack-slot occupied" data-level="3" data-depth="1" title="Posición 1">FOL:7084C</div>
+            <div class="rack-slot occupied" data-level="3" data-depth="2" title="Posición 2">FOL:7084C</div>
+            <div class="rack-slot occupied" data-level="3" data-depth="3" title="Posición 3">FOL:7084C</div>
+            <div class="rack-slot disabled" data-level="3" data-depth="4" title="Posición 4">---</div>
+            <div class="rack-slot" data-level="3" data-depth="5" title="Posición 5 (Posterior)">Vacío</div>
 
-        <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Ubicación y Almacenar</button>
-    </form>
+            <!-- Nivel 2 (Intermedio) -->
+            <div class="level-label level-2">Nivel 2</div>
+            <div class="rack-slot occupied" data-level="2" data-depth="1" title="Posición 1">FOL:7084C</div>
+            <div class="rack-slot occupied" data-level="2" data-depth="2" title="Posición 2">FOL:7084C</div>
+            <div class="rack-slot occupied" data-level="2" data-depth="3" title="Posición 3">FOL:7084C</div>
+            <div class="rack-slot" data-level="2" data-depth="4" title="Posición 4">Vacío</div>
+            <div class="rack-slot" data-level="2" data-depth="5" title="Posición 5 (Posterior)">Vacío</div>
+
+            <!-- Nivel 1 (Suelo) -->
+            <div class="level-label level-1">Nivel 1</div>
+            <div class="rack-slot occupied" data-level="1" data-depth="1" title="Posición 1">FOL:7084C</div>
+            <div class="rack-slot" data-level="1" data-depth="2" title="Posición 2">Vacío</div>
+            <div class="rack-slot disabled" data-level="1" data-depth="3" title="Posición 3">---</div>
+            <div class="rack-slot disabled" data-level="1" data-depth="4" title="Posición 4">---</div>
+            <div class="rack-slot disabled" data-level="1" data-depth="5" title="Posición 5">---</div> <!-- Suelo max 4 positions -->
+
+            <!-- Frente al Nivel 1 -->
+            <div class="level-label level-front">Frente Suelo</div>
+            <div class="rack-slot disabled" data-level="front" data-depth="1" title="Frente 1 (Estorba)">---</div>
+            <div class="rack-slot disabled" data-level="front" data-depth="2" title="Frente 2 (Estorba)">---</div>
+            <div class="rack-slot disabled" data-level="front" data-depth="3" title="Frente 3 (Estorba)">---</div>
+            <div class="rack-slot disabled" data-level="front" data-depth="4" title="Frente 4 (Estorba)">---</div>
+            <div class="rack-slot disabled" data-level="front" data-depth="5" title="Frente 5 (Estorba)">---</div>
+
+        </div>
+        <p style="font-size: 12px; color: #777; text-align: center;">Haz clic en un hueco vacío para seleccionar la ubicación.</p>
+    </div>
 </div>
 
 <div id="status-area"></div>
 
-<!-- Lógica del Escáner Automático y Formulario -->
+<!-- Lógica del Escáner, Mapa y Formulario -->
 <script>
     const video = document.getElementById('scanner-video');
     const canvas = document.createElement('canvas'); // Canvas oculto para procesar frames
@@ -247,20 +415,26 @@
     const folioDisplay = document.getElementById('folioDisplay');
     const scannerContainer = document.getElementById('scanner-container');
     const saveBtn = document.getElementById('saveBtn');
+    
+    // Variables de control de ubicación (Se mantienen)
+    const levelInput = document.getElementById('levelSelected');
+    const depthInput = document.getElementById('depthSelected');
+    const rackGrid = document.getElementById('rackGrid');
+    const form = document.getElementById('almacenForm');
 
     let stream = null;
     let isScanning = false;
 
-    // --- FUNCIONES DEL ESCÁNER AUTOMÁTICO ---
+    // --- FUNCIONES DEL ESCÁNER AUTOMÁTICO (NUEVO) ---
     async function startScanning() {
         try {
-            // Solicitar acceso a la cámara trasera (si está disponible)
+            // Solicitar acceso a la cámara trasera (ideal para escanear)
             stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: { ideal: 'environment' } } 
             });
             video.srcObject = stream;
-            
             isScanning = true;
+            
             qrInput.placeholder = "Escaneando... Apunta al código QR";
             
             // Iniciar el bucle de detección
@@ -279,7 +453,6 @@
             stream = null;
         }
         isScanning = false;
-        qrInput.placeholder = "Producto: Papas\\nFolio: 7084C\\n...";
     }
 
     // El "tick" del reloj de detección de QR
@@ -305,7 +478,7 @@
                 const qrText = code.data;
                 console.log('QR Detectado:', qrText);
                 
-                // 1. Escribir el texto completo en el campo de texto
+                // 1. Escribir el texto completo en el campo de texto (image_7.png)
                 qrInput.value = qrText;
                 
                 // 2. Extraer el Folio (7084C) usando Regex
@@ -314,7 +487,7 @@
                 // 3. Detener escaneo para ahorrar batería
                 stopScanning();
                 
-                // Feedback visual breve (borde verde)
+                // Feedback visual breve
                 folioDisplay.style.borderColor = var(--success);
                 setTimeout(() => { folioDisplay.style.borderColor = ''; }, 2000);
             }
@@ -324,7 +497,7 @@
         requestAnimationFrame(tick);
     }
 
-    // --- LÓGICA DE EXTRACCIÓN DE FOLIO (Regex) ---
+    // --- LÓGICA DE EXTRACCIÓN DE FOLIO (Regex, Se mantiene intacta) ---
     function extractFolio(text) {
         if (!text) {
             folioDisplay.value = "";
@@ -338,12 +511,44 @@
         if (match && match[1]) {
             const folio = match[1];
             folioDisplay.value = folio;
-            saveBtn.disabled = false;
+            // folioDisplay.style.borderColor = var(--success);
+            habilitarBotonGuardar();
         } else {
             folioDisplay.value = "Folio no encontrado en QR";
             folioDisplay.style.borderColor = "red";
-            saveBtn.disabled = true;
+            deshabilitarBotonGuardar();
         }
+    }
+
+    // 2. Manejar la selección interactiva del mapa de rack (Se mantiene intacta)
+    rackGrid.addEventListener('click', function(event) {
+        const slot = event.target;
+        if (!slot.classList.contains('rack-slot') || slot.classList.contains('disabled') || slot.classList.contains('occupied')) {
+            return; 
+        }
+
+        const slots = document.querySelectorAll('.rack-slot');
+        slots.forEach(s => s.classList.remove('selected'));
+        slot.classList.add('selected');
+
+        const level = slot.getAttribute('data-level');
+        const depth = slot.getAttribute('data-depth');
+
+        levelInput.value = level;
+        depthInput.value = depth;
+
+        habilitarBotonGuardar();
+    });
+
+    // Funciones de control del botón (Se mantienen)
+    function habilitarBotonGuardar() {
+        if (folioDisplay.value && levelInput.value && depthInput.value) {
+            saveBtn.disabled = false;
+        }
+    }
+
+    function deshabilitarBotonGuardar() {
+        saveBtn.disabled = true;
     }
 
     // --- EVENT LISTENERS ---
@@ -358,25 +563,30 @@
         extractFolio(qrInput.value);
     });
 
-    // Enviar formulario (Fase 3: Búsqueda y Actualización)
+    // 3. Enviar la actualización a Google Sheets (Se mantiene intacta)
     form.addEventListener('submit', function(event) {
         event.preventDefault(); 
         const folio = folioDisplay.value;
         const cuarto = document.getElementById('cuartoFrio').value;
+        const level = levelInput.value;
+        const depth = depthInput.value;
+        const statusArea = document.getElementById('status-area');
+
+        // URL proporcionada anteriormente (la misma)
+        const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
+
+        // NOTA: Para buscar y actualizar, debemos indicar que esta es una acción de "update_location"
+        const datos = {
+            action: 'update_location', // Clave para diferenciar de registro nuevo
+            folio: folio,
+            cuarto: cuarto,
+            level: level,
+            depth: depth
+        };
+
         submitBtn = document.getElementById('saveBtn');
         submitBtn.innerText = "Guardando Ubicación...";
         submitBtn.disabled = true;
-
-        // --- IMPORTANTE: PEGA AQUÍ TU URL ACTUALIZADA DEL PASO 1 (Apps Script) ---
-        const urlGoogleScript = "AQUI_PEGA_TU_URL_DE_APPS_SCRIPT_ACTUALIZADA";
-        // -------------------------------------------------------------------------
-
-        // NOTA: Para buscar y actualizar, debemos indicar que esta es una acción de "update"
-        const datos = {
-            action: 'update', // Clave para diferenciar de registro nuevo
-            folio: folio,
-            cuarto: cuarto
-        };
 
         fetch(urlGoogleScript, {
             method: 'POST',
@@ -388,18 +598,20 @@
         })
         .then(() => {
             // feedback visual
-            document.getElementById('status-area').style.display = 'block';
-            document.getElementById('status-area').innerHTML = `<span style="color:var(--success)">¡Mercancía ${folio} Almacenada con éxito!</span>`;
+            statusArea.style.display = 'block';
+            statusArea.innerHTML = `<span style="color:var(--success)">¡MERCANCÍA ${folio} ALMACENADA CON ÉXITO!<br>Ubicación: Andén J, Nivel ${level}, Pos. ${depth}</span>`;
             form.reset();
+            const slots = document.querySelectorAll('.rack-slot');
+            slots.forEach(s => s.classList.remove('selected'));
             submitBtn.innerText = "Confirmar Ubicación y Almacenar";
-            submitBtn.disabled = true;
+            deshabilitarBotonGuardar();
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('status-area').style.display = 'block';
-            document.getElementById('status-area').innerHTML = `<span style="color:red">Error al guardar. Revisa la conexión.</span>`;
+            statusArea.style.display = 'block';
+            statusArea.innerHTML = `<span style="color:red">Error al guardar. Revisa la conexión.</span>`;
             submitBtn.innerText = "Confirmar Ubicación y Almacenar";
-            submitBtn.disabled = false;
+            deshabilitarBotonGuardar();
         });
     });
 
