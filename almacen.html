@@ -357,11 +357,10 @@
     const rackGrid = document.getElementById('rackGrid');
     const form = document.getElementById('almacenForm');
 
-    // Inicializar el escáner (Soporta QR y Barras por defecto)
+    // Inicializar el escáner
     const html5QrCode = new Html5Qrcode("reader");
 
     function onScanSuccess(decodedText, decodedResult) {
-        // Pausar/Detener el escáner para evitar múltiples escaneos
         html5QrCode.stop().then(() => {
             document.getElementById('reader-container').style.display = 'none';
         }).catch(err => {
@@ -370,7 +369,6 @@
 
         qrInput.value = decodedText;
 
-        // Lógica Híbrida: ¿Es un QR formateado o un código de barras normal?
         if (decodedText.includes("Folio:")) {
             const regex = /Folio:\s*(\S+)/;
             const match = decodedText.match(regex);
@@ -391,34 +389,36 @@
         }
     }
 
-    // --- NUEVO INICIO DE CÁMARA (EVITANDO ULTRA-ANGULAR) ---
+    // --- CÁMARA CON ENCUADRE Y MEJOR ENFOQUE ---
     window.addEventListener('load', () => {
-        qrInput.placeholder = "Buscando cámara principal (1.0x)...";
-        const config = { fps: 30 }; // Sin restricciones de tamaño (qrbox) para leer en toda la pantalla
+        qrInput.placeholder = "Buscando cámara...";
         
-        // Obtenemos la lista de TODAS las cámaras del celular
+        // AQUÍ ESTÁ EL ENCUADRE: qrbox genera el cuadrado de escaneo.
+        const config = { 
+            fps: 30,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0 // Ayuda a que el cuadrado no se deforme
+        }; 
+        
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) {
-                let cameraIdToUse = devices[0].id; // Por defecto la primera
+                let cameraIdToUse = devices[0].id; 
                 
-                // Buscamos específicamente la cámara trasera normal (1.0x)
+                // Filtramos la cámara para evitar la ultra angular
                 for (let i = 0; i < devices.length; i++) {
                     let nombreCamara = devices[i].label.toLowerCase();
-                    // Si es trasera (back/environment)...
-                    if (nombreCamara.includes("back") || nombreCamara.includes("trasera") || nombreCamara.includes("environment")) {
-                        // ...Y NO es ultra angular, macro o de profundidad
-                        if (!nombreCamara.includes("ultra") && !nombreCamara.includes("macro") && !nombreCamara.includes("depth") && !nombreCamara.includes("0.5")) {
+                    if (nombreCamara.includes("back") || nombreCamara.includes("trasera") || nombreCamara.includes("environment") || nombreCamara.includes("0")) {
+                        if (!nombreCamara.includes("ultra") && !nombreCamara.includes("macro") && !nombreCamara.includes("depth") && !nombreCamara.includes("0.5") && !nombreCamara.includes("wide")) {
                             cameraIdToUse = devices[i].id;
-                            break; // Encontramos la buena, salimos del ciclo
+                            break; 
                         }
                     }
                 }
 
-                // Iniciamos con la cámara seleccionada
                 html5QrCode.start(cameraIdToUse, config, onScanSuccess)
                 .catch((err) => {
                     console.error("Fallo al iniciar cámara específica:", err);
-                    // Si falla, intentamos el método genérico
+                    // Fallback nativo
                     html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
                 });
             } else {
@@ -430,7 +430,6 @@
         });
     });
 
-    // Permitir ingreso manual si falla la cámara
     qrInput.addEventListener('input', () => {
         const text = qrInput.value;
         if (text.includes("Folio:")) {
