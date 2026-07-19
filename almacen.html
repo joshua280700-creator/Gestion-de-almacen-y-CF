@@ -147,7 +147,6 @@
                 </select>
             </div>
 
-            <!-- SELECTOR DE ESPACIO DE RACK -->
             <div class="form-group">
                 <label for="espacioRack">2. Seleccionar Espacio/Andén</label>
                 <select id="espacioRack" name="espacioRack" required>
@@ -214,23 +213,98 @@
     const rackTable = document.getElementById('rackTable');
     const form = document.getElementById('almacenForm');
 
-    const html5QrCode = new Html5Qrcode("reader");
-
-    function onScanSuccess(decodedText, decodedResult) {
-        html5QrCode.stop().then(() => {
-            document.getElementById('reader-container').style.display = 'none';
-        }).catch(err => console.log(err));
-
-        qrInput.value = decodedText;
-        folioDisplay.value = decodedText.trim();
-        folioDisplay.style.borderColor = "var(--success)"; 
-        habilitarBotonGuardar();
-    }
+    // ¡URL INSERTADA AQUÍ!
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
+    
+    let inventarioGlobal = [];
 
     window.addEventListener('load', () => {
+        iniciarCamara();
+        cargarInventario();
+    });
+
+    function cargarInventario() {
+        const statusArea = document.getElementById('status-area');
+        statusArea.style.display = 'block';
+        statusArea.innerHTML = `<span style="color:var(--primary)">Cargando inventario desde la base de datos...</span>`;
+
+        fetch(urlGoogleScript + "?t=" + new Date().getTime())
+        .then(response => response.json())
+        .then(data => {
+            inventarioGlobal = data;
+            statusArea.style.display = 'none';
+            actualizarTablaMapa(); 
+        })
+        .catch(error => {
+            console.error(error);
+            statusArea.innerHTML = `<span style="color:red">Error al cargar el inventario. Revisa tu conexión.</span>`;
+        });
+    }
+
+    function actualizarTablaMapa() {
+        const cuartoFrio = document.getElementById('cuartoFrio').value;
+        const espacioRack = document.getElementById('espacioRack').value;
+
+        document.querySelectorAll('.rack-row').forEach(row => {
+            row.className = 'rack-row empty';
+            const tds = row.querySelectorAll('td');
+            for(let i=0; i<5; i++) tds[i].innerText = "";
+        });
+
+        if (!cuartoFrio || !espacioRack) return;
+
+        inventarioGlobal.forEach(item => {
+            if (item.cuarto === cuartoFrio && item.ubicacion && item.ubicacion.startsWith(espacioRack)) {
+                const regex = /Nivel (\d+), Pos (\d+)/;
+                const match = item.ubicacion.match(regex);
+                
+                if(match) {
+                    const nivel = match[1];
+                    const pos = match[2];
+                    
+                    const row = document.querySelector(`.rack-row[data-level="${nivel}"][data-depth="${pos}"]`);
+                    if(row) {
+                        row.className = 'rack-row filled'; 
+                        const tds = row.querySelectorAll('td');
+                        tds[0].innerText = item.folio;
+                        tds[1].innerText = item.producto;
+                        tds[2].innerText = item.pesoNeto;
+                        tds[3].innerText = item.tipoCaja;
+                        tds[4].innerText = item.tarima;
+                    }
+                }
+            }
+        });
+    }
+
+    document.getElementById('cuartoFrio').addEventListener('change', () => {
+        actualizarTablaMapa();
+        habilitarBotonGuardar();
+    });
+    document.getElementById('espacioRack').addEventListener('change', () => {
+        actualizarTablaMapa();
+        habilitarBotonGuardar();
+    });
+
+    rackTable.addEventListener('click', function(event) {
+        const row = event.target.closest('.rack-row');
+        if (!row || row.classList.contains('filled')) return; 
+
+        const rows = document.querySelectorAll('.rack-row');
+        rows.forEach(r => r.classList.remove('selected'));
+        
+        row.classList.add('selected');
+        levelInput.value = row.getAttribute('data-level');
+        depthInput.value = row.getAttribute('data-depth');
+
+        habilitarBotonGuardar();
+    });
+
+    const html5QrCode = new Html5Qrcode("reader");
+
+    function iniciarCamara() {
         qrInput.placeholder = "Buscando cámara...";
         const config = { fps: 30, qrbox: { width: 300, height: 150 } }; 
-        
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) {
                 let cameraIdToUse = devices[0].id; 
@@ -249,24 +323,20 @@
                 qrInput.placeholder = "Sin cámara. Escribe el Folio.";
             }
         }).catch(err => qrInput.placeholder = "Cámara falló. Escribe manual.");
-    });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('reader-container').style.display = 'none';
+        }).catch(err => console.log(err));
+        qrInput.value = decodedText;
+        folioDisplay.value = decodedText.trim();
+        folioDisplay.style.borderColor = "var(--success)"; 
+        habilitarBotonGuardar();
+    }
 
     qrInput.addEventListener('input', () => {
         folioDisplay.value = qrInput.value.trim();
-        habilitarBotonGuardar();
-    });
-
-    rackTable.addEventListener('click', function(event) {
-        const row = event.target.closest('.rack-row');
-        if (!row || row.classList.contains('filled')) return; 
-
-        const rows = document.querySelectorAll('.rack-row');
-        rows.forEach(r => r.classList.remove('selected'));
-        
-        row.classList.add('selected');
-        levelInput.value = row.getAttribute('data-level');
-        depthInput.value = row.getAttribute('data-depth');
-
         habilitarBotonGuardar();
     });
 
@@ -275,16 +345,10 @@
             saveBtn.disabled = false;
         }
     }
-    
-    document.getElementById('cuartoFrio').addEventListener('change', habilitarBotonGuardar);
-    document.getElementById('espacioRack').addEventListener('change', habilitarBotonGuardar);
 
     form.addEventListener('submit', function(event) {
         event.preventDefault(); 
         
-        // RECUERDA PEGAR TU URL AQUÍ
-        const urlGoogleScript = "https://script.google.com/macros/s/AKfycbzDr6l3UjGvRhq2Fynfb2vPYgdrEVg3CdTfitceVKK6KHRlAES280L4ZCA4L8BLw2undg/exec";
-
         const datos = {
             action: 'update_location',
             folio: folioDisplay.value,
@@ -304,16 +368,21 @@
             body: JSON.stringify(datos)
         })
         .then(() => {
-            document.getElementById('status-area').style.display = 'block';
-            document.getElementById('status-area').innerHTML = `<span style="color:var(--success)">¡MERCANCÍA ${datos.folio} ALMACENADA!</span>`;
+            const statusArea = document.getElementById('status-area');
+            statusArea.style.display = 'block';
+            statusArea.innerHTML = `<span style="color:var(--success)">¡MERCANCÍA ${datos.folio} ALMACENADA!</span>`;
+            
+            cargarInventario(); 
+
             form.reset();
             const rows = document.querySelectorAll('.rack-row');
             rows.forEach(r => r.classList.remove('selected'));
             saveBtn.innerText = "Confirmar Ubicación";
         })
         .catch(error => {
-            document.getElementById('status-area').style.display = 'block';
-            document.getElementById('status-area').innerHTML = `<span style="color:red">Error al guardar.</span>`;
+            const statusArea = document.getElementById('status-area');
+            statusArea.style.display = 'block';
+            statusArea.innerHTML = `<span style="color:red">Error al guardar.</span>`;
             saveBtn.innerText = "Confirmar Ubicación";
         });
     });
