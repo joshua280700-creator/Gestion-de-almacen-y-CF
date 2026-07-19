@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Almacenaje - Ubicación de Mercancía V4 (Tabla Detallada)</title>
-    <!-- Librería JsBarcode (Solo lectura/soporte) y Scanner -->
+    <title>Almacenaje - Ubicación de Mercancía V5</title>
+    <!-- Librería JsBarcode y Scanner -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -15,7 +15,7 @@
             --success: #28a745;
             --warning: #ffc107;
             --muted: #999;
-            --rack-green: #548235; /* Verde oscuro de tu imagen */
+            --rack-green: #548235; 
         }
 
         body {
@@ -41,16 +41,8 @@
             padding-bottom: 10px;
         }
 
-        .header h1 {
-            color: var(--primary);
-            margin: 0;
-            font-size: 24px;
-        }
-
-        .user-info {
-            font-size: 14px;
-            color: #555;
-        }
+        .header h1 { color: var(--primary); margin: 0; font-size: 24px; }
+        .user-info { font-size: 14px; color: #555; }
 
         .container {
             background-color: #fff;
@@ -64,148 +56,61 @@
             gap: 20px;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
 
-        /* --- SECCIÓN ESCÁNER Y FORMULARIO --- */
-        .scan-section {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        .scan-section { display: flex; flex-direction: column; gap: 15px; }
 
         #reader-container {
-            width: 100%;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            background-color: #000;
+            width: 100%; border-radius: 8px; overflow: hidden;
+            margin-bottom: 15px; background-color: #000;
         }
-        
         #reader { width: 100%; }
 
         .form-group { margin-bottom: 10px; }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
 
         input[type="text"], select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
+            width: 100%; padding: 10px; border: 1px solid #ccc;
+            border-radius: 6px; font-size: 16px; box-sizing: border-box;
             background-color: #fff;
         }
 
         .submit-btn {
-            background-color: var(--success);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.3s ease;
-            margin-top: 15px;
+            background-color: var(--success); color: white; border: none;
+            padding: 12px 20px; font-size: 18px; font-weight: bold;
+            border-radius: 6px; cursor: pointer; width: 100%;
+            transition: background-color 0.3s ease; margin-top: 15px;
         }
         .submit-btn:hover:not(:disabled) { background-color: #218838; }
         .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
         
-        #status-area {
-            margin-top: 20px;
-            text-align: center;
-            font-weight: bold;
-            display: none;
-        }
+        #status-area { margin-top: 20px; text-align: center; font-weight: bold; display: none; }
 
-        /* --- SECCIÓN MAPA: TABLA DETALLADA --- */
         .rack-map-section {
-            border-left: 1px solid #eee;
-            padding-left: 20px;
-            overflow-x: auto; /* Por si la tabla es muy ancha en celular */
+            border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; 
         }
+        h2.map-title { color: var(--primary); margin-top: 0; font-size: 18px; text-align: center; }
 
-        h2.map-title {
-            color: var(--primary);
-            margin-top: 0;
-            font-size: 18px;
-            text-align: center;
-        }
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px 5px; }
+        .rack-table th { background-color: #fff; color: var(--text); font-weight: bold; border-bottom: 2px solid var(--primary); }
 
-        .rack-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            text-align: left;
-        }
-
-        .rack-table th, .rack-table td {
-            border: 1px solid #ddd;
-            padding: 8px 5px;
-        }
-
-        .rack-table th {
-            background-color: #fff;
-            color: var(--text);
-            font-weight: bold;
-            border-bottom: 2px solid var(--primary);
-        }
-
-        /* Franjas verdes que separan los niveles */
         .level-separator td {
-            background-color: var(--rack-green);
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            padding: 4px;
-            border: 1px solid var(--rack-green);
+            background-color: var(--rack-green); color: white; font-weight: bold;
+            text-align: center; padding: 4px; border: 1px solid var(--rack-green);
         }
 
-        /* Filas interactivas */
-        .rack-row.empty {
-            background-color: #fff;
-            cursor: pointer;
-            height: 35px; /* Altura mínima para que se vea el espacio */
-        }
+        .rack-row.empty { background-color: #fff; cursor: pointer; height: 35px; }
+        .rack-row.empty:hover { background-color: #f0f8ff; }
 
-        .rack-row.empty:hover {
-            background-color: #f0f8ff;
-        }
-
-        /* Estado Seleccionado */
         .rack-row.selected td {
-            background-color: #e8f5e9;
-            border-top: 2px solid var(--success);
+            background-color: #e8f5e9; border-top: 2px solid var(--success);
             border-bottom: 2px solid var(--success);
         }
         .rack-row.selected td:first-child { border-left: 2px solid var(--success); }
         .rack-row.selected td:last-child { border-right: 2px solid var(--success); }
 
-        /* Filas ya ocupadas (con datos) */
-        .rack-row.filled {
-            background-color: #f9f9f9;
-            color: #333;
-        }
-        
-        /* Simular el recuadro punteado azul de tu imagen para un folio específico */
-        .rack-row.highlighted td {
-            border-top: 2px dashed #007bff;
-            border-bottom: 2px dashed #007bff;
-        }
-        .rack-row.highlighted td:first-child { border-left: 2px dashed #007bff; }
-        .rack-row.highlighted td:last-child { border-right: 2px dashed #007bff; }
-
+        .rack-row.filled { background-color: #f9f9f9; color: #333; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -216,17 +121,12 @@
 </div>
 
 <div class="container">
-    <!-- SECCIÓN IZQUIERDA: ESCÁNER Y FORMULARIO -->
     <div class="scan-section">
-        
-        <div id="reader-container">
-            <div id="reader"></div>
-        </div>
+        <div id="reader-container"><div id="reader"></div></div>
 
         <form id="almacenForm">
             <div class="form-group">
                 <label for="qrInput">Escanear Etiqueta (Code 128)</label>
-                <!-- Usamos input en vez de textarea ya que es código de barras simple -->
                 <input type="text" id="qrInput" name="qrInput" placeholder="Iniciando cámara...">
             </div>
 
@@ -236,26 +136,37 @@
             </div>
 
             <div class="form-group">
-                <label for="cuartoFrio">Seleccionar Cuarto Frío</label>
+                <label for="cuartoFrio">1. Seleccionar Cuarto Frío</label>
                 <select id="cuartoFrio" name="cuartoFrio" required>
                     <option value="" disabled selected>Selecciona un Cuarto...</option>
-                    <option value="Cuarto 1 (Producto Terminado)">Cuarto 1 (Producto Terminado)</option>
-                    <option value="Cuarto 2 (General)">Cuarto 2 (General)</option>
-                    <option value="Cuarto 3 (General)">Cuarto 3 (General)</option>
-                    <option value="Cuarto 4 (General)">Cuarto 4 (General)</option>
-                    <option value="Cuarto 5 (Tomatillo/Mixto)">Cuarto 5 (Tomatillo/Mixto)</option>
+                    <option value="Cuarto 1">Cuarto 1 (Terminado)</option>
+                    <option value="Cuarto 2">Cuarto 2 (General)</option>
+                    <option value="Cuarto 3">Cuarto 3 (General)</option>
+                    <option value="Cuarto 4">Cuarto 4 (General)</option>
+                    <option value="Cuarto 5">Cuarto 5 (Tomatillo)</option>
                 </select>
             </div>
 
-            <!-- Inputs ocultos para enviar la ubicación seleccionada en la tabla -->
+            <!-- SELECTOR DE ESPACIO DE RACK -->
+            <div class="form-group">
+                <label for="espacioRack">2. Seleccionar Espacio/Andén</label>
+                <select id="espacioRack" name="espacioRack" required>
+                    <option value="" disabled selected>Selecciona un Espacio...</option>
+                    <option value="Espacio 1">Espacio 1</option>
+                    <option value="Espacio 2">Espacio 2</option>
+                    <option value="Espacio 3">Espacio 3</option>
+                    <option value="Espacio 4">Espacio 4</option>
+                    <option value="Espacio 5">Espacio 5</option>
+                </select>
+            </div>
+
             <input type="hidden" id="levelSelected" name="levelSelected">
             <input type="hidden" id="depthSelected" name="depthSelected">
-
             <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Ubicación</button>
         </form>
     </div>
 
-    <!-- SECCIÓN DERECHA: TABLA DETALLADA DE RACK -->
+    <!-- TABLA LIMPIA Y AJUSTADA A 4 ESPACIOS DE PROFUNDIDAD -->
     <div class="rack-map-section">
         <h2 class="map-title">Vista de Rack / Andén</h2>
         <p style="font-size: 11px; color: #777; margin-top:-5px; text-align:center;">Selecciona una fila vacía para asignar la ubicación (Fila superior = Fondo del rack).</p>
@@ -263,23 +174,12 @@
         <table class="rack-table" id="rackTable">
             <thead>
                 <tr>
-                    <th>Folio</th>
-                    <th>Producto</th>
-                    <th>Peso neto</th>
-                    <th>Tipo de caja</th>
-                    <th>Tipo de tarima</th>
+                    <th>Folio</th><th>Producto</th><th>Peso neto</th><th>Tipo de caja</th><th>Tipo de tarima</th>
                 </tr>
             </thead>
             <tbody>
-                
                 <!-- NIVEL 3 -->
                 <tr class="level-separator"><td colspan="5">Nivel 3 (Alto)</td></tr>
-                
-                <!-- Posición 5 (Fondo) - Ocupada -->
-                <tr class="rack-row filled highlighted" data-level="3" data-depth="5">
-                    <td>7084C</td><td>Serrano original</td><td>6</td><td>Morelia</td><td>Segunda</td>
-                </tr>
-                <!-- Posición 4 a 1 (Frente) - Vacías -->
                 <tr class="rack-row empty" data-level="3" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="3" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="3" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
@@ -287,24 +187,17 @@
 
                 <!-- NIVEL 2 -->
                 <tr class="level-separator"><td colspan="5">Nivel 2 (Medio)</td></tr>
-                <tr class="rack-row filled" data-level="2" data-depth="5">
-                    <td>8099C</td><td>Serrano original</td><td>7777</td><td>Morelia</td><td>Plástico</td>
-                </tr>
-                <tr class="rack-row filled" data-level="2" data-depth="4">
-                    <td>7086C</td><td>Serrano original</td><td>6668</td><td>Morelia</td><td>Plástico</td>
-                </tr>
+                <tr class="rack-row empty" data-level="2" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
 
                 <!-- NIVEL 1 -->
                 <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
-                <tr class="rack-row empty" data-level="1" data-depth="5"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
-
             </tbody>
         </table>
     </div>
@@ -316,17 +209,14 @@
     const qrInput = document.getElementById('qrInput');
     const folioDisplay = document.getElementById('folioDisplay');
     const saveBtn = document.getElementById('saveBtn');
-    
     const levelInput = document.getElementById('levelSelected');
     const depthInput = document.getElementById('depthSelected');
     const rackTable = document.getElementById('rackTable');
     const form = document.getElementById('almacenForm');
 
-    // Inicializar Escáner de Código de Barras
     const html5QrCode = new Html5Qrcode("reader");
 
     function onScanSuccess(decodedText, decodedResult) {
-        // Al detectar el código, detener la cámara y llenar los datos
         html5QrCode.stop().then(() => {
             document.getElementById('reader-container').style.display = 'none';
         }).catch(err => console.log(err));
@@ -337,7 +227,6 @@
         habilitarBotonGuardar();
     }
 
-    // Encender cámara con enfoque (Code128)
     window.addEventListener('load', () => {
         qrInput.placeholder = "Buscando cámara...";
         const config = { fps: 30, qrbox: { width: 300, height: 150 } }; 
@@ -362,28 +251,19 @@
         }).catch(err => qrInput.placeholder = "Cámara falló. Escribe manual.");
     });
 
-    // Ingreso manual por si falla la cámara
     qrInput.addEventListener('input', () => {
         folioDisplay.value = qrInput.value.trim();
         habilitarBotonGuardar();
     });
 
-    // --- LÓGICA DE SELECCIÓN EN LA TABLA ---
     rackTable.addEventListener('click', function(event) {
-        // Buscar la fila (<tr>) que fue clickeada
         const row = event.target.closest('.rack-row');
-        
-        // Si no se hizo clic en una fila, o la fila ya tiene producto, no hacer nada
         if (!row || row.classList.contains('filled')) return; 
 
-        // Quitar la selección anterior
         const rows = document.querySelectorAll('.rack-row');
         rows.forEach(r => r.classList.remove('selected'));
         
-        // Seleccionar la nueva fila
         row.classList.add('selected');
-
-        // Guardar nivel y profundidad para el envío
         levelInput.value = row.getAttribute('data-level');
         depthInput.value = row.getAttribute('data-depth');
 
@@ -391,28 +271,27 @@
     });
 
     function habilitarBotonGuardar() {
-        if (folioDisplay.value && levelInput.value && depthInput.value) {
+        if (folioDisplay.value && levelInput.value && depthInput.value && document.getElementById('espacioRack').value) {
             saveBtn.disabled = false;
         }
     }
+    
+    document.getElementById('cuartoFrio').addEventListener('change', habilitarBotonGuardar);
+    document.getElementById('espacioRack').addEventListener('change', habilitarBotonGuardar);
 
     form.addEventListener('submit', function(event) {
         event.preventDefault(); 
-        const folio = folioDisplay.value;
-        const cuarto = document.getElementById('cuartoFrio').value;
-        const level = levelInput.value;
-        const depth = depthInput.value;
-        const statusArea = document.getElementById('status-area');
-
-        // IMPORTANTE: Recuerda pegar tu URL aquí
+        
+        // RECUERDA PEGAR TU URL AQUÍ
         const urlGoogleScript = "https://script.google.com/macros/s/AKfycbzlsON8kyCiEm31zan2r2CTYWho3E9AzwWyIMSpGcjya6GfvvPNygyRM54_go8-wj8_Pg/exec";
 
         const datos = {
             action: 'update_location',
-            folio: folio,
-            cuarto: cuarto,
-            level: level,
-            depth: depth
+            folio: folioDisplay.value,
+            cuarto: document.getElementById('cuartoFrio').value,
+            espacio: document.getElementById('espacioRack').value,
+            level: levelInput.value,
+            depth: depthInput.value
         };
 
         saveBtn.innerText = "Guardando Ubicación...";
@@ -425,27 +304,16 @@
             body: JSON.stringify(datos)
         })
         .then(() => {
-            statusArea.style.display = 'block';
-            statusArea.innerHTML = `<span style="color:var(--success)">¡MERCANCÍA ${folio} ALMACENADA!<br>Ubicación: Andén J, Nivel ${level}, Pos. ${depth}</span>`;
-            
-            // Simular visualmente que se llenó la fila en la tabla
-            const selectedRow = document.querySelector('.rack-row.selected');
-            if(selectedRow) {
-                selectedRow.classList.remove('selected', 'empty');
-                selectedRow.classList.add('filled', 'highlighted');
-                const tds = selectedRow.querySelectorAll('td');
-                tds[0].innerText = folio;
-                tds[1].innerText = "Producto Reciente";
-            }
-
+            document.getElementById('status-area').style.display = 'block';
+            document.getElementById('status-area').innerHTML = `<span style="color:var(--success)">¡MERCANCÍA ${datos.folio} ALMACENADA!</span>`;
             form.reset();
+            const rows = document.querySelectorAll('.rack-row');
+            rows.forEach(r => r.classList.remove('selected'));
             saveBtn.innerText = "Confirmar Ubicación";
-            saveBtn.disabled = true;
         })
         .catch(error => {
-            console.error('Error:', error);
-            statusArea.style.display = 'block';
-            statusArea.innerHTML = `<span style="color:red">Error al guardar. Revisa la conexión.</span>`;
+            document.getElementById('status-area').style.display = 'block';
+            document.getElementById('status-area').innerHTML = `<span style="color:red">Error al guardar.</span>`;
             saveBtn.innerText = "Confirmar Ubicación";
         });
     });
