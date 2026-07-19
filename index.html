@@ -36,7 +36,6 @@
             max-width: 500px;
         }
 
-        /* --- NUEVOS ESTILOS DE NAVEGACIÓN --- */
         .nav-header {
             width: 100%;
             display: flex;
@@ -53,7 +52,7 @@
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            text-decoration: none; /* Quitar subrayado de enlace */
+            text-decoration: none;
             transition: all 0.3s ease;
         }
 
@@ -61,7 +60,6 @@
             background-color: var(--primary);
             color: white;
         }
-        /* ----------------------------------- */
 
         h2 {
             text-align: center;
@@ -122,7 +120,6 @@
             cursor: not-allowed;
         }
 
-        /* Area del QR */
         #qr-container {
             margin-top: 25px;
             text-align: center;
@@ -159,8 +156,6 @@
 <body>
 
 <div class="container">
-    
-    <!-- NUEVA CABECERA CON BOTÓN DE NAVEGACIÓN -->
     <div class="nav-header">
         <a href="almacen.html" class="nav-btn">Ir a Almacenaje</a>
     </div>
@@ -175,7 +170,7 @@
 
         <div class="form-group">
             <label for="folio">Folio</label>
-            <input type="text" id="folio" name="folio" required placeholder="Ej. A001">
+            <input type="text" id="folio" name="folio" required placeholder="Ej. 7084C">
         </div>
 
         <div class="form-group">
@@ -193,7 +188,6 @@
             <input type="date" id="fecha" name="fecha" required>
         </div>
 
-        <!-- CAMBIO: De 'Insumo' a 'Tipo de caja' y lista corregida -->
         <div class="form-group">
             <label for="tipoCaja">Tipo de caja</label>
             <input type="text" id="tipoCaja" name="tipoCaja" list="tipoCajaList" required placeholder="Selecciona o escribe">
@@ -244,7 +238,7 @@
             pesoBruto: document.getElementById('pesoBruto').value,
             pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value,
-            tipoCaja: document.getElementById('tipoCaja').value // Usando 'tipoCaja' consistentemente
+            tipoCaja: document.getElementById('tipoCaja').value
         };
 
         const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
@@ -261,17 +255,16 @@
             qrcodeElement.innerHTML = "";
             folioDisplay.innerText = datos.folio;
             
-            // --- ACTUALIZACIÓN DEL FORMATO DEL QR ---
             const textoQrCompleto = `Producto: ${datos.producto}\nFolio: ${datos.folio}\nPeso bruto: ${datos.pesoBruto}\nPeso neto: ${datos.pesoNeto}\nFecha: ${datos.fecha}\nTipo de caja: ${datos.tipoCaja}`;
-            // ----------------------------------------
-
+            
+            // GENERACIÓN DE QR CON NIVEL DE CORRECCIÓN 'M' (Más fácil de leer)
             qrGenerator = new QRCode(qrcodeElement, {
                 text: textoQrCompleto,
                 width: 180,
                 height: 180,
                 colorDark : "#000000",
                 colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
+                correctLevel : QRCode.CorrectLevel.M 
             });
 
             qrContainer.style.display = 'block';
