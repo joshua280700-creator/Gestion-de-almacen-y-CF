@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS - Recepción y Trazabilidad V3</title>
-    <!-- Incluimos la librería qrcode.js desde CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Librería JsBarcode para Códigos de Barras -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <style>
         :root {
             --primary: #1F4E78;
@@ -73,7 +73,6 @@
             margin-bottom: 15px;
         }
 
-        /* --- NUEVOS ESTILOS PARA LA FILA DIVIDIDA --- */
         .form-row {
             display: flex;
             gap: 15px;
@@ -84,14 +83,12 @@
             margin-bottom: 15px;
         }
 
-        /* En celulares pequeños, los campos se pondrán uno debajo del otro */
         @media (max-width: 480px) {
             .form-row {
                 flex-direction: column;
                 gap: 0;
             }
         }
-        /* ------------------------------------------- */
 
         label {
             display: block;
@@ -140,7 +137,7 @@
             cursor: not-allowed;
         }
 
-        #qr-container {
+        #barcode-container {
             margin-top: 25px;
             text-align: center;
             padding: 20px;
@@ -150,9 +147,10 @@
             display: none; 
         }
 
-        #qrcode {
-            display: flex;
-            justify-content: center;
+        /* El código de barras se renderiza aquí */
+        #barcode {
+            max-width: 100%;
+            height: auto;
             margin-bottom: 15px;
         }
 
@@ -208,7 +206,6 @@
             <input type="date" id="fecha" name="fecha" required>
         </div>
 
-        <!-- FILA DIVIDIDA: Tipo de Caja y Tipo de Tarima -->
         <div class="form-row">
             <div class="form-group half">
                 <label for="tipoCaja">Tipo de caja</label>
@@ -235,14 +232,15 @@
             </div>
         </div>
 
-        <button type="submit" class="submit-btn">Registrar y Generar QR</button>
+        <button type="submit" class="submit-btn">Registrar y Generar Etiqueta</button>
     </form>
 
-    <div id="qr-container">
-        <h3>Código QR Generado</h3>
-        <p>Folio: <strong id="folio-display"></strong></p>
-        <div id="qrcode"></div>
-        <button id="downloadBtn" class="download-btn">Descargar Imagen QR (PNG)</button>
+    <div id="barcode-container">
+        <h3>Etiqueta Generada</h3>
+        <!-- Usamos una etiqueta <img> para que sea fácil de descargar -->
+        <img id="barcode" />
+        <br>
+        <button id="downloadBtn" class="download-btn">Descargar Etiqueta (PNG)</button>
     </div>
 </div>
 
@@ -252,13 +250,9 @@
     };
 
     const form = document.getElementById('registroForm');
-    const qrContainer = document.getElementById('qr-container');
-    const qrcodeElement = document.getElementById('qrcode');
+    const barcodeContainer = document.getElementById('barcode-container');
     const downloadBtn = document.getElementById('downloadBtn');
-    const folioDisplay = document.getElementById('folio-display');
     
-    let qrGenerator = null;
-
     form.addEventListener('submit', function(event) {
         event.preventDefault(); 
 
@@ -267,7 +261,6 @@
         submitBtn.innerText = "Registrando en Base de Datos...";
         submitBtn.disabled = true;
 
-        // Se agregó la lectura del nuevo campo tipoTarima
         const datos = {
             producto: document.getElementById('producto').value,
             folio: document.getElementById('folio').value,
@@ -275,7 +268,7 @@
             pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value,
             tipoCaja: document.getElementById('tipoCaja').value,
-            tarima: document.getElementById('tipoTarima').value // NUEVO
+            tarima: document.getElementById('tipoTarima').value 
         };
 
         // IMPORTANTE: RECUERDA PEGAR TU URL DE GOOGLE APPS SCRIPT AQUÍ
@@ -290,22 +283,18 @@
             body: JSON.stringify(datos)
         })
         .then(() => {
-            qrcodeElement.innerHTML = "";
-            folioDisplay.innerText = datos.folio;
-            
-            // Se actualizó el texto para que incluya la Tarima en el código QR
-            const textoQrCompleto = `Producto: ${datos.producto}\nFolio: ${datos.folio}\nPeso bruto: ${datos.pesoBruto}\nPeso neto: ${datos.pesoNeto}\nFecha: ${datos.fecha}\nTipo de caja: ${datos.tipoCaja}\nTarima: ${datos.tarima}`;
-            
-            qrGenerator = new QRCode(qrcodeElement, {
-                text: textoQrCompleto,
-                width: 180,
-                height: 180,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M 
+            // GENERACIÓN DEL CÓDIGO DE BARRAS (Code 128)
+            // Solo imprimimos el Folio, es lo único que necesita la cámara
+            JsBarcode("#barcode", datos.folio, {
+                format: "CODE128",
+                lineColor: "#000",
+                width: 3, // Grosor de las líneas
+                height: 100, // Altura de las líneas
+                displayValue: true, // Muestra el texto abajo
+                fontSize: 24
             });
 
-            qrContainer.style.display = 'block';
+            barcodeContainer.style.display = 'block';
             
             submitBtn.innerText = textoOriginal;
             submitBtn.disabled = false;
@@ -322,24 +311,11 @@
     });
 
     downloadBtn.addEventListener('click', function() {
-        const img = qrcodeElement.querySelector('img');
-        const canvas = qrcodeElement.querySelector('canvas');
-
-        let dataUrl;
-        
-        if (img && img.src) {
-            dataUrl = img.src;
-        } else if (canvas) {
-            dataUrl = canvas.toDataURL("image/png");
-        } else {
-            alert("No se pudo descargar la imagen. Intenta regenerar el QR.");
-            return;
-        }
+        const img = document.getElementById('barcode');
+        const dataUrl = img.src;
 
         const link = document.createElement('a');
-        const folioTexto = folioDisplay.innerText;
-        
-        link.download = `QR_${folioTexto}.png`;
+        link.download = `Etiqueta_Folio.png`;
         link.href = dataUrl;
         document.body.appendChild(link);
         link.click();
