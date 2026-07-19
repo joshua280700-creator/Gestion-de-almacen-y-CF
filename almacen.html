@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Almacenaje - Ubicación de Mercancía V3 (Drive-In)</title>
-    <!-- Incluimos la librería jsQR desde CDN para el escaneo -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
         :root {
@@ -68,18 +67,16 @@
             }
         }
 
-        /* Sección Izquierda: Escaneo (Integración de Cámara) */
         .scan-section {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
 
-        /* --- ESTILOS DEL ESCÁNER DE CÁMARA --- */
         #scanner-container {
             width: 100%;
             height: 300px;
-            background-color: #000; /* Fondo negro por si no carga */
+            background-color: #000; 
             border-radius: 8px;
             overflow: hidden;
             position: relative;
@@ -95,7 +92,6 @@
             object-fit: cover;
         }
 
-        /* Marco de enfoque visual circular */
         #scanner-overlay {
             position: absolute;
             top: 50%;
@@ -108,8 +104,13 @@
             box-sizing: border-box;
             pointer-events: none;
             box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            text-align: center;
         }
-        /* ------------------------------------------- */
 
         .form-group {
             margin-bottom: 10px;
@@ -279,15 +280,13 @@
 
 <div class="header">
     <h1>WMS: Ubicación de Almacén (Drive-In)</h1>
-    <div class="user-info">Joshua0700 | <a href="recepcion.html">Ir a Recepción</a></div>
+    <div class="user-info">Joshua0700 | <a href="index.html">Ir a Recepción</a></div>
 </div>
 
 <div class="container">
     <div class="scan-section">
         
-        <!-- SECCIÓN DE CÁMARA AUTOMÁTICA -->
         <div id="scanner-container">
-            <!-- NOTA: Añadí 'muted' para evitar bloqueos de autoplay en móviles -->
             <video id="scanner-video" autoplay playsinline muted></video>
             <div id="scanner-overlay"></div>
         </div>
@@ -295,7 +294,7 @@
         <form id="almacenForm">
             <div class="form-group">
                 <label for="qrInput">Pegar/Escanear Texto QR Completo</label>
-                <textarea id="qrInput" name="qrInput" placeholder="Producto: Papas\nFolio: 7084C\n..."></textarea>
+                <textarea id="qrInput" name="qrInput" placeholder="Iniciando cámara..."></textarea>
             </div>
 
             <div class="form-group">
@@ -339,7 +338,6 @@
             <div class="depth-label">Pos. 4</div>
             <div class="depth-label">Pos. 5<br>(Posterior)</div>
 
-            <!-- Nivel 3 -->
             <div class="level-label level-3">Nivel 3</div>
             <div class="rack-slot occupied" data-level="3" data-depth="1" title="Posición 1">FOL:7084C</div>
             <div class="rack-slot occupied" data-level="3" data-depth="2" title="Posición 2">FOL:7084C</div>
@@ -347,7 +345,6 @@
             <div class="rack-slot disabled" data-level="3" data-depth="4" title="Posición 4">---</div>
             <div class="rack-slot" data-level="3" data-depth="5" title="Posición 5 (Posterior)">Vacío</div>
 
-            <!-- Nivel 2 -->
             <div class="level-label level-2">Nivel 2</div>
             <div class="rack-slot occupied" data-level="2" data-depth="1" title="Posición 1">FOL:7084C</div>
             <div class="rack-slot occupied" data-level="2" data-depth="2" title="Posición 2">FOL:7084C</div>
@@ -355,7 +352,6 @@
             <div class="rack-slot" data-level="2" data-depth="4" title="Posición 4">Vacío</div>
             <div class="rack-slot" data-level="2" data-depth="5" title="Posición 5 (Posterior)">Vacío</div>
 
-            <!-- Nivel 1 -->
             <div class="level-label level-1">Nivel 1</div>
             <div class="rack-slot occupied" data-level="1" data-depth="1" title="Posición 1">FOL:7084C</div>
             <div class="rack-slot" data-level="1" data-depth="2" title="Posición 2">Vacío</div>
@@ -363,7 +359,6 @@
             <div class="rack-slot disabled" data-level="1" data-depth="4" title="Posición 4">---</div>
             <div class="rack-slot disabled" data-level="1" data-depth="5" title="Posición 5">---</div> 
 
-            <!-- Frente -->
             <div class="level-label level-front">Frente Suelo</div>
             <div class="rack-slot disabled" data-level="front" data-depth="1" title="Frente 1 (Estorba)">---</div>
             <div class="rack-slot disabled" data-level="front" data-depth="2" title="Frente 2 (Estorba)">---</div>
@@ -378,7 +373,6 @@
 
 <div id="status-area"></div>
 
-<!-- Lógica JavaScript -->
 <script>
     const video = document.getElementById('scanner-video');
     const canvas = document.createElement('canvas'); 
@@ -386,6 +380,8 @@
     const qrInput = document.getElementById('qrInput');
     const folioDisplay = document.getElementById('folioDisplay');
     const saveBtn = document.getElementById('saveBtn');
+    const scannerContainer = document.getElementById('scanner-container');
+    const overlay = document.getElementById('scanner-overlay');
     
     const levelInput = document.getElementById('levelSelected');
     const depthInput = document.getElementById('depthSelected');
@@ -395,41 +391,51 @@
     let stream = null;
     let isScanning = false;
 
-    // --- FUNCIÓN startScanning() ACTUALIZADA CON DIAGNÓSTICO ---
     async function startScanning() {
         try {
-            console.log("Intentando acceder a la cámara...");
-            // Solicitar acceso (priorizando cámara trasera)
-            stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: { ideal: 'environment' } } 
-            });
+            // 1. Intentar acceder a la cámara trasera primero
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+            } catch (errCamaraTrasera) {
+                // 2. Si falla (muy común en PC), agarrar cualquier cámara disponible
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            }
+
             video.srcObject = stream;
+            video.setAttribute("playsinline", true); 
+            
+            // 3. Intentar reproducir el video de inmediato
+            await video.play();
+            
             isScanning = true;
             qrInput.placeholder = "Escaneando... Apunta al código QR";
-            
-            // Forzar reproducción por si acaso
-            video.play().catch(e => console.error("Error al reproducir video:", e));
-            
             requestAnimationFrame(tick);
-            console.log("Cámara iniciada correctamente.");
 
         } catch (err) {
-            console.error('Error al acceder a la cámara:', err);
+            // Si llega aquí, es porque el navegador bloqueó el autoplay o hubo error general
+            console.warn("Autoplay bloqueado o cámara falló. Esperando clic del usuario.");
             
-            // SISTEMA DE ALERTA PARA SABER QUÉ FALLÓ EXACTAMENTE
-            let msjError = "Error desconocido.";
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                msjError = "PERMISOS DENEGADOS o estás abriendo el archivo en local (file://) sin conexión segura (HTTPS). ¡Súbelo a GitHub Pages!";
-            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                msjError = "NO SE ENCONTRÓ CÁMARA. Tu dispositivo parece no tener una cámara web habilitada.";
-            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-                msjError = "CÁMARA OCUPADA. Otra aplicación (como Zoom, Teams o la app de cámara) la está usando.";
-            } else {
-                msjError = `${err.name}: ${err.message}`;
-            }
-            
-            alert(`⚠️ FALLO AL INICIAR LA CÁMARA:\n\n${msjError}\n\nPuedes pegar el texto del QR manualmente en el cuadro de abajo mientras tanto.`);
-            qrInput.placeholder = "Cámara falló. Pega el texto del QR aquí.";
+            // Convertimos el cuadro negro en un botón gigante
+            overlay.style.border = "none";
+            overlay.innerHTML = "Toca aquí para<br>encender la cámara";
+            scannerContainer.style.cursor = "pointer";
+            qrInput.placeholder = "Toca el cuadro negro de arriba para iniciar.";
+
+            scannerContainer.addEventListener('click', async () => {
+                try {
+                    await video.play();
+                    isScanning = true;
+                    overlay.style.border = "4px solid var(--success)";
+                    overlay.innerHTML = "";
+                    scannerContainer.style.cursor = "default";
+                    qrInput.placeholder = "Escaneando... Apunta al código QR";
+                    requestAnimationFrame(tick);
+                } catch (e) {
+                    alert("Aún no se puede iniciar. Asegúrate de dar permisos.");
+                }
+            }, { once: true });
         }
     }
 
@@ -505,7 +511,6 @@
         saveBtn.disabled = true;
     }
     
-    // Iniciar escáner al cargar la página
     window.addEventListener('load', () => {
         startScanning();
     });
@@ -522,8 +527,8 @@
         const depth = depthInput.value;
         const statusArea = document.getElementById('status-area');
 
-        // URL proporcionada anteriormente (la misma)
-        const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
+        // IMPORTANTE: Recuerda pegar tu URL aquí
+        const urlGoogleScript = "AQUI_TU_URL";
 
         const datos = {
             action: 'update_location',
