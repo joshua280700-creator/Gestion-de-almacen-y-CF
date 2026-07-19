@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Almacenaje - Ubicación de Mercancía V3 (Drive-In)</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <title>Almacenaje - Ubicación de Mercancía V3 (Híbrido QR/Barras)</title>
+    <!-- Librería Html5Qrcode (La misma del Control de Salidas) -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
             --primary: #1F4E78;
@@ -73,44 +74,19 @@
             gap: 15px;
         }
 
-        #scanner-container {
+        /* --- CONTENEDOR DEL ESCÁNER HTML5-QRCODE --- */
+        #reader-container {
             width: 100%;
-            height: 300px;
-            background-color: #000; 
             border-radius: 8px;
             overflow: hidden;
-            position: relative;
             margin-bottom: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: #000;
         }
-
-        #scanner-video {
+        
+        #reader {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
         }
-
-        #scanner-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            border: 4px solid var(--success);
-            border-radius: 50%;
-            box-sizing: border-box;
-            pointer-events: none;
-            box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-        }
+        /* ------------------------------------------- */
 
         .form-group {
             margin-bottom: 10px;
@@ -286,14 +262,13 @@
 <div class="container">
     <div class="scan-section">
         
-        <div id="scanner-container">
-            <video id="scanner-video" autoplay playsinline muted></video>
-            <div id="scanner-overlay"></div>
+        <div id="reader-container">
+            <div id="reader"></div>
         </div>
 
         <form id="almacenForm">
             <div class="form-group">
-                <label for="qrInput">Pegar/Escanear Texto QR Completo</label>
+                <label for="qrInput">Pegar/Escanear Texto (QR o Barras)</label>
                 <textarea id="qrInput" name="qrInput" placeholder="Iniciando cámara..."></textarea>
             </div>
 
@@ -374,118 +349,79 @@
 <div id="status-area"></div>
 
 <script>
-    const video = document.getElementById('scanner-video');
-    const canvas = document.createElement('canvas'); 
-    const ctx = canvas.getContext('2d');
     const qrInput = document.getElementById('qrInput');
     const folioDisplay = document.getElementById('folioDisplay');
     const saveBtn = document.getElementById('saveBtn');
-    const scannerContainer = document.getElementById('scanner-container');
-    const overlay = document.getElementById('scanner-overlay');
     
     const levelInput = document.getElementById('levelSelected');
     const depthInput = document.getElementById('depthSelected');
     const rackGrid = document.getElementById('rackGrid');
     const form = document.getElementById('almacenForm');
 
-    let stream = null;
-    let isScanning = false;
+    // Inicializar el escáner (Soporta QR y Barras por defecto)
+    const html5QrCode = new Html5Qrcode("reader");
 
-    async function startScanning() {
-        try {
-            // 1. Intentar acceder a la cámara trasera primero
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
-                });
-            } catch (errCamaraTrasera) {
-                // 2. Si falla (muy común en PC), agarrar cualquier cámara disponible
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    function onScanSuccess(decodedText, decodedResult) {
+        // Pausar/Detener el escáner para evitar múltiples escaneos
+        html5QrCode.stop().then(() => {
+            document.getElementById('reader-container').style.display = 'none';
+        }).catch(err => {
+            console.log("No se pudo detener la cámara", err);
+        });
+
+        qrInput.value = decodedText;
+
+        // Lógica Híbrida: ¿Es un QR formateado o un código de barras normal?
+        if (decodedText.includes("Folio:")) {
+            // Es un QR tuyo con formato de texto
+            const regex = /Folio:\s*(\S+)/;
+            const match = decodedText.match(regex);
+
+            if (match && match[1]) {
+                folioDisplay.value = match[1];
+                folioDisplay.style.borderColor = "#28a745"; // Corregido: Color en comillas
+                habilitarBotonGuardar();
+            } else {
+                folioDisplay.value = "Folio no encontrado en QR";
+                folioDisplay.style.borderColor = "red";
+                deshabilitarBotonGuardar();
             }
-
-            video.srcObject = stream;
-            video.setAttribute("playsinline", true); 
-            
-            // 3. Intentar reproducir el video de inmediato
-            await video.play();
-            
-            isScanning = true;
-            qrInput.placeholder = "Escaneando... Apunta al código QR";
-            requestAnimationFrame(tick);
-
-        } catch (err) {
-            // Si llega aquí, es porque el navegador bloqueó el autoplay o hubo error general
-            console.warn("Autoplay bloqueado o cámara falló. Esperando clic del usuario.");
-            
-            // Convertimos el cuadro negro en un botón gigante
-            overlay.style.border = "none";
-            overlay.innerHTML = "Toca aquí para<br>encender la cámara";
-            scannerContainer.style.cursor = "pointer";
-            qrInput.placeholder = "Toca el cuadro negro de arriba para iniciar.";
-
-            scannerContainer.addEventListener('click', async () => {
-                try {
-                    await video.play();
-                    isScanning = true;
-                    overlay.style.border = "4px solid var(--success)";
-                    overlay.innerHTML = "";
-                    scannerContainer.style.cursor = "default";
-                    qrInput.placeholder = "Escaneando... Apunta al código QR";
-                    requestAnimationFrame(tick);
-                } catch (e) {
-                    alert("Aún no se puede iniciar. Asegúrate de dar permisos.");
-                }
-            }, { once: true });
-        }
-    }
-
-    function stopScanning() {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-        }
-        isScanning = false;
-    }
-
-    function tick() {
-        if (!isScanning) return;
-
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.height = video.videoHeight;
-            canvas.width = video.videoWidth;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            
-            if (code) {
-                const qrText = code.data;
-                qrInput.value = qrText;
-                extractFolio(qrText);
-                stopScanning();
-                folioDisplay.style.borderColor = var(--success);
-                setTimeout(() => { folioDisplay.style.borderColor = ''; }, 2000);
-            }
-        }
-        requestAnimationFrame(tick);
-    }
-
-    function extractFolio(text) {
-        if (!text) {
-            folioDisplay.value = "";
-            return;
-        }
-        const regex = /Folio:\s*(\S+)/;
-        const match = text.match(regex);
-
-        if (match && match[1]) {
-            folioDisplay.value = match[1];
-            habilitarBotonGuardar();
         } else {
-            folioDisplay.value = "Folio no encontrado en QR";
-            folioDisplay.style.borderColor = "red";
-            deshabilitarBotonGuardar();
+            // Es un código de barras normal o un QR con solo el número
+            folioDisplay.value = decodedText.trim();
+            folioDisplay.style.borderColor = "#28a745"; // Corregido
+            habilitarBotonGuardar();
         }
     }
+
+    // Encender la cámara automáticamente
+    window.addEventListener('load', () => {
+        qrInput.placeholder = "Encendiendo cámara...";
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        // Priorizamos cámara trasera
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch((err) => {
+            console.error("Fallo al iniciar cámara:", err);
+            qrInput.placeholder = "Cámara falló. Pega el texto manualmente.";
+        });
+    });
+
+    // Permitir ingreso manual si falla la cámara
+    qrInput.addEventListener('input', () => {
+        const text = qrInput.value;
+        if (text.includes("Folio:")) {
+            const regex = /Folio:\s*(\S+)/;
+            const match = text.match(regex);
+            if (match && match[1]) {
+                folioDisplay.value = match[1];
+                habilitarBotonGuardar();
+            }
+        } else {
+            folioDisplay.value = text.trim();
+            habilitarBotonGuardar();
+        }
+    });
 
     rackGrid.addEventListener('click', function(event) {
         const slot = event.target;
@@ -510,14 +446,6 @@
     function deshabilitarBotonGuardar() {
         saveBtn.disabled = true;
     }
-    
-    window.addEventListener('load', () => {
-        startScanning();
-    });
-
-    qrInput.addEventListener('input', () => {
-        extractFolio(qrInput.value);
-    });
 
     form.addEventListener('submit', function(event) {
         event.preventDefault(); 
