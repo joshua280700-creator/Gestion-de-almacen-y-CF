@@ -174,7 +174,8 @@
 
 <div class="container">
     <div class="nav-header">
-        <a href="almacen.html" class="nav-btn">Ir a Almacenaje</a>
+        <a href="ajustes.html" class="nav-btn" style="margin-right: 10px;">Ajustes de Peso</a>
+        <a href="almacen.html" class="nav-btn">Ir a Almacenaje →</a>
     </div>
     
     <h2>Registro de Entrada</h2>
@@ -185,7 +186,6 @@
             <input type="text" id="producto" name="producto" required placeholder="Ej. Tomatillo">
         </div>
 
-        <!-- NUEVA FILA DIVIDIDA: Folio Master y Número de Tarima -->
         <div class="form-row">
             <div class="form-group half">
                 <label for="folio">Folio Master</label>
@@ -270,14 +270,13 @@
         submitBtn.innerText = "Registrando en Base de Datos...";
         submitBtn.disabled = true;
 
-        // Lógica para unir el Folio Master y el Número de Tarima
         const folioBase = document.getElementById('folio').value.trim();
         const numTarima = document.getElementById('numeroTarima').value.trim();
         const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
 
         const datos = {
             producto: document.getElementById('producto').value,
-            folio: folioFinal, // Mandamos el folio compuesto (Ej. 7084C-1)
+            folio: folioFinal, 
             pesoBruto: document.getElementById('pesoBruto').value,
             pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value,
@@ -294,7 +293,6 @@
             body: JSON.stringify(datos)
         })
         .then(() => {
-            // Generamos el Código de Barras con el Folio Final
             JsBarcode("#barcode", datos.folio, {
                 format: "CODE128",
                 lineColor: "#000",
@@ -323,7 +321,6 @@
     downloadBtn.addEventListener('click', function() {
         const img = document.getElementById('barcode');
         const dataUrl = img.src;
-        // Tomamos el folio final para nombrar el archivo de descarga
         const folioBase = document.getElementById('folio').value.trim();
         const numTarima = document.getElementById('numeroTarima').value.trim();
         const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
