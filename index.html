@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Recepción y Trazabilidad V3</title>
+    <title>WMS - Recepción y Trazabilidad V4</title>
     <!-- Librería JsBarcode para Códigos de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <style>
@@ -147,7 +147,6 @@
             display: none; 
         }
 
-        /* El código de barras se renderiza aquí */
         #barcode {
             max-width: 100%;
             height: auto;
@@ -183,12 +182,20 @@
         
         <div class="form-group">
             <label for="producto">Nombre del Producto</label>
-            <input type="text" id="producto" name="producto" required placeholder="Ej. Papas">
+            <input type="text" id="producto" name="producto" required placeholder="Ej. Tomatillo">
         </div>
 
-        <div class="form-group">
-            <label for="folio">Folio</label>
-            <input type="text" id="folio" name="folio" required placeholder="Ej. 7084C">
+        <!-- NUEVA FILA DIVIDIDA: Folio Master y Número de Tarima -->
+        <div class="form-row">
+            <div class="form-group half">
+                <label for="folio">Folio Master</label>
+                <input type="text" id="folio" name="folio" required placeholder="Ej. 7084C">
+            </div>
+
+            <div class="form-group half">
+                <label for="numeroTarima">Tarima # (Opcional)</label>
+                <input type="number" id="numeroTarima" name="numeroTarima" min="1" placeholder="Ej. 1, 2, 3...">
+            </div>
         </div>
 
         <div class="form-group">
@@ -237,7 +244,6 @@
 
     <div id="barcode-container">
         <h3>Etiqueta Generada</h3>
-        <!-- Usamos una etiqueta <img> para que sea fácil de descargar -->
         <img id="barcode" />
         <br>
         <button id="downloadBtn" class="download-btn">Descargar Etiqueta (PNG)</button>
@@ -253,6 +259,9 @@
     const barcodeContainer = document.getElementById('barcode-container');
     const downloadBtn = document.getElementById('downloadBtn');
     
+    // Tu URL oficial de Google Apps Script
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycby7AfCwjNyGCzRUX6myRFWbZJOhAQwY0CZgMWdJCqZ0mVcGJBJrpQSdcKOehnRtcVCuMg/exec";
+
     form.addEventListener('submit', function(event) {
         event.preventDefault(); 
 
@@ -261,18 +270,20 @@
         submitBtn.innerText = "Registrando en Base de Datos...";
         submitBtn.disabled = true;
 
+        // Lógica para unir el Folio Master y el Número de Tarima
+        const folioBase = document.getElementById('folio').value.trim();
+        const numTarima = document.getElementById('numeroTarima').value.trim();
+        const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
+
         const datos = {
             producto: document.getElementById('producto').value,
-            folio: document.getElementById('folio').value,
+            folio: folioFinal, // Mandamos el folio compuesto (Ej. 7084C-1)
             pesoBruto: document.getElementById('pesoBruto').value,
             pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value,
             tipoCaja: document.getElementById('tipoCaja').value,
             tarima: document.getElementById('tipoTarima').value 
         };
-
-        // IMPORTANTE: RECUERDA PEGAR TU URL DE GOOGLE APPS SCRIPT AQUÍ
-        const urlGoogleScript = "https://script.google.com/macros/s/AKfycby7AfCwjNyGCzRUX6myRFWbZJOhAQwY0CZgMWdJCqZ0mVcGJBJrpQSdcKOehnRtcVCuMg/exec";
 
         fetch(urlGoogleScript, {
             method: 'POST',
@@ -283,14 +294,13 @@
             body: JSON.stringify(datos)
         })
         .then(() => {
-            // GENERACIÓN DEL CÓDIGO DE BARRAS (Code 128)
-            // Solo imprimimos el Folio, es lo único que necesita la cámara
+            // Generamos el Código de Barras con el Folio Final
             JsBarcode("#barcode", datos.folio, {
                 format: "CODE128",
                 lineColor: "#000",
-                width: 3, // Grosor de las líneas
-                height: 100, // Altura de las líneas
-                displayValue: true, // Muestra el texto abajo
+                width: 3, 
+                height: 100, 
+                displayValue: true, 
                 fontSize: 24
             });
 
@@ -313,9 +323,13 @@
     downloadBtn.addEventListener('click', function() {
         const img = document.getElementById('barcode');
         const dataUrl = img.src;
+        // Tomamos el folio final para nombrar el archivo de descarga
+        const folioBase = document.getElementById('folio').value.trim();
+        const numTarima = document.getElementById('numeroTarima').value.trim();
+        const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
 
         const link = document.createElement('a');
-        link.download = `Etiqueta_Folio.png`;
+        link.download = `Etiqueta_${folioFinal}.png`;
         link.href = dataUrl;
         document.body.appendChild(link);
         link.click();
