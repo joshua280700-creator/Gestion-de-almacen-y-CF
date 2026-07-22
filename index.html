@@ -8,19 +8,20 @@
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
         .nav-header { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s ease; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
         h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; } .form-row { display: flex; gap: 15px; } .form-group.half { flex: 1; margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
-        .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; }
+        .form-group { margin-bottom: 15px; } .form-row { display: flex; gap: 10px; } .form-group.third { flex: 1; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 14px;}
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+        .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
         .submit-btn:hover:not(:disabled) { background-color: #153a5c; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
         #barcode-container { margin-top: 25px; text-align: center; padding: 20px; background-color: #fafafa; border-radius: 8px; border: 1px dashed #ccc; display: none; }
         #barcode { max-width: 100%; height: auto; margin-bottom: 15px; }
         .download-btn { background-color: #28a745; color: white; border: none; padding: 8px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .loading-text { font-size: 12px; color: var(--primary); margin-top: 5px; display: block; font-style: italic;}
     </style>
 </head>
 <body>
@@ -30,7 +31,7 @@
         <a href="index.html" class="nav-btn active">Recepción</a>
         <a href="almacen.html" class="nav-btn">Almacenaje</a>
         <a href="salidas.html" class="nav-btn">Salidas</a>
-        <a href="ajustes.html" class="nav-btn">Ajustes</a>
+        <a href="ajustes.html" class="nav-btn">Ajustes / Reubicación</a>
         <a href="rastreador.html" class="nav-btn">Rastreador</a>
         <a href="dashboard.html" class="nav-btn">Dashboard</a>
     </div>
@@ -38,19 +39,40 @@
     <h2>Registro de Entrada</h2>
     <form id="registroForm">
         <div class="form-group"><label>Nombre del Producto</label><input type="text" id="producto" required placeholder="Ej. Tomatillo"></div>
+        
         <div class="form-row">
-            <div class="form-group half"><label>Folio Master</label><input type="text" id="folio" required placeholder="Ej. 7084C"></div>
-            <div class="form-group half"><label>Tarima # (Opcional)</label><input type="number" id="numeroTarima" min="1" placeholder="Ej. 1, 2..."></div>
+            <div class="form-group third">
+                <label>Folio (Números)</label>
+                <input type="number" id="folio" required placeholder="Ej. 7084">
+                <span id="folio-hint" class="loading-text">Buscando consecutivo...</span>
+            </div>
+            
+            <div class="form-group third">
+                <label>Certificación</label>
+                <select id="certificado" required>
+                    <option value="C" selected>C - Certificado</option>
+                    <option value="N">N - No Certificado</option>
+                </select>
+            </div>
+
+            <div class="form-group third">
+                <label>Tarima #</label>
+                <input type="number" id="numeroTarima" min="1" placeholder="Opcional">
+            </div>
         </div>
-        <div class="form-group"><label>Peso Bruto (kg)</label><input type="number" id="pesoBruto" step="0.01" required></div>
-        <div class="form-group"><label>Peso Neto (kg)</label><input type="number" id="pesoNeto" step="0.01" required></div>
-        <div class="form-group"><label>Fecha de Recepción</label><input type="date" id="fecha" required></div>
+
         <div class="form-row">
-            <div class="form-group half">
+            <div class="form-group third"><label>Peso Bruto (kg)</label><input type="number" id="pesoBruto" step="0.01" required></div>
+            <div class="form-group third"><label>Peso Neto (kg)</label><input type="number" id="pesoNeto" step="0.01" required></div>
+            <div class="form-group third"><label>Fecha</label><input type="date" id="fecha" required></div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group third">
                 <label>Tipo de caja</label><input type="text" id="tipoCaja" list="tipoCajaList" required>
                 <datalist id="tipoCajaList"><option value="Morelia"><option value="Naylea"><option value="Arpilla"><option value="Madera"><option value="Cartón"></datalist>
             </div>
-            <div class="form-group half">
+            <div class="form-group third">
                 <label>Tipo de Tarima</label>
                 <select id="tipoTarima" required>
                     <option value="" disabled selected>Selecciona...</option><option value="Plástico">Plástico</option><option value="Madera 1ra">Madera 1ra</option><option value="Madera 2da">Madera 2da</option><option value="Chep">Chep</option><option value="Sin Tarima">Sin Tarima</option>
@@ -67,8 +89,36 @@
 </div>
 
 <script>
-    window.onload = function() { document.getElementById('fecha').valueAsDate = new Date(); };
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
+
+    window.onload = function() { 
+        document.getElementById('fecha').valueAsDate = new Date(); 
+        
+        // Obtener inventario para calcular el siguiente folio maestro automáticamente
+        fetch(urlGoogleScript + "?t=" + new Date().getTime())
+        .then(res => res.json())
+        .then(data => {
+            let maxFolio = 0;
+            data.forEach(item => {
+                // Extrae solo los números al inicio del folio (ignora C, N y guiones)
+                let match = String(item.folio).match(/^(\d+)/);
+                if(match) {
+                    let num = parseInt(match[1]);
+                    if(num > maxFolio) maxFolio = num;
+                }
+            });
+            if(maxFolio > 0) {
+                document.getElementById('folio').value = maxFolio + 1; // Sugiere el siguiente
+                document.getElementById('folio-hint').innerText = `Último registrado: ${maxFolio}`;
+                document.getElementById('folio-hint').style.color = "green";
+            } else {
+                document.getElementById('folio-hint').innerText = "Primer registro o base vacía.";
+            }
+        }).catch(err => {
+            document.getElementById('folio-hint').innerText = "Conexión lenta. Ingresa manual.";
+            document.getElementById('folio-hint').style.color = "red";
+        });
+    };
 
     document.getElementById('registroForm').addEventListener('submit', function(event) {
         event.preventDefault(); 
@@ -76,8 +126,11 @@
         submitBtn.innerText = "Registrando..."; submitBtn.disabled = true;
 
         const folioBase = document.getElementById('folio').value.trim();
+        const certificado = document.getElementById('certificado').value;
         const numTarima = document.getElementById('numeroTarima').value.trim();
-        const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
+        
+        // Construye el folio final (Ej. 7085C-1 o 7085N)
+        const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
 
         const datos = {
             producto: document.getElementById('producto').value, folio: folioFinal,
@@ -90,14 +143,20 @@
             JsBarcode("#barcode", datos.folio, { format: "CODE128", width: 3, height: 100, displayValue: true, fontSize: 24 });
             document.getElementById('barcode-container').style.display = 'block';
             submitBtn.innerText = "Registrar y Generar Etiqueta"; submitBtn.disabled = false;
-            document.getElementById('registroForm').reset(); document.getElementById('fecha').valueAsDate = new Date(); 
+            
+            // Incrementa el número visualmente para que esté listo para la siguiente tarima
+            document.getElementById('folio').value = parseInt(folioBase) + 1;
+            document.getElementById('numeroTarima').value = ""; // Limpia la tarima
+            document.getElementById('folio-hint').innerText = `Folio anterior ${folioFinal} guardado.`;
         }).catch(() => { alert("Error al guardar."); submitBtn.disabled = false; });
     });
 
     document.getElementById('downloadBtn').addEventListener('click', function() {
-        const folioBase = document.getElementById('folio').value.trim();
+        const folioBase = document.getElementById('folio').value.trim() - 1; // Regresa al anterior para el nombre
+        const certificado = document.getElementById('certificado').value;
         const numTarima = document.getElementById('numeroTarima').value.trim();
-        const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
+        const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
+        
         const link = document.createElement('a');
         link.download = `Etiqueta_${folioFinal}.png`; link.href = document.getElementById('barcode').src;
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
