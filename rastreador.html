@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS - Rastreador</title>
+    <style>
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --rack-green: #548235; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .nav-header { width: 100%; max-width: 1000px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
+        .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
+        .container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 20px; }
+        .panel { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .search-box { display: flex; gap: 10px; }
+        .search-box input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; }
+        .search-box button { background-color: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight:bold; }
+        .result-card { margin-top: 15px; padding: 15px; background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; display: none; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
+        .bg-recibido { background-color: #ffc107; color: #333;} .bg-almacenado { background-color: #28a745; } .bg-produccion { background-color: #dc3545; }
+        .controls select { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px;}
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px; }
+        .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
+        .rack-row.empty { background-color: #fff; color: #aaa; text-align: center; }
+        .rack-row.filled { background-color: #e8f5e9; border-left: 4px solid var(--rack-green); }
+    </style>
+</head>
+<body>
+
+<div class="nav-header">
+    <a href="index.html" class="nav-btn">Recepción</a>
+    <a href="almacen.html" class="nav-btn">Almacenaje</a>
+    <a href="salidas.html" class="nav-btn">Salidas</a>
+    <a href="ajustes.html" class="nav-btn">Ajustes</a>
+    <a href="rastreador.html" class="nav-btn active">Rastreador</a>
+</div>
+
+<div class="container">
+    <div class="panel" style="border-left: 5px solid var(--primary);">
+        <h3 style="margin-top:0; color:var(--primary);">🔍 Rastreador de Folios</h3>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Ingresa el folio (Ej. 7084C-1)">
+            <button onclick="buscarFolio()">Buscar</button>
+        </div>
+        <div id="resultCard" class="result-card">
+            <h4 style="margin:0 0 10px 0;">Folio: <span id="resFolio"></span></h4>
+            <p style="margin:5px 0;">Producto: <strong id="resProducto"></strong> | Peso Neto: <strong id="resPeso"></strong></p>
+            <hr><p style="margin:5px 0;">Estatus: <span id="resEstatus" class="badge"></span></p>
+            <p style="margin:5px 0;">Ubicación: <strong id="resUbicacion"></strong></p>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top:0; color:var(--rack-green);">🗺️ Consulta por Andén</h3>
+        <div style="display:flex; gap:10px;" class="controls">
+            <select id="cuartoFrio"><option value="" disabled selected>Cuarto...</option><option value="Cuarto 1">Cuarto 1</option><option value="Cuarto 2">Cuarto 2</option><option value="Cuarto 3">Cuarto 3</option><option value="Cuarto 4">Cuarto 4</option><option value="Cuarto 5">Cuarto 5</option></select>
+            <select id="espacioRack"><option value="" disabled selected>Espacio...</option><option value="Espacio 1">Espacio 1</option><option value="Espacio 2">Espacio 2</option><option value="Espacio 3">Espacio 3</option><option value="Espacio 4">Espacio 4</option><option value="Espacio 5">Espacio 5</option></select>
+        </div>
+        <table class="rack-table" id="rackTable">
+            <thead><tr><th>Folio</th><th>Producto</th><th>Peso</th><th>Caja</th><th>Tarima</th></tr></thead>
+            <tbody>
+                <tr class="level-separator"><td colspan="5">Nivel 3 (Alto)</td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="4"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="3" data-depth="3"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="3" data-depth="2"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="3" data-depth="1"><td colspan="5">Libre</td></tr>
+                <tr class="level-separator"><td colspan="5">Nivel 2 (Medio)</td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="4"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="2" data-depth="3"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="2" data-depth="2"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="2" data-depth="1"><td colspan="5">Libre</td></tr>
+                <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="4"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="1" data-depth="3"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="1" data-depth="2"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="1" data-depth="1"><td colspan="5">Libre</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwfj9TXJqRFq2qhJmJypKTIa_p44DD5USRckmc1HaEcgLHoCfP9U1WDtLpKSL4Z3dkSDQ/exec";
+    let inventarioGlobal = [];
+    window.addEventListener('load', () => { fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(r => r.json()).then(d => inventarioGlobal = d); });
+
+    function buscarFolio() {
+        const query = document.getElementById('searchInput').value.trim().toUpperCase();
+        if (!query) return;
+        const res = inventarioGlobal.filter(i => i.folio.toUpperCase() === query);
+        const c = document.getElementById('resultCard'); c.style.display = 'block';
+        if (res.length > 0) {
+            const t = res[res.length - 1];
+            document.getElementById('resFolio').innerText = t.folio; document.getElementById('resProducto').innerText = t.producto;
+            document.getElementById('resPeso').innerText = t.pesoNeto;
+            
+            const badge = document.getElementById('resEstatus'); badge.innerText = t.estatus; badge.className = 'badge';
+            if (t.estatus === "Recibido") badge.classList.add("bg-recibido"); else if (t.estatus === "Almacenado") badge.classList.add("bg-almacenado"); else badge.classList.add("bg-produccion");
+            
+            document.getElementById('resUbicacion').innerText = t.estatus === "Recibido" ? "Área de Recepción" : (t.estatus === "En Producción" ? "Salió del Almacén" : `${t.cuarto} | ${t.ubicacion}`);
+        } else {
+            document.getElementById('resFolio').innerText = query; document.getElementById('resProducto').innerText = "---"; document.getElementById('resPeso').innerText = "---";
+            document.getElementById('resEstatus').innerText = "NO ENCONTRADO"; document.getElementById('resEstatus').className = 'badge bg-produccion'; document.getElementById('resUbicacion').innerText = "---";
+        }
+    }
+
+    function actualizarMapa() {
+        const c = document.getElementById('cuartoFrio').value; const e = document.getElementById('espacioRack').value;
+        document.querySelectorAll('.rack-row').forEach(row => { row.className = 'rack-row empty'; row.innerHTML = `<td colspan="5">Libre</td>`; });
+        if (!c || !e) return;
+        inventarioGlobal.forEach(item => {
+            if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
+                const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
+                if(match) {
+                    const row = document.querySelector(`.rack-row[data-level="${match[1]}"][data-depth="${match[2]}"]`);
+                    if(row) { row.className = 'rack-row filled'; row.innerHTML = `<td>${item.folio}</td><td>${item.producto}</td><td>${item.pesoNeto}kg</td><td>${item.tipoCaja}</td><td>${item.tarima}</td>`; }
+                }
+            }
+        });
+    }
+    document.getElementById('cuartoFrio').addEventListener('change', actualizarMapa); document.getElementById('espacioRack').addEventListener('change', actualizarMapa);
+</script>
+</body>
+</html>
