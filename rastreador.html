@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS - Rastreador</title>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --rack-green: #548235; }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --rack-green: #548235; --danger: #dc3545; --success: #28a745;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .nav-header { width: 100%; max-width: 1000px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
@@ -13,13 +13,13 @@
         .container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 20px; }
         .panel { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .search-box { display: flex; gap: 10px; }
-        .search-box input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; }
-        .search-box button { background-color: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight:bold; }
+        .search-box input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px;}
+        .search-box button { background-color: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight:bold; font-size: 16px;}
         .result-card { margin-top: 15px; padding: 15px; background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; display: none; }
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
         .bg-recibido { background-color: #ffc107; color: #333;} .bg-almacenado { background-color: #28a745; } .bg-produccion { background-color: #dc3545; }
-        .controls select { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px;}
-        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        .controls select { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px; font-size: 15px;}
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px; }
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
         .rack-row.empty { background-color: #fff; color: #aaa; text-align: center; }
@@ -40,13 +40,14 @@
     <div class="panel" style="border-left: 5px solid var(--primary);">
         <h3 style="margin-top:0; color:var(--primary);">🔍 Rastreador de Folios</h3>
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Ingresa el folio (Ej. 7084C-1)">
+            <input type="text" id="searchInput" placeholder="Ingresa el folio (Ej. 7085C-1)">
             <button onclick="buscarFolio()">Buscar</button>
         </div>
         <div id="resultCard" class="result-card">
             <h4 style="margin:0 0 10px 0;">Folio: <span id="resFolio"></span></h4>
             <p style="margin:5px 0;">Producto: <strong id="resProducto"></strong> | Peso Neto: <strong id="resPeso"></strong></p>
-            <hr><p style="margin:5px 0;">Estatus: <span id="resEstatus" class="badge"></span></p>
+            <hr>
+            <p style="margin:5px 0;">Estatus: <span id="resEstatus" class="badge"></span></p>
             <p style="margin:5px 0;">Ubicación: <strong id="resUbicacion"></strong></p>
         </div>
     </div>
@@ -74,32 +75,63 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwfj9TXJqRFq2qhJmJypKTIa_p44DD5USRckmc1HaEcgLHoCfP9U1WDtLpKSL4Z3dkSDQ/exec";
     let inventarioGlobal = [];
-    window.addEventListener('load', () => { fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(r => r.json()).then(d => inventarioGlobal = d); });
+    
+    window.addEventListener('load', () => { 
+        fetch(urlGoogleScript + "?t=" + new Date().getTime())
+        .then(r => r.json())
+        .then(d => inventarioGlobal = d); 
+    });
 
     function buscarFolio() {
         const query = document.getElementById('searchInput').value.trim().toUpperCase();
         if (!query) return;
-        const res = inventarioGlobal.filter(i => i.folio.toUpperCase() === query);
-        const c = document.getElementById('resultCard'); c.style.display = 'block';
+        
+        // ¡LA MAGIA OCURRE AQUÍ! String(i.folio) evita que truene si hay números
+        const res = inventarioGlobal.filter(i => String(i.folio).toUpperCase() === query);
+        
+        const c = document.getElementById('resultCard'); 
+        c.style.display = 'block';
+        
         if (res.length > 0) {
             const t = res[res.length - 1];
-            document.getElementById('resFolio').innerText = t.folio; document.getElementById('resProducto').innerText = t.producto;
-            document.getElementById('resPeso').innerText = t.pesoNeto;
+            document.getElementById('resFolio').innerText = t.folio; 
+            document.getElementById('resProducto').innerText = t.producto;
+            document.getElementById('resPeso').innerText = t.pesoNeto + " kg";
             
-            const badge = document.getElementById('resEstatus'); badge.innerText = t.estatus; badge.className = 'badge';
-            if (t.estatus === "Recibido") badge.classList.add("bg-recibido"); else if (t.estatus === "Almacenado") badge.classList.add("bg-almacenado"); else badge.classList.add("bg-produccion");
+            const badge = document.getElementById('resEstatus'); 
+            badge.innerText = t.estatus; 
+            badge.className = 'badge';
+            
+            if (t.estatus === "Recibido") badge.classList.add("bg-recibido"); 
+            else if (t.estatus === "Almacenado") badge.classList.add("bg-almacenado"); 
+            else badge.classList.add("bg-produccion");
             
             document.getElementById('resUbicacion').innerText = t.estatus === "Recibido" ? "Área de Recepción" : (t.estatus === "En Producción" ? "Salió del Almacén" : `${t.cuarto} | ${t.ubicacion}`);
+            
+            c.style.borderLeft = "5px solid var(--success)";
         } else {
-            document.getElementById('resFolio').innerText = query; document.getElementById('resProducto').innerText = "---"; document.getElementById('resPeso').innerText = "---";
-            document.getElementById('resEstatus').innerText = "NO ENCONTRADO"; document.getElementById('resEstatus').className = 'badge bg-produccion'; document.getElementById('resUbicacion').innerText = "---";
+            document.getElementById('resFolio').innerText = query; 
+            document.getElementById('resProducto').innerText = "---"; 
+            document.getElementById('resPeso').innerText = "---";
+            document.getElementById('resEstatus').innerText = "NO ENCONTRADO"; 
+            document.getElementById('resEstatus').className = 'badge bg-produccion'; 
+            document.getElementById('resUbicacion').innerText = "Verifica que el folio sea correcto.";
+            
+            c.style.borderLeft = "5px solid var(--danger)";
         }
     }
 
+    // Para que puedas buscar presionando la tecla "Enter"
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') buscarFolio();
+    });
+
     function actualizarMapa() {
-        const c = document.getElementById('cuartoFrio').value; const e = document.getElementById('espacioRack').value;
+        const c = document.getElementById('cuartoFrio').value; 
+        const e = document.getElementById('espacioRack').value;
         document.querySelectorAll('.rack-row').forEach(row => { row.className = 'rack-row empty'; row.innerHTML = `<td colspan="5">Libre</td>`; });
         if (!c || !e) return;
+        
         inventarioGlobal.forEach(item => {
             if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
                 const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
@@ -110,7 +142,9 @@
             }
         });
     }
-    document.getElementById('cuartoFrio').addEventListener('change', actualizarMapa); document.getElementById('espacioRack').addEventListener('change', actualizarMapa);
+    
+    document.getElementById('cuartoFrio').addEventListener('change', actualizarMapa); 
+    document.getElementById('espacioRack').addEventListener('change', actualizarMapa);
 </script>
 </body>
 </html>
