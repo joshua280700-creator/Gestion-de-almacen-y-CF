@@ -3,30 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Almacenaje</title>
+    <title>WMS - Ajustes y Reubicación</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --rack-green: #548235; }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; --rack-green: #548235; --success: #28a745;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
+        
         .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1.8fr; gap: 20px; }
         @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
-        .scan-section { display: flex; flex-direction: column; gap: 15px; }
-        #reader-container { width: 100%; border-radius: 8px; overflow: hidden; background-color: #000; } #reader { width: 100%; }
-        .form-group { margin-bottom: 10px; } label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        .submit-btn { background-color: var(--success); color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; }
-        .submit-btn:disabled { background-color: #999; }
+        
+        .form-section { display: flex; flex-direction: column; gap: 10px; }
+        #reader-container { width: 100%; border-radius: 8px; overflow: hidden; background-color: #000; margin-bottom: 10px;} #reader { width: 100%; }
+        label { font-weight: bold; font-size: 13px; margin-bottom: 4px; display: block; color: var(--primary);}
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px;}
+        
+        .submit-btn { background-color: var(--warning); color: #333; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; margin-top: 10px;}
+        .submit-btn:disabled { background-color: #ccc; color:#666; cursor: not-allowed; }
+        
         .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; }
         .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
         .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px 5px; } .rack-table th { background-color: #f9f9f9; }
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
         .rack-row.empty { cursor: pointer; height: 35px; } .rack-row.empty:hover { background-color: #f0f8ff; }
-        .rack-row.selected td { background-color: #e8f5e9; border-top: 2px solid var(--success); border-bottom: 2px solid var(--success); }
-        .rack-row.filled { background-color: #f9f9f9; cursor: not-allowed; }
-        #status-area { margin-top: 20px; text-align: center; font-weight: bold; }
+        .rack-row.selected td { background-color: #fff3cd; border-top: 2px solid var(--warning); border-bottom: 2px solid var(--warning); }
+        .rack-row.filled { background-color: #f9f9f9; cursor: not-allowed; color:#888;}
+        #status-area { margin-top: 15px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -35,30 +39,38 @@
     <a href="index.html" class="nav-btn">Recepción</a>
     <a href="almacen.html" class="nav-btn">Almacenaje</a>
     <a href="salidas.html" class="nav-btn">Salidas</a>
-    <a href="ajustes.html" class="nav-btn">Ajustes</a>
+    <a href="ajustes.html" class="nav-btn active">Ajustes / Reubicación</a>
     <a href="rastreador.html" class="nav-btn">Rastreador</a>
     <a href="dashboard.html" class="nav-btn">Dashboard</a>
 </div>
 
 <div class="container">
-    <div class="scan-section">
+    <div class="form-section">
+        <h3 style="margin-top:0; color:var(--primary);">1. Ajuste de Pesos</h3>
         <div id="reader-container"><div id="reader"></div></div>
-        <form id="almacenForm">
-            <div class="form-group"><label>Folio (Escanear o teclear)</label><input type="text" id="folioDisplay" required></div>
-            <div class="form-group"><label>1. Cuarto Frío</label>
-                <select id="cuartoFrio" required><option value="" disabled selected>Selecciona...</option><option value="Cuarto 1">Cuarto 1 (Terminado)</option><option value="Cuarto 2">Cuarto 2 (General)</option><option value="Cuarto 3">Cuarto 3 (General)</option><option value="Cuarto 4">Cuarto 4 (General)</option><option value="Cuarto 5">Cuarto 5 (Tomatillo)</option></select>
+        
+        <form id="ajusteForm">
+            <input type="text" id="folioDisplay" placeholder="Escanea o escribe folio..." required>
+            
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;"><label>Nuevo P. Bruto</label><input type="number" id="nuevoPesoBruto" step="0.01" required></div>
+                <div style="flex:1;"><label>Nuevo P. Neto</label><input type="number" id="nuevoPesoNeto" step="0.01" required></div>
             </div>
-            <div class="form-group"><label>2. Espacio/Andén</label>
-                <select id="espacioRack" required><option value="" disabled selected>Selecciona...</option><option value="Espacio 1">Espacio 1</option><option value="Espacio 2">Espacio 2</option><option value="Espacio 3">Espacio 3</option><option value="Espacio 4">Espacio 4</option><option value="Espacio 5">Espacio 5</option></select>
-            </div>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+            <h3 style="margin-top:0; color:var(--rack-green);">2. Nueva Ubicación</h3>
+
+            <select id="cuartoFrio" required><option value="" disabled selected>Selecciona Cuarto...</option><option value="Cuarto 1">Cuarto 1</option><option value="Cuarto 2">Cuarto 2</option><option value="Cuarto 3">Cuarto 3</option><option value="Cuarto 4">Cuarto 4</option><option value="Cuarto 5">Cuarto 5</option></select>
+            <select id="espacioRack" required><option value="" disabled selected>Selecciona Espacio...</option><option value="Espacio 1">Espacio 1</option><option value="Espacio 2">Espacio 2</option><option value="Espacio 3">Espacio 3</option><option value="Espacio 4">Espacio 4</option><option value="Espacio 5">Espacio 5</option></select>
+            
             <input type="hidden" id="levelSelected"><input type="hidden" id="depthSelected">
-            <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Ubicación</button>
+            <button type="submit" id="saveBtn" class="submit-btn" disabled>Actualizar y Guardar en Rack</button>
         </form>
+        <div id="status-area"></div>
     </div>
 
     <div class="rack-map-section">
-        <h2 style="color:var(--primary); margin-top:0;">Vista de Rack</h2>
-        <p style="font-size:11px; margin-top:-10px;">Selecciona una fila vacía para asignar.</p>
+        <h3 style="margin-top:0;">Mapa de Rack (Selecciona un espacio vacío)</h3>
         <table class="rack-table" id="rackTable">
             <thead><tr><th>Folio</th><th>Producto</th><th>Peso neto</th><th>Caja</th><th>Tarima</th></tr></thead>
             <tbody>
@@ -81,20 +93,42 @@
         </table>
     </div>
 </div>
-<div id="status-area"></div>
 
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
     let inventarioGlobal = [];
 
-    window.addEventListener('load', () => { iniciarCamara(); cargarInventario(); });
-
-    function cargarInventario() {
-        document.getElementById('status-area').innerHTML = "Cargando inventario...";
+    window.addEventListener('load', () => { 
+        iniciarCamara();
         fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(res => res.json()).then(data => {
-            inventarioGlobal = data; document.getElementById('status-area').innerHTML = ""; actualizarTablaMapa();
+            inventarioGlobal = data; 
+        });
+    });
+
+    const html5QrCode = new Html5Qrcode("reader");
+    function iniciarCamara() {
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) { html5QrCode.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 250, height: 100 } }, text => {
+                document.getElementById('folioDisplay').value = text; 
+                document.getElementById('reader-container').style.display='none'; 
+                html5QrCode.stop(); 
+                buscarPesosAnteriores();
+            }); }
         });
     }
+
+    // Autocompleta los pesos para ayudar al operador
+    function buscarPesosAnteriores() {
+        const folio = document.getElementById('folioDisplay').value.trim().toUpperCase();
+        const tarima = inventarioGlobal.find(i => String(i.folio).toUpperCase() === folio);
+        if(tarima) {
+            document.getElementById('nuevoPesoBruto').value = tarima.pesoBruto;
+            document.getElementById('nuevoPesoNeto').value = tarima.pesoNeto;
+        }
+        checkForm();
+    }
+
+    document.getElementById('folioDisplay').addEventListener('change', buscarPesosAnteriores);
 
     function actualizarTablaMapa() {
         const c = document.getElementById('cuartoFrio').value; const e = document.getElementById('espacioRack').value;
@@ -118,8 +152,7 @@
 
     document.getElementById('cuartoFrio').addEventListener('change', () => { actualizarTablaMapa(); checkForm(); });
     document.getElementById('espacioRack').addEventListener('change', () => { actualizarTablaMapa(); checkForm(); });
-    document.getElementById('folioDisplay').addEventListener('input', checkForm);
-
+    
     document.getElementById('rackTable').addEventListener('click', function(e) {
         const row = e.target.closest('.rack-row');
         if (!row || row.classList.contains('filled')) return;
@@ -131,28 +164,35 @@
     });
 
     function checkForm() {
-        if(document.getElementById('folioDisplay').value && document.getElementById('levelSelected').value && document.getElementById('espacioRack').value) {
+        // Blindaje extra: Peso Bruto debe ser mayor al Neto
+        let pBruto = parseFloat(document.getElementById('nuevoPesoBruto').value);
+        let pNeto = parseFloat(document.getElementById('nuevoPesoNeto').value);
+        let pesosLogicos = (pBruto > 0 && pNeto > 0 && pBruto >= pNeto);
+
+        if(document.getElementById('folioDisplay').value && pesosLogicos && document.getElementById('levelSelected').value && document.getElementById('espacioRack').value) {
             document.getElementById('saveBtn').disabled = false;
+        } else {
+            document.getElementById('saveBtn').disabled = true;
         }
     }
+    
+    document.querySelectorAll('input').forEach(i => i.addEventListener('input', checkForm));
 
-    const html5QrCode = new Html5Qrcode("reader");
-    function iniciarCamara() {
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) { html5QrCode.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 250, height: 100 } }, text => {
-                document.getElementById('folioDisplay').value = text; document.getElementById('reader-container').style.display='none'; html5QrCode.stop(); checkForm();
-            }); }
-        });
-    }
-
-    document.getElementById('almacenForm').addEventListener('submit', function(e) {
+    document.getElementById('ajusteForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = "Guardando...";
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-            action: 'update_location', folio: document.getElementById('folioDisplay').value, cuarto: document.getElementById('cuartoFrio').value, espacio: document.getElementById('espacioRack').value, level: document.getElementById('levelSelected').value, depth: document.getElementById('depthSelected').value
+            action: 'ajuste_reubicacion', 
+            folio: document.getElementById('folioDisplay').value, 
+            pesoBruto: document.getElementById('nuevoPesoBruto').value, 
+            pesoNeto: document.getElementById('nuevoPesoNeto').value,
+            cuarto: document.getElementById('cuartoFrio').value, 
+            espacio: document.getElementById('espacioRack').value, 
+            level: document.getElementById('levelSelected').value, 
+            depth: document.getElementById('depthSelected').value
         })}).then(() => {
-            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Guardado!</span>";
-            cargarInventario(); document.getElementById('almacenForm').reset(); btn.innerText = "Confirmar Ubicación";
+            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Pesos y Ubicación Actualizados!</span>";
+            setTimeout(() => { location.reload(); }, 1500); // Recarga para actualizar el mapa
         });
     });
 </script>
