@@ -32,8 +32,8 @@
     <a href="index.html" class="nav-btn">Recepción</a>
     <a href="almacen.html" class="nav-btn">Almacenaje</a>
     <a href="salidas.html" class="nav-btn">Salidas</a>
-    <a href="ajustes.html" class="nav-btn">Ajustes</a>
-    <a href="rastreador.html" class="nav-btn">Rastreador</a>
+    <a href="ajustes.html" class="nav-btn">Ajustes / Reubicación</a>
+    <a href="rastreador.html" class="nav-btn active">Rastreador</a>
     <a href="dashboard.html" class="nav-btn">Dashboard</a>
 </div>
 
@@ -87,9 +87,7 @@
         const query = document.getElementById('searchInput').value.trim().toUpperCase();
         if (!query) return;
         
-        // ¡LA MAGIA OCURRE AQUÍ! String(i.folio) evita que truene si hay números
         const res = inventarioGlobal.filter(i => String(i.folio).toUpperCase() === query);
-        
         const c = document.getElementById('resultCard'); 
         c.style.display = 'block';
         
@@ -105,9 +103,10 @@
             
             if (t.estatus === "Recibido") badge.classList.add("bg-recibido"); 
             else if (t.estatus === "Almacenado") badge.classList.add("bg-almacenado"); 
-            else badge.classList.add("bg-produccion");
+            else if (t.estatus === "PT") badge.classList.add("bg-produccion"); // Aquí detecta PT y lo pone rojo
             
-            document.getElementById('resUbicacion').innerText = t.estatus === "Recibido" ? "Área de Recepción" : (t.estatus === "En Producción" ? "Salió del Almacén" : `${t.cuarto} | ${t.ubicacion}`);
+            // Aquí actualiza el texto de ubicación para PT
+            document.getElementById('resUbicacion').innerText = t.estatus === "Recibido" ? "Área de Recepción" : (t.estatus === "PT" ? "Salió a PT (Producto Terminado)" : `${t.cuarto} | ${t.ubicacion}`);
             
             c.style.borderLeft = "5px solid var(--success)";
         } else {
@@ -122,7 +121,6 @@
         }
     }
 
-    // Para que puedas buscar presionando la tecla "Enter"
     document.getElementById('searchInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') buscarFolio();
     });
