@@ -6,7 +6,7 @@
     <title>WMS - Recepción</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --info: #17a2b8; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
         .nav-header { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -18,10 +18,29 @@
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
         .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
         .submit-btn:hover:not(:disabled) { background-color: #153a5c; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
+        
         #barcode-container { margin-top: 25px; text-align: center; padding: 20px; background-color: #fafafa; border-radius: 8px; border: 1px dashed #ccc; display: none; }
         #barcode { max-width: 100%; height: auto; margin-bottom: 15px; }
-        .download-btn { background-color: #28a745; color: white; border: none; padding: 8px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        
+        .action-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .download-btn { background-color: var(--success); color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .print-btn { background-color: var(--info); color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .download-btn:hover { background-color: #218838; } .print-btn:hover { background-color: #138496; }
         .loading-text { font-size: 12px; color: var(--primary); margin-top: 5px; display: block; font-style: italic;}
+
+        /* MAGIA DE IMPRESIÓN: Esto solo se activa cuando se manda a imprimir */
+        @media print {
+            body * { visibility: hidden; } /* Esconde todo */
+            #barcode, #barcode * { visibility: visible; } /* Muestra solo el código de barras */
+            #barcode { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; /* Se adapta al ancho de tu etiqueta térmica */
+                max-width: 100mm; /* Ancho estándar de etiqueta térmica */
+            }
+            @page { margin: 0; } /* Quita los márgenes blancos que pone Chrome por defecto */
+        }
     </style>
 </head>
 <body>
@@ -83,8 +102,13 @@
     </form>
 
     <div id="barcode-container">
-        <h3>Etiqueta Generada</h3><img id="barcode" /><br>
-        <button id="downloadBtn" class="download-btn">Descargar Etiqueta (PNG)</button>
+        <h3 style="margin-top: 0;">Etiqueta Generada</h3>
+        <img id="barcode" /><br>
+        
+        <div class="action-buttons">
+            <button id="printBtn" class="print-btn" type="button">🖨️ Imprimir Directo</button>
+            <button id="downloadBtn" class="download-btn" type="button">⬇️ Descargar (PNG)</button>
+        </div>
     </div>
 </div>
 
@@ -94,13 +118,11 @@
     window.onload = function() { 
         document.getElementById('fecha').valueAsDate = new Date(); 
         
-        // Obtener inventario para calcular el siguiente folio maestro automáticamente
         fetch(urlGoogleScript + "?t=" + new Date().getTime())
         .then(res => res.json())
         .then(data => {
             let maxFolio = 0;
             data.forEach(item => {
-                // Extrae solo los números al inicio del folio (ignora C, N y guiones)
                 let match = String(item.folio).match(/^(\d+)/);
                 if(match) {
                     let num = parseInt(match[1]);
@@ -108,7 +130,7 @@
                 }
             });
             if(maxFolio > 0) {
-                document.getElementById('folio').value = maxFolio + 1; // Sugiere el siguiente
+                document.getElementById('folio').value = maxFolio + 1; 
                 document.getElementById('folio-hint').innerText = `Último registrado: ${maxFolio}`;
                 document.getElementById('folio-hint').style.color = "green";
             } else {
@@ -129,7 +151,6 @@
         const certificado = document.getElementById('certificado').value;
         const numTarima = document.getElementById('numeroTarima').value.trim();
         
-        // Construye el folio final (Ej. 7085C-1 o 7085N)
         const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
 
         const datos = {
@@ -144,15 +165,15 @@
             document.getElementById('barcode-container').style.display = 'block';
             submitBtn.innerText = "Registrar y Generar Etiqueta"; submitBtn.disabled = false;
             
-            // Incrementa el número visualmente para que esté listo para la siguiente tarima
             document.getElementById('folio').value = parseInt(folioBase) + 1;
-            document.getElementById('numeroTarima').value = ""; // Limpia la tarima
+            document.getElementById('numeroTarima').value = ""; 
             document.getElementById('folio-hint').innerText = `Folio anterior ${folioFinal} guardado.`;
         }).catch(() => { alert("Error al guardar."); submitBtn.disabled = false; });
     });
 
+    // Botón de descargar PNG
     document.getElementById('downloadBtn').addEventListener('click', function() {
-        const folioBase = document.getElementById('folio').value.trim() - 1; // Regresa al anterior para el nombre
+        const folioBase = document.getElementById('folio').value.trim() - 1; 
         const certificado = document.getElementById('certificado').value;
         const numTarima = document.getElementById('numeroTarima').value.trim();
         const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
@@ -160,6 +181,11 @@
         const link = document.createElement('a');
         link.download = `Etiqueta_${folioFinal}.png`; link.href = document.getElementById('barcode').src;
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    });
+
+    // NUEVO: Botón de Imprimir Directo
+    document.getElementById('printBtn').addEventListener('click', function() {
+        window.print();
     });
 </script>
 </body>
