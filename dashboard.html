@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS - Dashboard de Ocupación</title>
+    <style>
+        :root { 
+            --primary: #1F4E78; --background: #f4f7f6; --text: #333; 
+            --info: #17a2b8; --success: #28a745; --warning: #ffc107; --danger: #dc3545;
+            --rack-green: #548235; 
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Menú de Navegación */
+        .nav-header { width: 100%; max-width: 1000px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+        .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
+        .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
+        
+        .container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 20px; }
+        
+        /* Tarjetas de Resumen (KPIs) */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .kpi-card { background-color: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border-bottom: 5px solid; }
+        .kpi-card h3 { margin: 0; font-size: 16px; color: #666; text-transform: uppercase; letter-spacing: 1px;}
+        .kpi-card .number { font-size: 40px; font-weight: bold; margin: 10px 0 0 0; color: #333; }
+        
+        .kpi-recibido { border-color: var(--warning); }
+        .kpi-almacenado { border-color: var(--success); }
+        .kpi-produccion { border-color: var(--danger); }
+
+        /* Panel de Barras de Capacidad */
+        .panel { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+        .panel-header h2 { margin: 0; color: var(--primary); font-size: 20px; }
+        
+        .room-bar-container { margin-bottom: 25px; }
+        .room-info { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px; font-size: 15px; }
+        .room-stats { color: #666; font-size: 13px; font-weight: normal; }
+        
+        .progress-bg { width: 100%; background-color: #e9ecef; border-radius: 10px; height: 22px; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; background-color: var(--success); transition: width 1s ease-in-out; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-size: 12px; font-weight: bold; box-sizing: border-box; }
+        
+        /* Colores dinámicos para las barras */
+        .fill-warning { background-color: var(--warning); color: #333; }
+        .fill-danger { background-color: var(--danger); }
+
+        #loading { text-align: center; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="nav-header">
+    <a href="index.html" class="nav-btn">Recepción</a>
+    <a href="almacen.html" class="nav-btn">Almacenaje</a>
+    <a href="salidas.html" class="nav-btn">Salidas</a>
+    <a href="ajustes.html" class="nav-btn">Ajustes</a>
+    <a href="rastreador.html" class="nav-btn">Rastreador</a>
+    <a href="dashboard.html" class="nav-btn active">Dashboard</a>
+</div>
+
+<div id="loading">Calculando ocupación en tiempo real...</div>
+
+<div class="container" id="dashboardContent" style="display: none;">
+    
+    <!-- TARJETAS DE MÉTRICAS -->
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-recibido">
+            <h3>Por Acomodar</h3>
+            <p class="number" id="kpiRecibido">0</p>
+            <span style="font-size: 12px; color: #777;">Esperando en puerta</span>
+        </div>
+        <div class="kpi-card kpi-almacenado">
+            <h3>Total en Racks</h3>
+            <p class="number" id="kpiAlmacenado">0</p>
+            <span style="font-size: 12px; color: #777;">Tarimas aseguradas</span>
+        </div>
+        <div class="kpi-card kpi-produccion">
+            <h3>Despachadas</h3>
+            <p class="number" id="kpiProduccion">0</p>
+            <span style="font-size: 12px; color: #777;">Enviadas a producción</span>
+        </div>
+    </div>
+
+    <!-- BARRAS DE CAPACIDAD POR CUARTO -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2>📊 Capacidad de Cuartos Fríos</h2>
+            <span style="font-size: 13px; color: #777;">Capacidad máxima: 60 tarimas por cuarto</span>
+        </div>
+
+        <div id="cuartosContainer">
+            <!-- Las barras se inyectarán aquí automáticamente con Javascript -->
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwfj9TXJqRFq2qhJmJypKTIa_p44DD5USRckmc1HaEcgLHoCfP9U1WDtLpKSL4Z3dkSDQ/exec";
+    
+    // Capacidad máxima de un cuarto: 5 espacios * 12 posiciones = 60
+    const CAPACIDAD_CUARTO = 60; 
+    
+    // Lista de cuartos exactos de tu sistema
+    const listaCuartos = [
+        "Cuarto 1", "Cuarto 2", "Cuarto 3", "Cuarto 4", "Cuarto 5"
+    ];
+
+    window.addEventListener('load', () => { 
+        fetch(urlGoogleScript + "?t=" + new Date().getTime())
+        .then(r => r.json())
+        .then(data => procesarDatos(data))
+        .catch(err => {
+            document.getElementById('loading').innerHTML = `<span style="color:red">Error de conexión con la base de datos.</span>`;
+        });
+    });
+
+    function procesarDatos(inventario) {
+        // 1. Calcular KPIs Globales
+        let countRecibido = 0;
+        let countAlmacenado = 0;
+        let countProduccion = 0;
+
+        // Objeto para contar cuántas tarimas hay en cada cuarto
+        let ocupacionCuartos = {
+            "Cuarto 1": 0, "Cuarto 2": 0, "Cuarto 3": 0, "Cuarto 4": 0, "Cuarto 5": 0
+        };
+
+        inventario.forEach(item => {
+            if (item.estatus === "Recibido") countRecibido++;
+            if (item.estatus === "En Producción") countProduccion++;
+            
+            if (item.estatus === "Almacenado") {
+                countAlmacenado++;
+                // Sumar al cuarto correspondiente si existe en nuestro objeto
+                if(ocupacionCuartos[item.cuarto] !== undefined) {
+                    ocupacionCuartos[item.cuarto]++;
+                }
+            }
+        });
+
+        // Imprimir KPIs en pantalla
+        document.getElementById('kpiRecibido').innerText = countRecibido;
+        document.getElementById('kpiAlmacenado').innerText = countAlmacenado;
+        document.getElementById('kpiProduccion').innerText = countProduccion;
+
+        // 2. Dibujar las Barras de Capacidad
+        const contenedorBarras = document.getElementById('cuartosContainer');
+        contenedorBarras.innerHTML = ""; // Limpiar antes de dibujar
+
+        listaCuartos.forEach(cuarto => {
+            let ocupados = ocupacionCuartos[cuarto];
+            let porcentaje = (ocupados / CAPACIDAD_CUARTO) * 100;
+            
+            // Asegurar que visualmente no pase del 100% aunque haya un error de captura
+            let porcentajeVisual = porcentaje > 100 ? 100 : Math.round(porcentaje);
+            
+            // Determinar el color de la barra
+            let claseColor = "";
+            if (porcentajeVisual >= 90) claseColor = "fill-danger"; // Rojo si está casi lleno
+            else if (porcentajeVisual >= 70) claseColor = "fill-warning"; // Amarillo si está al 70%+
+            
+            // Construir el HTML de la barra
+            let htmlBarra = `
+                <div class="room-bar-container">
+                    <div class="room-info">
+                        <span>❄️ ${cuarto}</span>
+                        <span class="room-stats">${ocupados} / ${CAPACIDAD_CUARTO} tarimas</span>
+                    </div>
+                    <div class="progress-bg">
+                        <div class="progress-fill ${claseColor}" style="width: ${porcentajeVisual}%;">
+                            ${porcentajeVisual > 5 ? porcentajeVisual + '%' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            contenedorBarras.innerHTML += htmlBarra;
+        });
+
+        // Ocultar mensaje de carga y mostrar el panel
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dashboardContent').style.display = 'flex';
+    }
+</script>
+</body>
+</html>
