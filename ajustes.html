@@ -3,300 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Ajuste de Pesos (Sobrantes)</title>
-    <!-- Librería para el escáner de cámara -->
+    <title>WMS - Ajustes</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root {
-            --primary: #1F4E78;
-            --background: #f4f7f6;
-            --text: #333;
-            --warning: #ffc107;
-            --success: #28a745;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .nav-header {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-
-        .nav-btn {
-            background-color: transparent;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-            padding: 8px 12px;
-            font-size: 13px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn:hover {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        h2 {
-            text-align: center;
-            color: var(--primary);
-            margin-top: 0;
-            border-bottom: 2px solid var(--warning);
-            padding-bottom: 10px;
-        }
-
-        .scan-section {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        #reader-container {
-            width: 100%;
-            border-radius: 8px;
-            overflow: hidden;
-            background-color: #000;
-        }
-        
-        #reader { width: 100%; }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .form-group.half {
-            flex: 1;
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background-color: #fafafa;
-        }
-
-        input:focus {
-            border-color: var(--warning);
-            outline: none;
-            background-color: #fff;
-        }
-
-        .submit-btn {
-            background-color: var(--warning);
-            color: #333;
-            border: none;
-            padding: 14px 20px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .submit-btn:hover:not(:disabled) {
-            background-color: #e0a800;
-        }
-        
-        .submit-btn:disabled {
-            background-color: #ccc;
-            color: #666;
-            cursor: not-allowed;
-        }
-
-        #status-area {
-            margin-top: 15px;
-            text-align: center;
-            font-weight: bold;
-            display: none;
-            padding: 10px;
-            border-radius: 6px;
-        }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .nav-header { width: 100%; max-width: 500px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
+        .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
+        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; }
+        label { font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;}
+        .submit-btn { background-color: var(--warning); color: #333; border: none; padding: 14px; font-size: 18px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; }
+        .submit-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        #reader-container { width: 100%; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px; } #reader { width: 100%; }
+        #status-area { margin-top: 15px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
+<div class="nav-header">
+    <a href="index.html" class="nav-btn">Recepción</a>
+    <a href="almacen.html" class="nav-btn">Almacenaje</a>
+    <a href="salidas.html" class="nav-btn">Salidas</a>
+    <a href="ajustes.html" class="nav-btn active">Ajustes</a>
+    <a href="rastreador.html" class="nav-btn">Rastreador</a>
+</div>
+
 <div class="container">
-    <div class="nav-header">
-        <a href="index.html" class="nav-btn">← Recepción</a>
-        <a href="almacen.html" class="nav-btn">Almacenaje →</a>
-    </div>
-    
-    <h2>Ajuste de Sobrantes</h2>
-    <p style="text-align: center; font-size: 13px; color: #666; margin-top: -5px;">Actualiza el peso de las tarimas que regresan de producción.</p>
-    
-    <div class="scan-section">
-        <div id="reader-container"><div id="reader"></div></div>
-    </div>
-
+    <h2 style="text-align:center; color:var(--primary);">Ajuste de Sobrantes</h2>
+    <div id="reader-container"><div id="reader"></div></div>
     <form id="ajusteForm">
-        <div class="form-group">
-            <label for="folioDisplay">Folio de la Tarima</label>
-            <input type="text" id="folioDisplay" name="folioDisplay" required placeholder="Escanea la etiqueta o escribe el folio (Ej. 7084C-1)">
+        <label>Folio de la Tarima</label><input type="text" id="folioDisplay" required>
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;"><label>Nuevo P. Bruto</label><input type="number" id="nuevoPesoBruto" step="0.01" required></div>
+            <div style="flex:1;"><label>Nuevo P. Neto</label><input type="number" id="nuevoPesoNeto" step="0.01" required></div>
         </div>
-
-        <div class="form-row">
-            <div class="form-group half">
-                <label for="nuevoPesoBruto">Nuevo Peso Bruto</label>
-                <input type="number" id="nuevoPesoBruto" name="nuevoPesoBruto" step="0.01" required placeholder="0.00 kg">
-            </div>
-
-            <div class="form-group half">
-                <label for="nuevoPesoNeto">Nuevo Peso Neto</label>
-                <input type="number" id="nuevoPesoNeto" name="nuevoPesoNeto" step="0.01" required placeholder="0.00 kg">
-            </div>
-        </div>
-
-        <button type="submit" id="saveBtn" class="submit-btn" disabled>Actualizar Pesos en Base de Datos</button>
+        <button type="submit" id="saveBtn" class="submit-btn" disabled>Actualizar Pesos</button>
     </form>
-
     <div id="status-area"></div>
 </div>
 
 <script>
-    const folioDisplay = document.getElementById('folioDisplay');
-    const pesoBrutoInput = document.getElementById('nuevoPesoBruto');
-    const pesoNetoInput = document.getElementById('nuevoPesoNeto');
-    const saveBtn = document.getElementById('saveBtn');
-    const statusArea = document.getElementById('status-area');
-    const form = document.getElementById('ajusteForm');
-
-    // ¡URL INSERTADA AQUÍ!
-    const urlGoogleScript = "https://script.google.com/macros/s/AKfycby7AfCwjNyGCzRUX6myRFWbZJOhAQwY0CZgMWdJCqZ0mVcGJBJrpQSdcKOehnRtcVCuMg/exec";
-
-    // --- INICIALIZAR CÁMARA ---
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwfj9TXJqRFq2qhJmJypKTIa_p44DD5USRckmc1HaEcgLHoCfP9U1WDtLpKSL4Z3dkSDQ/exec";
+    
     const html5QrCode = new Html5Qrcode("reader");
-
-    window.addEventListener('load', () => {
-        const config = { fps: 30, qrbox: { width: 250, height: 100 } }; 
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) {
-                let cameraIdToUse = devices[0].id; 
-                for (let i = 0; i < devices.length; i++) {
-                    let nombre = devices[i].label.toLowerCase();
-                    if (nombre.includes("back") || nombre.includes("trasera") || nombre.includes("environment")) {
-                        if (!nombre.includes("ultra") && !nombre.includes("macro") && !nombre.includes("wide") && !nombre.includes("0.5")) {
-                            cameraIdToUse = devices[i].id;
-                            break; 
-                        }
-                    }
-                }
-                html5QrCode.start(cameraIdToUse, config, onScanSuccess)
-                .catch(() => html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess));
-            } else {
-                folioDisplay.placeholder = "Sin cámara. Escribe el Folio.";
-            }
-        }).catch(err => folioDisplay.placeholder = "Cámara falló. Escribe manual.");
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) { html5QrCode.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 250, height: 100 } }, text => {
+            document.getElementById('folioDisplay').value = text; document.getElementById('reader-container').style.display='none'; html5QrCode.stop(); checkForm();
+        }); }
     });
 
-    function onScanSuccess(decodedText, decodedResult) {
-        html5QrCode.stop().then(() => {
-            document.getElementById('reader-container').style.display = 'none';
-        }).catch(err => console.log(err));
-        
-        folioDisplay.value = decodedText.trim();
-        folioDisplay.style.borderColor = "var(--warning)"; 
-        habilitarBotonGuardar();
+    function checkForm() {
+        document.getElementById('saveBtn').disabled = !(document.getElementById('folioDisplay').value && document.getElementById('nuevoPesoBruto').value && document.getElementById('nuevoPesoNeto').value);
     }
+    document.querySelectorAll('input').forEach(i => i.addEventListener('input', checkForm));
 
-    // --- VALIDACIONES DE FORMULARIO ---
-    function habilitarBotonGuardar() {
-        if (folioDisplay.value.trim() !== "" && pesoBrutoInput.value !== "" && pesoNetoInput.value !== "") {
-            saveBtn.disabled = false;
-        } else {
-            saveBtn.disabled = true;
-        }
-    }
-
-    folioDisplay.addEventListener('input', habilitarBotonGuardar);
-    pesoBrutoInput.addEventListener('input', habilitarBotonGuardar);
-    pesoNetoInput.addEventListener('input', habilitarBotonGuardar);
-
-    // --- ENVÍO A GOOGLE SHEETS ---
-    form.addEventListener('submit', function(event) {
-        event.preventDefault(); 
-        
-        const datos = {
-            action: 'update_weight',
-            folio: folioDisplay.value.trim(),
-            pesoBruto: pesoBrutoInput.value,
-            pesoNeto: pesoNetoInput.value
-        };
-
-        saveBtn.innerText = "Actualizando...";
-        saveBtn.disabled = true;
-        statusArea.style.display = 'none';
-
-        fetch(urlGoogleScript, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datos)
-        })
-        .then(() => {
-            statusArea.style.display = 'block';
-            statusArea.style.backgroundColor = "#d4edda";
-            statusArea.style.color = "#155724";
-            statusArea.innerHTML = `¡Pesos del folio <strong>${datos.folio}</strong> actualizados con éxito!`;
-            
-            form.reset();
-            saveBtn.innerText = "Actualizar Pesos en Base de Datos";
-            habilitarBotonGuardar();
-        })
-        .catch(error => {
-            statusArea.style.display = 'block';
-            statusArea.style.backgroundColor = "#f8d7da";
-            statusArea.style.color = "#721c24";
-            statusArea.innerHTML = `Hubo un error de conexión. Intenta de nuevo.`;
-            
-            saveBtn.innerText = "Actualizar Pesos en Base de Datos";
-            habilitarBotonGuardar();
+    document.getElementById('ajusteForm').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = "Actualizando...";
+        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+            action: 'update_weight', folio: document.getElementById('folioDisplay').value, pesoBruto: document.getElementById('nuevoPesoBruto').value, pesoNeto: document.getElementById('nuevoPesoNeto').value
+        })}).then(() => {
+            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Pesos actualizados!</span>";
+            document.getElementById('ajusteForm').reset(); btn.innerText = "Actualizar Pesos";
         });
     });
 </script>
-
 </body>
 </html>
