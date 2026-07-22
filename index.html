@@ -3,343 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Recepción y Trazabilidad V4</title>
-    <!-- Librería JsBarcode para Códigos de Barras -->
+    <title>WMS - Recepción</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <style>
-        :root {
-            --primary: #1F4E78;
-            --background: #f4f7f6;
-            --text: #333;
-            --success: #28a745;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 600px; /* Lo hice un poquitito más ancho para que quepan bien los 3 botones */
-        }
-
-        .nav-header {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 15px;
-            flex-wrap: wrap; /* Para que no se amontonen en celulares */
-            gap: 10px;
-        }
-
-        .nav-btn {
-            background-color: transparent;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-            padding: 8px 12px;
-            font-size: 13px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn:hover {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        h2 {
-            text-align: center;
-            color: var(--primary);
-            margin-top: 0;
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .form-group.half {
-            flex: 1;
-            margin-bottom: 15px;
-        }
-
-        @media (max-width: 480px) {
-            .form-row {
-                flex-direction: column;
-                gap: 0;
-            }
-            .nav-header {
-                justify-content: center;
-            }
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-
-        input[type="number"] {
-            -moz-appearance: textfield;
-        }
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        .submit-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background-color 0.3s ease;
-        }
-
-        .submit-btn:hover:not(:disabled) {
-            background-color: #153a5c;
-        }
-        
-        .submit-btn:disabled {
-            background-color: #999;
-            cursor: not-allowed;
-        }
-
-        #barcode-container {
-            margin-top: 25px;
-            text-align: center;
-            padding: 20px;
-            background-color: #fafafa;
-            border-radius: 8px;
-            border: 1px dashed #ccc;
-            display: none; 
-        }
-
-        #barcode {
-            max-width: 100%;
-            height: auto;
-            margin-bottom: 15px;
-        }
-
-        .download-btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            font-size: 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .download-btn:hover {
-            background-color: #218838;
-        }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        .nav-header { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .nav-btn { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s ease; }
+        .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
+        h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; } .form-row { display: flex; gap: 15px; } .form-group.half { flex: 1; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; }
+        .submit-btn:hover:not(:disabled) { background-color: #153a5c; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
+        #barcode-container { margin-top: 25px; text-align: center; padding: 20px; background-color: #fafafa; border-radius: 8px; border: 1px dashed #ccc; display: none; }
+        #barcode { max-width: 100%; height: auto; margin-bottom: 15px; }
+        .download-btn { background-color: #28a745; color: white; border: none; padding: 8px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; text-decoration: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- AQUÍ ESTÁ EL MENÚ CORREGIDO CON TODOS LOS BOTONES -->
     <div class="nav-header">
+        <a href="index.html" class="nav-btn active">Recepción</a>
         <a href="almacen.html" class="nav-btn">Almacenaje</a>
+        <a href="salidas.html" class="nav-btn">Salidas</a>
         <a href="ajustes.html" class="nav-btn">Ajustes</a>
-        <a href="salidas.html" class="nav-btn" style="color: #dc3545; border-color: #dc3545;">Salidas</a>
+        <a href="rastreador.html" class="nav-btn">Rastreador</a>
     </div>
     
     <h2>Registro de Entrada</h2>
     <form id="registroForm">
-        
-        <div class="form-group">
-            <label for="producto">Nombre del Producto</label>
-            <input type="text" id="producto" name="producto" required placeholder="Ej. Tomatillo">
+        <div class="form-group"><label>Nombre del Producto</label><input type="text" id="producto" required placeholder="Ej. Tomatillo"></div>
+        <div class="form-row">
+            <div class="form-group half"><label>Folio Master</label><input type="text" id="folio" required placeholder="Ej. 7084C"></div>
+            <div class="form-group half"><label>Tarima # (Opcional)</label><input type="number" id="numeroTarima" min="1" placeholder="Ej. 1, 2..."></div>
         </div>
-
+        <div class="form-group"><label>Peso Bruto (kg)</label><input type="number" id="pesoBruto" step="0.01" required></div>
+        <div class="form-group"><label>Peso Neto (kg)</label><input type="number" id="pesoNeto" step="0.01" required></div>
+        <div class="form-group"><label>Fecha de Recepción</label><input type="date" id="fecha" required></div>
         <div class="form-row">
             <div class="form-group half">
-                <label for="folio">Folio Master</label>
-                <input type="text" id="folio" name="folio" required placeholder="Ej. 7084C">
+                <label>Tipo de caja</label><input type="text" id="tipoCaja" list="tipoCajaList" required>
+                <datalist id="tipoCajaList"><option value="Morelia"><option value="Naylea"><option value="Arpilla"><option value="Madera"><option value="Cartón"></datalist>
             </div>
-
             <div class="form-group half">
-                <label for="numeroTarima">Tarima # (Opcional)</label>
-                <input type="number" id="numeroTarima" name="numeroTarima" min="1" placeholder="Ej. 1, 2, 3...">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="pesoBruto">Peso Bruto (kg)</label>
-            <input type="number" id="pesoBruto" name="pesoBruto" step="0.01" required placeholder="0.00">
-        </div>
-
-        <div class="form-group">
-            <label for="pesoNeto">Peso Neto (kg)</label>
-            <input type="number" id="pesoNeto" name="pesoNeto" step="0.01" required placeholder="0.00">
-        </div>
-
-        <div class="form-group">
-            <label for="fecha">Fecha de Recepción</label>
-            <input type="date" id="fecha" name="fecha" required>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group half">
-                <label for="tipoCaja">Tipo de caja</label>
-                <input type="text" id="tipoCaja" name="tipoCaja" list="tipoCajaList" required placeholder="Ej. Morelia">
-                <datalist id="tipoCajaList">
-                    <option value="Morelia">
-                    <option value="Naylea">
-                    <option value="Arpilla">
-                    <option value="Madera">
-                    <option value="Cartón">
-                </datalist>
-            </div>
-
-            <div class="form-group half">
-                <label for="tipoTarima">Tipo de Tarima</label>
-                <select id="tipoTarima" name="tipoTarima" required>
-                    <option value="" disabled selected>Selecciona...</option>
-                    <option value="Plástico">Plástico</option>
-                    <option value="Madera 1ra">Madera 1ra</option>
-                    <option value="Madera 2da">Madera 2da</option>
-                    <option value="Chep">Chep</option>
-                    <option value="Sin Tarima">Sin Tarima</option>
+                <label>Tipo de Tarima</label>
+                <select id="tipoTarima" required>
+                    <option value="" disabled selected>Selecciona...</option><option value="Plástico">Plástico</option><option value="Madera 1ra">Madera 1ra</option><option value="Madera 2da">Madera 2da</option><option value="Chep">Chep</option><option value="Sin Tarima">Sin Tarima</option>
                 </select>
             </div>
         </div>
-
         <button type="submit" class="submit-btn">Registrar y Generar Etiqueta</button>
     </form>
 
     <div id="barcode-container">
-        <h3>Etiqueta Generada</h3>
-        <img id="barcode" />
-        <br>
+        <h3>Etiqueta Generada</h3><img id="barcode" /><br>
         <button id="downloadBtn" class="download-btn">Descargar Etiqueta (PNG)</button>
     </div>
 </div>
 
 <script>
-    window.onload = function() {
-        document.getElementById('fecha').valueAsDate = new Date();
-    };
+    window.onload = function() { document.getElementById('fecha').valueAsDate = new Date(); };
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwfj9TXJqRFq2qhJmJypKTIa_p44DD5USRckmc1HaEcgLHoCfP9U1WDtLpKSL4Z3dkSDQ/exec";
 
-    const form = document.getElementById('registroForm');
-    const barcodeContainer = document.getElementById('barcode-container');
-    const downloadBtn = document.getElementById('downloadBtn');
-    
-    // Tu URL oficial de Google Apps Script
-    const urlGoogleScript = "https://script.google.com/macros/s/AKfycby7AfCwjNyGCzRUX6myRFWbZJOhAQwY0CZgMWdJCqZ0mVcGJBJrpQSdcKOehnRtcVCuMg/exec";
-
-    form.addEventListener('submit', function(event) {
+    document.getElementById('registroForm').addEventListener('submit', function(event) {
         event.preventDefault(); 
-
         const submitBtn = document.querySelector('.submit-btn');
-        const textoOriginal = submitBtn.innerText;
-        submitBtn.innerText = "Registrando en Base de Datos...";
-        submitBtn.disabled = true;
+        submitBtn.innerText = "Registrando..."; submitBtn.disabled = true;
 
         const folioBase = document.getElementById('folio').value.trim();
         const numTarima = document.getElementById('numeroTarima').value.trim();
         const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
 
         const datos = {
-            producto: document.getElementById('producto').value,
-            folio: folioFinal, 
-            pesoBruto: document.getElementById('pesoBruto').value,
-            pesoNeto: document.getElementById('pesoNeto').value,
-            fecha: document.getElementById('fecha').value,
-            tipoCaja: document.getElementById('tipoCaja').value,
-            tarima: document.getElementById('tipoTarima').value 
+            producto: document.getElementById('producto').value, folio: folioFinal,
+            pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: document.getElementById('pesoNeto').value,
+            fecha: document.getElementById('fecha').value, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value 
         };
 
-        fetch(urlGoogleScript, {
-            method: 'POST',
-            mode: 'no-cors', 
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(datos)
-        })
+        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) })
         .then(() => {
-            JsBarcode("#barcode", datos.folio, {
-                format: "CODE128",
-                lineColor: "#000",
-                width: 3, 
-                height: 100, 
-                displayValue: true, 
-                fontSize: 24
-            });
-
-            barcodeContainer.style.display = 'block';
-            
-            submitBtn.innerText = textoOriginal;
-            submitBtn.disabled = false;
-            
-            form.reset();
-            document.getElementById('fecha').valueAsDate = new Date(); 
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("Hubo un error al guardar. Revisa tu conexión a internet.");
-            submitBtn.innerText = textoOriginal;
-            submitBtn.disabled = false;
-        });
+            JsBarcode("#barcode", datos.folio, { format: "CODE128", width: 3, height: 100, displayValue: true, fontSize: 24 });
+            document.getElementById('barcode-container').style.display = 'block';
+            submitBtn.innerText = "Registrar y Generar Etiqueta"; submitBtn.disabled = false;
+            document.getElementById('registroForm').reset(); document.getElementById('fecha').valueAsDate = new Date(); 
+        }).catch(() => { alert("Error al guardar."); submitBtn.disabled = false; });
     });
 
-    downloadBtn.addEventListener('click', function() {
-        const img = document.getElementById('barcode');
-        const dataUrl = img.src;
+    document.getElementById('downloadBtn').addEventListener('click', function() {
         const folioBase = document.getElementById('folio').value.trim();
         const numTarima = document.getElementById('numeroTarima').value.trim();
         const folioFinal = numTarima ? `${folioBase}-${numTarima}` : folioBase;
-
         const link = document.createElement('a');
-        link.download = `Etiqueta_${folioFinal}.png`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        link.download = `Etiqueta_${folioFinal}.png`; link.href = document.getElementById('barcode').src;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
     });
 </script>
-
 </body>
 </html>
