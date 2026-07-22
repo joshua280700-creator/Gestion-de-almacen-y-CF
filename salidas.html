@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS - Salidas a Producción</title>
+    <style>
+        :root {
+            --primary: #1F4E78;
+            --background: #f4f7f6;
+            --text: #333;
+            --danger: #dc3545; /* Rojo para salidas */
+            --warning: #ffc107;
+            --rack-green: #548235; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--danger);
+            padding-bottom: 10px;
+        }
+
+        .header h1 { color: var(--danger); margin: 0; font-size: 24px; }
+        .user-info { font-size: 14px; color: #555; }
+        .user-info a { margin: 0 5px; text-decoration: none; font-weight: bold; }
+
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+
+        .form-section { display: flex; flex-direction: column; gap: 15px; }
+
+        .form-group { margin-bottom: 10px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+
+        select, input[type="text"] {
+            width: 100%; padding: 10px; border: 1px solid #ccc;
+            border-radius: 6px; font-size: 16px; box-sizing: border-box;
+            background-color: #fff;
+        }
+
+        .submit-btn {
+            background-color: var(--danger); color: white; border: none;
+            padding: 12px 20px; font-size: 18px; font-weight: bold;
+            border-radius: 6px; cursor: pointer; width: 100%;
+            transition: background-color 0.3s ease; margin-top: 15px;
+        }
+        .submit-btn:hover:not(:disabled) { background-color: #c82333; }
+        .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
+        
+        #status-area { margin-top: 20px; text-align: center; font-weight: bold; display: none; padding: 10px; border-radius: 6px;}
+
+        .rack-map-section {
+            border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; 
+        }
+        h2.map-title { color: var(--danger); margin-top: 0; font-size: 18px; text-align: center; }
+
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px 5px; }
+        .rack-table th { background-color: #fff; color: var(--text); font-weight: bold; border-bottom: 2px solid var(--danger); }
+
+        .level-separator td {
+            background-color: var(--rack-green); color: white; font-weight: bold;
+            text-align: center; padding: 4px; border: 1px solid var(--rack-green);
+        }
+
+        /* En Salidas, las filas vacías NO son clickeables */
+        .rack-row.empty { background-color: #fff; cursor: not-allowed; height: 35px; }
+        
+        /* En Salidas, las filas ocupadas SÍ son clickeables */
+        .rack-row.filled { background-color: #f9f9f9; color: #333; cursor: pointer; }
+        .rack-row.filled:hover { background-color: #fce8e8; } /* Efecto hover rojizo */
+
+        /* Estilo para la tarima que se va a despachar */
+        .rack-row.selected-exit td {
+            background-color: #f8d7da; border-top: 2px solid var(--danger);
+            border-bottom: 2px solid var(--danger); color: #721c24; font-weight: bold;
+        }
+        .rack-row.selected-exit td:first-child { border-left: 2px solid var(--danger); }
+        .rack-row.selected-exit td:last-child { border-right: 2px solid var(--danger); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>WMS: Salida a Producción</h1>
+    <div class="user-info">
+        Joshua0700 | 
+        <a href="index.html" style="color: var(--primary);">Recepción</a> | 
+        <a href="almacen.html" style="color: var(--rack-green);">Almacenaje</a> | 
+        <a href="ajustes.html" style="color: var(--warning);">Ajustes</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="form-section">
+        <p style="font-size: 14px; color: #666; margin-top: 0;">Selecciona el andén donde estás parado y haz clic en la tarima que vas a llevar a producción.</p>
+        
+        <form id="salidaForm">
+            <div class="form-group">
+                <label for="cuartoFrio">1. Ubicación (Cuarto Frío)</label>
+                <select id="cuartoFrio" name="cuartoFrio" required>
+                    <option value="" disabled selected>Selecciona un Cuarto...</option>
+                    <option value="Cuarto 1">Cuarto 1 (Terminado)</option>
+                    <option value="Cuarto 2">Cuarto 2 (General)</option>
+                    <option value="Cuarto 3">Cuarto 3 (General)</option>
+                    <option value="Cuarto 4">Cuarto 4 (General)</option>
+                    <option value="Cuarto 5">Cuarto 5 (Tomatillo)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="espacioRack">2. Ubicación (Espacio/Andén)</label>
+                <select id="espacioRack" name="espacioRack" required>
+                    <option value="" disabled selected>Selecciona un Espacio...</option>
+                    <option value="Espacio 1">Espacio 1</option>
+                    <option value="Espacio 2">Espacio 2</option>
+                    <option value="Espacio 3">Espacio 3</option>
+                    <option value="Espacio 4">Espacio 4</option>
+                    <option value="Espacio 5">Espacio 5</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="folioDisplay">Tarima Seleccionada para Salida:</label>
+                <input type="text" id="folioDisplay" readonly placeholder="Haz clic en una tarima del mapa..." style="background-color: #f8f9fa; font-weight: bold; color: var(--danger);">
+            </div>
+
+            <input type="hidden" id="levelSelected">
+            <input type="hidden" id="depthSelected">
+            <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Salida a Producción</button>
+        </form>
+    </div>
+
+    <!-- TABLA DE RACK -->
+    <div class="rack-map-section">
+        <h2 class="map-title">Inventario en Andén</h2>
+        <p style="font-size: 11px; color: #777; margin-top:-5px; text-align:center;">Las filas grises están ocupadas. Haz clic en la que vas a despachar.</p>
+        
+        <table class="rack-table" id="rackTable">
+            <thead>
+                <tr>
+                    <th>Folio</th><th>Producto</th><th>Peso neto</th><th>Tipo de caja</th><th>Tipo de tarima</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- NIVEL 3 -->
+                <tr class="level-separator"><td colspan="5">Nivel 3 (Alto)</td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
+
+                <!-- NIVEL 2 -->
+                <tr class="level-separator"><td colspan="5">Nivel 2 (Medio)</td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
+
+                <!-- NIVEL 1 -->
+                <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="status-area"></div>
+
+<script>
+    const folioDisplay = document.getElementById('folioDisplay');
+    const saveBtn = document.getElementById('saveBtn');
+    const levelInput = document.getElementById('levelSelected');
+    const depthInput = document.getElementById('depthSelected');
+    const rackTable = document.getElementById('rackTable');
+    const form = document.getElementById('salidaForm');
+
+    // ¡URL OFICIAL!
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwuwfwSfBzH_R9UZWkd_nCyECLb8HZJ4kiGeZmhLUz5Ue_GQ9hV0w7IFzLmLADBWgzwbw/exec";
+    
+    let inventarioGlobal = [];
+
+    window.addEventListener('load', cargarInventario);
+
+    function cargarInventario() {
+        const statusArea = document.getElementById('status-area');
+        statusArea.style.display = 'block';
+        statusArea.style.backgroundColor = "transparent";
+        statusArea.innerHTML = `<span style="color:var(--primary)">Cargando inventario...</span>`;
+
+        fetch(urlGoogleScript + "?t=" + new Date().getTime())
+        .then(response => response.json())
+        .then(data => {
+            inventarioGlobal = data;
+            statusArea.style.display = 'none';
+            actualizarTablaMapa(); 
+        })
+        .catch(error => {
+            console.error(error);
+            statusArea.innerHTML = `<span style="color:red">Error al cargar el inventario. Revisa tu conexión.</span>`;
+        });
+    }
+
+    function actualizarTablaMapa() {
+        const cuartoFrio = document.getElementById('cuartoFrio').value;
+        const espacioRack = document.getElementById('espacioRack').value;
+
+        // Limpiar la tabla
+        document.querySelectorAll('.rack-row').forEach(row => {
+            row.className = 'rack-row empty';
+            const tds = row.querySelectorAll('td');
+            for(let i=0; i<5; i++) tds[i].innerText = "";
+        });
+
+        // Limpiar selección actual si cambian de rack
+        folioDisplay.value = "";
+        saveBtn.disabled = true;
+
+        if (!cuartoFrio || !espacioRack) return;
+
+        inventarioGlobal.forEach(item => {
+            if (item.cuarto === cuartoFrio && item.ubicacion && item.ubicacion.startsWith(espacioRack)) {
+                const regex = /Nivel (\d+), Pos (\d+)/;
+                const match = item.ubicacion.match(regex);
+                
+                if(match) {
+                    const nivel = match[1];
+                    const pos = match[2];
+                    
+                    const row = document.querySelector(`.rack-row[data-level="${nivel}"][data-depth="${pos}"]`);
+                    if(row) {
+                        row.className = 'rack-row filled'; 
+                        const tds = row.querySelectorAll('td');
+                        tds[0].innerText = item.folio;
+                        tds[1].innerText = item.producto;
+                        tds[2].innerText = item.pesoNeto;
+                        tds[3].innerText = item.tipoCaja;
+                        tds[4].innerText = item.tarima;
+                    }
+                }
+            }
+        });
+    }
+
+    document.getElementById('cuartoFrio').addEventListener('change', actualizarTablaMapa);
+    document.getElementById('espacioRack').addEventListener('change', actualizarTablaMapa);
+
+    // Lógica para SELECCIONAR tarimas ocupadas
+    rackTable.addEventListener('click', function(event) {
+        const row = event.target.closest('.rack-row');
+        // En esta pantalla, NO puedes hacer clic en filas vacías
+        if (!row || row.classList.contains('empty')) return; 
+
+        // Quitar la selección anterior
+        const rows = document.querySelectorAll('.rack-row');
+        rows.forEach(r => {
+            if(r.classList.contains('selected-exit')) {
+                r.classList.remove('selected-exit');
+                r.classList.add('filled');
+            }
+        });
+        
+        // Aplicar selección roja
+        row.classList.remove('filled');
+        row.classList.add('selected-exit');
+        
+        // Obtener datos
+        const tds = row.querySelectorAll('td');
+        const folioSeleccionado = tds[0].innerText;
+        
+        folioDisplay.value = folioSeleccionado;
+        levelInput.value = row.getAttribute('data-level');
+        depthInput.value = row.getAttribute('data-depth');
+
+        saveBtn.disabled = false;
+    });
+
+    // Confirmar salida
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); 
+        
+        const datos = {
+            action: 'salida_produccion', // <-- Llama a la nueva función que programamos en el Google Script
+            folio: folioDisplay.value,
+            cuarto: document.getElementById('cuartoFrio').value,
+            espacio: document.getElementById('espacioRack').value,
+            level: levelInput.value,
+            depth: depthInput.value
+        };
+
+        saveBtn.innerText = "Registrando Salida...";
+        saveBtn.disabled = true;
+
+        fetch(urlGoogleScript, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+        })
+        .then(() => {
+            const statusArea = document.getElementById('status-area');
+            statusArea.style.display = 'block';
+            statusArea.style.backgroundColor = "#d4edda";
+            statusArea.style.color = "#155724";
+            statusArea.innerHTML = `¡Tarima <strong>${datos.folio}</strong> despachada a Producción!`;
+            
+            // Recargar para que desaparezca del mapa
+            cargarInventario(); 
+
+            saveBtn.innerText = "Confirmar Salida a Producción";
+        })
+        .catch(error => {
+            const statusArea = document.getElementById('status-area');
+            statusArea.style.display = 'block';
+            statusArea.style.backgroundColor = "#f8d7da";
+            statusArea.style.color = "#721c24";
+            statusArea.innerHTML = `Error al registrar la salida. Revisa tu conexión.`;
+            saveBtn.innerText = "Confirmar Salida a Producción";
+            saveBtn.disabled = false;
+        });
+    });
+</script>
+</body>
+</html>
