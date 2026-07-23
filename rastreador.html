@@ -59,7 +59,7 @@
 
     <div class="panel">
         <h3 style="margin-top:0; color:var(--rack-green);">🗺️ Vista General por Cuarto</h3>
-        <p style="font-size: 13px; color: #666; margin-top: -10px;">Selecciona un cuarto para visualizar todos sus andenes simultáneamente.</p>
+        <p style="font-size: 13px; color: #666; margin-top: -10px;">Selecciona un cuarto para visualizar todos sus carriles simultáneamente.</p>
         
         <div class="controls">
             <select id="cuartoFrio">
@@ -72,7 +72,6 @@
             </select>
         </div>
         
-        <!-- Aquí se inyectarán las 5 tablas dinámicamente -->
         <div id="racksContainer" class="racks-container"></div>
         
     </div>
@@ -132,13 +131,13 @@
     function actualizarMapaGeneral() {
         const c = document.getElementById('cuartoFrio').value; 
         const container = document.getElementById('racksContainer');
-        container.innerHTML = ""; // Limpia lo anterior
+        container.innerHTML = ""; 
         
         if (!c) return;
         
-        const espacios = ["Espacio 1", "Espacio 2", "Espacio 3", "Espacio 4", "Espacio 5"];
+        // ¡El cambio principal está aquí! Cambiamos "Espacio" por "Carril"
+        const espacios = ["Carril 1", "Carril 2", "Carril 3", "Carril 4", "Carril 5"];
         
-        // 1. Dibuja las 5 tablas vacías primero
         espacios.forEach(e => {
             let idTabla = 'tabla-' + e.replace(' ', '');
             let htmlTabla = `
@@ -159,10 +158,8 @@
             container.innerHTML += htmlTabla;
         });
 
-        // 2. Busca las tarimas y las inyecta en la tabla que le corresponda
         inventarioGlobal.forEach(item => {
             if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion) {
-                // Separa "Espacio 1" de "Nivel 1, Pos 1"
                 let partes = item.ubicacion.split(" - ");
                 if (partes.length === 2) {
                     let nombreEspacio = partes[0];
