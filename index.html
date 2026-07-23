@@ -13,9 +13,17 @@
         .nav-btn { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s ease; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
         h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        
         .form-group { margin-bottom: 15px; } .form-row { display: flex; gap: 10px; } .form-group.third { flex: 1; margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 14px;}
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+        
+        /* Estilos de la Botonera de Productos */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .product-btn { background-color: #f8f9fa; border: 2px solid #ddd; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #555; transition: 0.2s; }
+        .product-btn:hover { border-color: var(--primary); }
+        .product-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(31, 78, 120, 0.3); }
+
         .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
         .submit-btn:hover:not(:disabled) { background-color: #153a5c; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
         
@@ -23,23 +31,15 @@
         #barcode { max-width: 100%; height: auto; margin-bottom: 15px; }
         
         .action-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-        .download-btn { background-color: var(--success); color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
-        .print-btn { background-color: var(--info); color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
-        .download-btn:hover { background-color: #218838; } .print-btn:hover { background-color: #138496; }
-        .loading-text { font-size: 12px; color: var(--primary); margin-top: 5px; display: block; font-style: italic;}
+        .download-btn, .print-btn { color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .download-btn { background-color: var(--success); } .download-btn:hover { background-color: #218838; }
+        .print-btn { background-color: var(--info); } .print-btn:hover { background-color: #138496; }
 
-        /* MAGIA DE IMPRESIÓN: Esto solo se activa cuando se manda a imprimir */
         @media print {
-            body * { visibility: hidden; } /* Esconde todo */
-            #barcode, #barcode * { visibility: visible; } /* Muestra solo el código de barras */
-            #barcode { 
-                position: absolute; 
-                left: 0; 
-                top: 0; 
-                width: 100%; /* Se adapta al ancho de tu etiqueta térmica */
-                max-width: 100mm; /* Ancho estándar de etiqueta térmica */
-            }
-            @page { margin: 0; } /* Quita los márgenes blancos que pone Chrome por defecto */
+            body * { visibility: hidden; } 
+            #barcode, #barcode * { visibility: visible; } 
+            #barcode { position: absolute; left: 0; top: 0; width: 100%; max-width: 100mm; }
+            @page { margin: 0; } 
         }
     </style>
 </head>
@@ -57,13 +57,24 @@
     
     <h2>Registro de Entrada</h2>
     <form id="registroForm">
-        <div class="form-group"><label>Nombre del Producto</label><input type="text" id="producto" required placeholder="Ej. Tomatillo"></div>
+        
+        <!-- BOTONERA DE PRODUCTOS -->
+        <label>Selecciona el Producto</label>
+        <div class="product-grid" id="productGrid">
+            <button type="button" class="product-btn" data-val="Serrano">Serrano</button>
+            <button type="button" class="product-btn" data-val="Jalapeño">Jalapeño</button>
+            <button type="button" class="product-btn" data-val="Poblano">Poblano</button>
+            <button type="button" class="product-btn" data-val="Tomatillo C/H">Tomatillo C/H</button>
+            <button type="button" class="product-btn" data-val="Tomatillo S/H">Tomatillo S/H</button>
+            <button type="button" class="product-btn" data-val="Shishito">Shishito</button>
+            <button type="button" class="product-btn" data-val="Anaheim">Anaheim</button>
+        </div>
+        <input type="hidden" id="producto" required>
         
         <div class="form-row">
             <div class="form-group third">
-                <label>Folio (Números)</label>
+                <label>Folio Master</label>
                 <input type="number" id="folio" required placeholder="Ej. 7084">
-                <span id="folio-hint" class="loading-text">Buscando consecutivo...</span>
             </div>
             
             <div class="form-group third">
@@ -76,7 +87,7 @@
 
             <div class="form-group third">
                 <label>Tarima #</label>
-                <input type="number" id="numeroTarima" min="1" placeholder="Opcional">
+                <input type="number" id="numeroTarima" min="1" placeholder="Ej. 1">
             </div>
         </div>
 
@@ -104,7 +115,6 @@
     <div id="barcode-container">
         <h3 style="margin-top: 0;">Etiqueta Generada</h3>
         <img id="barcode" /><br>
-        
         <div class="action-buttons">
             <button id="printBtn" class="print-btn" type="button">🖨️ Imprimir Directo</button>
             <button id="downloadBtn" class="download-btn" type="button">⬇️ Descargar (PNG)</button>
@@ -115,35 +125,27 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
 
-    window.onload = function() { 
-        document.getElementById('fecha').valueAsDate = new Date(); 
-        
-        fetch(urlGoogleScript + "?t=" + new Date().getTime())
-        .then(res => res.json())
-        .then(data => {
-            let maxFolio = 0;
-            data.forEach(item => {
-                let match = String(item.folio).match(/^(\d+)/);
-                if(match) {
-                    let num = parseInt(match[1]);
-                    if(num > maxFolio) maxFolio = num;
-                }
-            });
-            if(maxFolio > 0) {
-                document.getElementById('folio').value = maxFolio + 1; 
-                document.getElementById('folio-hint').innerText = `Último registrado: ${maxFolio}`;
-                document.getElementById('folio-hint').style.color = "green";
-            } else {
-                document.getElementById('folio-hint').innerText = "Primer registro o base vacía.";
-            }
-        }).catch(err => {
-            document.getElementById('folio-hint').innerText = "Conexión lenta. Ingresa manual.";
-            document.getElementById('folio-hint').style.color = "red";
+    window.onload = function() { document.getElementById('fecha').valueAsDate = new Date(); };
+
+    // Lógica para que los botones de producto funcionen como selectores
+    document.querySelectorAll('.product-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.product-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('producto').value = this.getAttribute('data-val');
         });
-    };
+    });
 
     document.getElementById('registroForm').addEventListener('submit', function(event) {
         event.preventDefault(); 
+        
+        // Validar que se haya seleccionado un producto de la botonera
+        const productoBase = document.getElementById('producto').value;
+        if(!productoBase) {
+            alert("Por favor, selecciona un producto tocando uno de los botones.");
+            return;
+        }
+
         const submitBtn = document.querySelector('.submit-btn');
         submitBtn.innerText = "Registrando..."; submitBtn.disabled = true;
 
@@ -152,9 +154,12 @@
         const numTarima = document.getElementById('numeroTarima').value.trim();
         
         const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
+        
+        // Aquí se le agrega "Original" automáticamente
+        const productoFinal = `${productoBase} Original`; 
 
         const datos = {
-            producto: document.getElementById('producto').value, folio: folioFinal,
+            producto: productoFinal, folio: folioFinal,
             pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: document.getElementById('pesoNeto').value,
             fecha: document.getElementById('fecha').value, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value 
         };
@@ -165,17 +170,29 @@
             document.getElementById('barcode-container').style.display = 'block';
             submitBtn.innerText = "Registrar y Generar Etiqueta"; submitBtn.disabled = false;
             
-            document.getElementById('folio').value = parseInt(folioBase) + 1;
-            document.getElementById('numeroTarima').value = ""; 
-            document.getElementById('folio-hint').innerText = `Folio anterior ${folioFinal} guardado.`;
+            // LA MAGIA DE LA MEMORIA: Solo vaciamos los pesos. Todo lo demás se queda congelado.
+            document.getElementById('pesoBruto').value = "";
+            document.getElementById('pesoNeto').value = "";
+            
+            // Auto-incrementar el número de tarima si hay uno
+            if(numTarima !== "") {
+                document.getElementById('numeroTarima').value = parseInt(numTarima) + 1;
+            }
+            
+            // Enfocar el input del peso bruto para que el operador no tenga que usar el mouse
+            document.getElementById('pesoBruto').focus();
+            
         }).catch(() => { alert("Error al guardar."); submitBtn.disabled = false; });
     });
 
-    // Botón de descargar PNG
     document.getElementById('downloadBtn').addEventListener('click', function() {
-        const folioBase = document.getElementById('folio').value.trim() - 1; 
+        const folioBase = document.getElementById('folio').value.trim(); 
         const certificado = document.getElementById('certificado').value;
-        const numTarima = document.getElementById('numeroTarima').value.trim();
+        
+        // Si el script ya auto-incrementó la tarima, debemos restarle 1 para que el archivo lleve el nombre de la etiqueta que acabamos de generar
+        let numTarima = document.getElementById('numeroTarima').value.trim();
+        if(numTarima !== "") { numTarima = parseInt(numTarima) - 1; }
+        
         const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
         
         const link = document.createElement('a');
@@ -183,7 +200,6 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     });
 
-    // NUEVO: Botón de Imprimir Directo
     document.getElementById('printBtn').addEventListener('click', function() {
         window.print();
     });
