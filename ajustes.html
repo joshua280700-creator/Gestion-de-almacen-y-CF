@@ -61,7 +61,14 @@
             <h3 style="margin-top:0; color:var(--rack-green);">2. Nueva Ubicación</h3>
 
             <select id="cuartoFrio" required><option value="" disabled selected>Selecciona Cuarto...</option><option value="Cuarto 1">Cuarto 1</option><option value="Cuarto 2">Cuarto 2</option><option value="Cuarto 3">Cuarto 3</option><option value="Cuarto 4">Cuarto 4</option><option value="Cuarto 5">Cuarto 5</option></select>
-            <select id="espacioRack" required><option value="" disabled selected>Selecciona Espacio...</option><option value="Espacio 1">Espacio 1</option><option value="Espacio 2">Espacio 2</option><option value="Espacio 3">Espacio 3</option><option value="Espacio 4">Espacio 4</option><option value="Espacio 5">Espacio 5</option></select>
+            <select id="espacioRack" required>
+                <option value="" disabled selected>Selecciona Carril...</option>
+                <option value="Carril 1">Carril 1</option>
+                <option value="Carril 2">Carril 2</option>
+                <option value="Carril 3">Carril 3</option>
+                <option value="Carril 4">Carril 4</option>
+                <option value="Carril 5">Carril 5</option>
+            </select>
             
             <input type="hidden" id="levelSelected"><input type="hidden" id="depthSelected">
             <button type="submit" id="saveBtn" class="submit-btn" disabled>Actualizar y Guardar en Rack</button>
@@ -70,7 +77,7 @@
     </div>
 
     <div class="rack-map-section">
-        <h3 style="margin-top:0;">Mapa de Rack (Selecciona un espacio vacío)</h3>
+        <h3 style="margin-top:0;">Mapa de Rack (Selecciona una posición)</h3>
         <table class="rack-table" id="rackTable">
             <thead><tr><th>Folio</th><th>Producto</th><th>Peso neto</th><th>Caja</th><th>Tarima</th></tr></thead>
             <tbody>
@@ -117,7 +124,6 @@
         });
     }
 
-    // Autocompleta los pesos para ayudar al operador
     function buscarPesosAnteriores() {
         const folio = document.getElementById('folioDisplay').value.trim().toUpperCase();
         const tarima = inventarioGlobal.find(i => String(i.folio).toUpperCase() === folio);
@@ -164,7 +170,6 @@
     });
 
     function checkForm() {
-        // Blindaje extra: Peso Bruto debe ser mayor al Neto
         let pBruto = parseFloat(document.getElementById('nuevoPesoBruto').value);
         let pNeto = parseFloat(document.getElementById('nuevoPesoNeto').value);
         let pesosLogicos = (pBruto > 0 && pNeto > 0 && pBruto >= pNeto);
@@ -192,7 +197,7 @@
             depth: document.getElementById('depthSelected').value
         })}).then(() => {
             document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Pesos y Ubicación Actualizados!</span>";
-            setTimeout(() => { location.reload(); }, 1500); // Recarga para actualizar el mapa
+            setTimeout(() => { location.reload(); }, 1500);
         });
     });
 </script>
