@@ -18,7 +18,7 @@
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 14px;}
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
         
-        /* Estilos de la Botonera de Productos */
+        /* Botonera de Productos */
         .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .product-btn { background-color: #f8f9fa; border: 2px solid #ddd; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #555; transition: 0.2s; }
         .product-btn:hover { border-color: var(--primary); }
@@ -27,18 +27,33 @@
         .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
         .submit-btn:hover:not(:disabled) { background-color: #153a5c; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
         
-        #barcode-container { margin-top: 25px; text-align: center; padding: 20px; background-color: #fafafa; border-radius: 8px; border: 1px dashed #ccc; display: none; }
-        #barcode { max-width: 100%; height: auto; margin-bottom: 15px; }
+        #barcode-container { margin-top: 25px; display: none; }
+        
+        /* === DISEÑO DE LA ETIQUETA INDUSTRIAL === */
+        .print-label { background: white; padding: 20px; border: 2px dashed #ccc; border-radius: 8px; max-width: 400px; margin: 0 auto 20px auto; text-align: center; color: black; }
+        .label-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 10px; text-transform: uppercase;}
+        .label-peso { font-size: 26px; font-weight: 900; margin-bottom: 15px; }
+        .label-caja { font-size: 14px; font-weight: bold; border-top: 2px solid #000; padding-top: 8px; margin-top: 5px; text-transform: uppercase;}
+        #barcode { max-width: 100%; height: auto; }
         
         .action-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .download-btn, .print-btn { color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
         .download-btn { background-color: var(--success); } .download-btn:hover { background-color: #218838; }
         .print-btn { background-color: var(--info); } .print-btn:hover { background-color: #138496; }
 
+        /* MAGIA DE IMPRESIÓN MEJORADA */
         @media print {
             body * { visibility: hidden; } 
-            #barcode, #barcode * { visibility: visible; } 
-            #barcode { position: absolute; left: 0; top: 0; width: 100%; max-width: 100mm; }
+            .print-label, .print-label * { visibility: visible; } 
+            .print-label { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                max-width: 100mm; /* Adaptado a etiquetadora térmica */
+                border: none; /* Quitamos borde punteado al imprimir */
+                padding: 0;
+            }
             @page { margin: 0; } 
         }
     </style>
@@ -58,7 +73,6 @@
     <h2>Registro de Entrada</h2>
     <form id="registroForm">
         
-        <!-- BOTONERA DE PRODUCTOS -->
         <label>Selecciona el Producto</label>
         <div class="product-grid" id="productGrid">
             <button type="button" class="product-btn" data-val="Serrano">Serrano</button>
@@ -113,11 +127,26 @@
     </form>
 
     <div id="barcode-container">
-        <h3 style="margin-top: 0;">Etiqueta Generada</h3>
-        <img id="barcode" /><br>
+        <!-- ETIQUETA INDUSTRIAL COMPLETA -->
+        <div class="print-label" id="printLabelArea">
+            <div class="label-header">
+                <span id="lbl-producto">PRODUCTO</span>
+                <span id="lbl-fecha">FECHA</span>
+            </div>
+            <div class="label-peso">
+                P. NETO: <span id="lbl-peso">0.00</span> kg
+            </div>
+            <!-- Mejoramos calidad del código de barras -->
+            <img id="barcode" />
+            
+            <div class="label-caja">
+                Caja: <span id="lbl-caja"></span> | Tarima: <span id="lbl-tarima"></span>
+            </div>
+        </div>
+
         <div class="action-buttons">
-            <button id="printBtn" class="print-btn" type="button">🖨️ Imprimir Directo</button>
-            <button id="downloadBtn" class="download-btn" type="button">⬇️ Descargar (PNG)</button>
+            <button id="printBtn" class="print-btn" type="button">🖨️ Imprimir Etiqueta</button>
+            <button id="downloadBtn" class="download-btn" type="button" style="display:none;">⬇️ Descargar</button>
         </div>
     </div>
 </div>
@@ -127,7 +156,6 @@
 
     window.onload = function() { document.getElementById('fecha').valueAsDate = new Date(); };
 
-    // Lógica para que los botones de producto funcionen como selectores
     document.querySelectorAll('.product-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.product-btn').forEach(b => b.classList.remove('active'));
@@ -139,7 +167,6 @@
     document.getElementById('registroForm').addEventListener('submit', function(event) {
         event.preventDefault(); 
         
-        // Validar que se haya seleccionado un producto de la botonera
         const productoBase = document.getElementById('producto').value;
         if(!productoBase) {
             alert("Por favor, selecciona un producto tocando uno de los botones.");
@@ -154,50 +181,55 @@
         const numTarima = document.getElementById('numeroTarima').value.trim();
         
         const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
-        
-        // Aquí se le agrega "Original" automáticamente
         const productoFinal = `${productoBase} Original`; 
+        
+        const pesoNetoData = document.getElementById('pesoNeto').value;
+        const fechaData = document.getElementById('fecha').value;
+        const cajaData = document.getElementById('tipoCaja').value;
+        const tarimaData = document.getElementById('tipoTarima').value;
 
         const datos = {
             producto: productoFinal, folio: folioFinal,
-            pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: document.getElementById('pesoNeto').value,
-            fecha: document.getElementById('fecha').value, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value 
+            pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: pesoNetoData,
+            fecha: fechaData, tipoCaja: cajaData, tarima: tarimaData 
         };
 
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) })
         .then(() => {
-            JsBarcode("#barcode", datos.folio, { format: "CODE128", width: 3, height: 100, displayValue: true, fontSize: 24 });
+            
+            // LLENAMOS LOS DATOS VISUALES DE LA ETIQUETA
+            document.getElementById('lbl-producto').innerText = productoFinal;
+            document.getElementById('lbl-fecha').innerText = fechaData;
+            document.getElementById('lbl-peso').innerText = pesoNetoData;
+            document.getElementById('lbl-caja').innerText = cajaData;
+            document.getElementById('lbl-tarima').innerText = tarimaData;
+
+            // MEJORA DE CALIDAD EN EL CÓDIGO DE BARRAS
+            // Aumentamos width de 3 a 4, height de 100 a 120, y margin a 15 para la zona de silencio.
+            JsBarcode("#barcode", datos.folio, { 
+                format: "CODE128", 
+                width: 4, 
+                height: 120, 
+                displayValue: true, 
+                fontSize: 30, 
+                fontOptions: "bold",
+                margin: 15,
+                background: "#ffffff",
+                lineColor: "#000000"
+            });
+            
             document.getElementById('barcode-container').style.display = 'block';
             submitBtn.innerText = "Registrar y Generar Etiqueta"; submitBtn.disabled = false;
             
-            // LA MAGIA DE LA MEMORIA: Solo vaciamos los pesos. Todo lo demás se queda congelado.
+            // Congelamos todo y limpiamos pesos
             document.getElementById('pesoBruto').value = "";
             document.getElementById('pesoNeto').value = "";
-            
-            // Auto-incrementar el número de tarima si hay uno
             if(numTarima !== "") {
                 document.getElementById('numeroTarima').value = parseInt(numTarima) + 1;
             }
-            
-            // Enfocar el input del peso bruto para que el operador no tenga que usar el mouse
             document.getElementById('pesoBruto').focus();
             
         }).catch(() => { alert("Error al guardar."); submitBtn.disabled = false; });
-    });
-
-    document.getElementById('downloadBtn').addEventListener('click', function() {
-        const folioBase = document.getElementById('folio').value.trim(); 
-        const certificado = document.getElementById('certificado').value;
-        
-        // Si el script ya auto-incrementó la tarima, debemos restarle 1 para que el archivo lleve el nombre de la etiqueta que acabamos de generar
-        let numTarima = document.getElementById('numeroTarima').value.trim();
-        if(numTarima !== "") { numTarima = parseInt(numTarima) - 1; }
-        
-        const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
-        
-        const link = document.createElement('a');
-        link.download = `Etiqueta_${folioFinal}.png`; link.href = document.getElementById('barcode').src;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
     });
 
     document.getElementById('printBtn').addEventListener('click', function() {
