@@ -69,14 +69,14 @@
             </div>
             
             <div class="form-group">
-                <label>2. Espacio/Andén</label>
+                <label>2. Carril</label>
                 <select id="espacioRack" required>
-                    <option value="" disabled selected>Selecciona...</option>
-                    <option value="Espacio 1">Espacio 1</option>
-                    <option value="Espacio 2">Espacio 2</option>
-                    <option value="Espacio 3">Espacio 3</option>
-                    <option value="Espacio 4">Espacio 4</option>
-                    <option value="Espacio 5">Espacio 5</option>
+                    <option value="" disabled selected>Selecciona Carril...</option>
+                    <option value="Carril 1">Carril 1</option>
+                    <option value="Carril 2">Carril 2</option>
+                    <option value="Carril 3">Carril 3</option>
+                    <option value="Carril 4">Carril 4</option>
+                    <option value="Carril 5">Carril 5</option>
                 </select>
             </div>
             
@@ -117,7 +117,6 @@
 <div id="status-area"></div>
 
 <script>
-    // ¡Tu nuevo enlace de Google Apps Script integrado aquí!
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
     let inventarioGlobal = [];
 
@@ -144,7 +143,6 @@
         const c = document.getElementById('cuartoFrio').value; 
         const e = document.getElementById('espacioRack').value;
         
-        // Limpiamos la tabla primero
         document.querySelectorAll('.rack-row').forEach(row => {
             row.className = 'rack-row empty'; 
             const tds = row.querySelectorAll('td'); 
@@ -153,7 +151,6 @@
         
         if (!c || !e) return;
         
-        // Buscamos lo que ya está "Almacenado" en ese andén y lo dibujamos
         inventarioGlobal.forEach(item => {
             if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
                 const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
@@ -179,7 +176,6 @@
 
     document.getElementById('rackTable').addEventListener('click', function(e) {
         const row = e.target.closest('.rack-row');
-        // Prevenir que se seleccione una celda que ya está llena
         if (!row || row.classList.contains('filled')) return;
         
         document.querySelectorAll('.rack-row').forEach(r => r.classList.remove('selected'));
@@ -202,7 +198,6 @@
         }
     }
 
-    // Inicialización del escáner de cámara
     const html5QrCode = new Html5Qrcode("reader");
     function iniciarCamara() {
         Html5Qrcode.getCameras().then(devices => {
@@ -223,7 +218,6 @@
         });
     }
 
-    // Envío del formulario a la base de datos
     document.getElementById('almacenForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -247,10 +241,7 @@
             body: JSON.stringify(datos)
         }).then(() => {
             document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Ubicación asignada correctamente!</span>";
-            
-            // Recargamos el inventario para que el mapa se actualice y bloquee la celda que acabamos de llenar
             cargarInventario(); 
-            
             document.getElementById('almacenForm').reset(); 
             document.getElementById('levelSelected').value = "";
             document.getElementById('depthSelected').value = "";
