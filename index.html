@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS - Recepción</title>
-    <!-- Librería para el Código de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
-    <!-- NUEVO: Librería para descargar la etiqueta completa como imagen -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --info: #17a2b8; --danger: #dc3545; --warning: #ffc107; }
@@ -33,9 +31,11 @@
         .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
         .submit-btn:hover:not(:disabled) { background-color: #153a5c; }
         
+        .reprint-btn { background-color: var(--warning); color: #333; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
+        .reprint-btn:hover { background-color: #e0a800; }
+
         #barcode-container { margin-top: 25px; display: none; }
         
-        /* === DISEÑO DE ETIQUETA A MEDIDA EXACTA (10.20cm x 5.01cm) === */
         .print-label { 
             background: white; border: 2px dashed #ccc; border-radius: 8px; 
             width: 10.20cm; height: 5.01cm; 
@@ -53,11 +53,7 @@
         @media print {
             body * { visibility: hidden; } 
             .print-label, .print-label * { visibility: visible; } 
-            .print-label { 
-                position: absolute; left: 0; top: 0; 
-                width: 10.20cm; height: 5.01cm; 
-                border: none; padding: 2mm; 
-            }
+            .print-label { position: absolute; left: 0; top: 0; width: 10.20cm; height: 5.01cm; border: none; padding: 2mm; }
             @page { size: 10.20cm 5.01cm; margin: 0; } 
         }
     </style>
@@ -95,73 +91,44 @@
         <input type="hidden" id="producto" required>
         
         <div class="form-row">
-            <div class="form-group third">
-                <label>Folio Master</label>
-                <input type="number" id="folio" required placeholder="Ej. 7084">
-            </div>
-            
-            <div class="form-group third">
-                <label>Certificación</label>
-                <select id="certificado" required>
-                    <option value="C" selected>C - Certificado</option>
-                    <option value="N">N - No Certificado</option>
-                </select>
-            </div>
-
-            <div class="form-group third">
-                <label>Tarima #</label>
-                <input type="number" id="numeroTarima" min="1" placeholder="Ej. 1">
-            </div>
+            <div class="form-group third"><label>Folio Master</label><input type="number" id="folio" required placeholder="Ej. 7084"></div>
+            <div class="form-group third"><label>Certificación</label><select id="certificado" required><option value="C" selected>C - Certificado</option><option value="N">N - No Certificado</option></select></div>
+            <div class="form-group third"><label>Tarima #</label><input type="number" id="numeroTarima" min="1" placeholder="Ej. 1"></div>
         </div>
 
         <div class="form-row">
-            <div class="form-group third"><label>Peso Bruto (kg)</label><input type="number" id="pesoBruto" step="0.01" required></div>
-            <div class="form-group third"><label>Peso Neto (kg)</label><input type="number" id="pesoNeto" step="0.01" required></div>
+            <div class="form-group third"><label>Peso Bruto (kg)</label><input type="number" id="pesoBruto" step="0.01"></div>
+            <div class="form-group third"><label>Peso Neto (kg)</label><input type="number" id="pesoNeto" step="0.01"></div>
             <div class="form-group third"><label>Fecha</label><input type="date" id="fecha" required></div>
         </div>
 
         <div class="form-row">
-            <div class="form-group third">
-                <label>Tipo de caja</label><input type="text" id="tipoCaja" list="tipoCajaList" required>
-                <datalist id="tipoCajaList"><option value="Morelia"><option value="Naylea"><option value="Arpilla"><option value="Madera"><option value="Cartón"></datalist>
-            </div>
+            <div class="form-group third"><label>Tipo de caja</label><input type="text" id="tipoCaja" list="tipoCajaList"><datalist id="tipoCajaList"><option value="Morelia"><option value="Naylea"><option value="Arpilla"><option value="Madera"><option value="Cartón"></datalist></div>
             <div class="form-group third">
                 <label>Tipo de Tarima</label>
-                <select id="tipoTarima" required>
-                    <option value="" disabled selected>Selecciona...</option>
-                    <option value="Tarima azul">Tarima azul</option>
-                    <option value="Tarima 2da">Tarima 2da</option>
-                </select>
+                <select id="tipoTarima"><option value="" disabled selected>Selecciona...</option><option value="Tarima azul">Tarima azul</option><option value="Tarima 2da">Tarima 2da</option></select>
             </div>
         </div>
-        <button type="submit" class="submit-btn" id="btnGuardar">Registrar y Generar Etiqueta</button>
+        
+        <button type="submit" class="submit-btn" id="btnGuardar">1️⃣ Registrar y Generar Etiqueta</button>
+        <button type="button" class="reprint-btn" id="btnReimprimir">2️⃣ 🔄 Reimprimir Etiqueta (Sin guardar)</button>
     </form>
 
     <div id="barcode-container">
-        <!-- ETIQUETA INDUSTRIAL LIMPIA -->
         <div class="print-label" id="printLabelArea">
-            <div class="label-header">
-                <span id="lbl-producto">PRODUCTO</span>
-                <span id="lbl-fecha">FECHA</span>
-            </div>
+            <div class="label-header"><span id="lbl-producto">PRODUCTO</span><span id="lbl-fecha">FECHA</span></div>
             <img id="barcode" />
         </div>
-
         <div class="action-buttons">
             <button id="printBtn" class="print-btn" type="button">🖨️ Imprimir Etiqueta</button>
-            <!-- BOTÓN DE DESCARGAR RESTAURADO -->
             <button id="downloadBtn" class="download-btn" type="button">⬇️ Descargar PNG</button>
         </div>
     </div>
 </div>
 
 <script>
-    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
-    
-    // === SISTEMA DE ALMACENAMIENTO OFFLINE ===
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwHM9dAeRsDsr4nMhlTWqTKPjse90wgcVu0wj81ogE-6EsrcTiXlDv-ldZY-kPUp5gFrQ/exec";
     let buzonsalida = JSON.parse(localStorage.getItem('wms_recepcion_offline')) || [];
-    
-    // Variable para recordar el folio exacto de la última etiqueta generada
     let ultimoFolioGenerado = "";
 
     window.onload = function() { 
@@ -174,45 +141,30 @@
         if (buzonsalida.length > 0) {
             banner.style.display = 'flex';
             document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} tarimas en espera`;
-        } else {
-            banner.style.display = 'none';
-        }
+        } else { banner.style.display = 'none'; }
     }
 
-    // El vigilante: detecta automáticamente cuando regresa el internet
     window.addEventListener('online', sincronizarDatos);
 
     async function sincronizarDatos() {
         if (buzonsalida.length === 0) return;
-        if (!navigator.onLine) {
-            alert("Aún no tienes conexión a internet estable.");
-            return;
-        }
+        if (!navigator.onLine) { alert("Aún no tienes conexión a internet estable."); return; }
 
         document.getElementById('offlineText').innerText = "🔄 Sincronizando datos...";
         let pendientes = [];
 
         for (let i = 0; i < buzonsalida.length; i++) {
             try {
-                await fetch(urlGoogleScript, { 
-                    method: 'POST', mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(buzonsalida[i]) 
-                });
-            } catch (error) {
-                pendientes.push(buzonsalida[i]);
-            }
+                await fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buzonsalida[i]) });
+            } catch (error) { pendientes.push(buzonsalida[i]); }
         }
 
         buzonsalida = pendientes; 
         localStorage.setItem('wms_recepcion_offline', JSON.stringify(buzonsalida));
         actualizarInterfazOffline();
 
-        if (buzonsalida.length === 0) {
-            alert("¡Todas las tarimas pendientes fueron sincronizadas con éxito!");
-        }
+        if (buzonsalida.length === 0) { alert("¡Todas las tarimas pendientes fueron sincronizadas con éxito!"); }
     }
-    // ==========================================
 
     document.querySelectorAll('.product-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -222,69 +174,85 @@
         });
     });
 
+    function generarEtiquetaVisual(folioCalculado, productoCalculado, fechaCalculada) {
+        ultimoFolioGenerado = folioCalculado;
+        document.getElementById('lbl-producto').innerText = productoCalculado;
+        document.getElementById('lbl-fecha').innerText = fechaCalculada;
+        JsBarcode("#barcode", folioCalculado, { format: "CODE128", width: 3, height: 90, displayValue: true, fontSize: 26, fontOptions: "bold", margin: 10, background: "#ffffff", lineColor: "#000000" });
+        document.getElementById('barcode-container').style.display = 'block';
+    }
+
     document.getElementById('registroForm').addEventListener('submit', function(event) {
         event.preventDefault(); 
         
         const productoBase = document.getElementById('producto').value;
         if(!productoBase) { alert("Por favor, selecciona un producto."); return; }
 
+        // === CANDADO LÓGICO DE PESOS ===
+        const pBruto = parseFloat(document.getElementById('pesoBruto').value);
+        const pNeto = parseFloat(document.getElementById('pesoNeto').value);
+        
+        if(!pBruto || !pNeto) { 
+            alert("⚠️ Error: Necesitas ingresar los pesos para registrar."); 
+            return; 
+        }
+        
+        if(pNeto > pBruto) {
+            alert("⚠️ Error: El Peso Neto no puede ser mayor que el Peso Bruto. Por favor, verifica la báscula.");
+            return;
+        }
+        // ================================
+
         const folioBase = document.getElementById('folio').value.trim();
         const certificado = document.getElementById('certificado').value;
         const numTarima = document.getElementById('numeroTarima').value.trim();
         const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
         const productoFinal = `${productoBase} Original`; 
-        
         const fechaData = document.getElementById('fecha').value;
-
+        
         const datos = {
             producto: productoFinal, folio: folioFinal,
-            pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: document.getElementById('pesoNeto').value,
+            pesoBruto: pBruto, pesoNeto: pNeto,
             fecha: fechaData, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value 
         };
-        
-        // Guardamos el folio para el nombre del archivo al descargar
-        ultimoFolioGenerado = folioFinal;
 
-        // 1. GENERAMOS ETIQUETA INMEDIATAMENTE
-        document.getElementById('lbl-producto').innerText = productoFinal;
-        document.getElementById('lbl-fecha').innerText = fechaData;
-
-        JsBarcode("#barcode", datos.folio, { 
-            format: "CODE128", width: 3, height: 90, 
-            displayValue: true, fontSize: 26, fontOptions: "bold",
-            margin: 10, background: "#ffffff", lineColor: "#000000"
-        });
+        generarEtiquetaVisual(folioFinal, productoFinal, fechaData);
         
-        document.getElementById('barcode-container').style.display = 'block';
-        
-        // 2. CONGELAMOS VARIABLES Y LIMPIAMOS PESOS AL INSTANTE
         document.getElementById('pesoBruto').value = "";
         document.getElementById('pesoNeto').value = "";
         if(numTarima !== "") { document.getElementById('numeroTarima').value = parseInt(numTarima) + 1; }
         document.getElementById('pesoBruto').focus();
 
-        // 3. INTENTAMOS GUARDAR EN SEGUNDO PLANO
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) })
-        .then(() => {
-            // Guardado exitoso
-        }).catch(() => {
-            // Modo Offline
+        .then(() => { }).catch(() => {
             buzonsalida.push(datos);
             localStorage.setItem('wms_recepcion_offline', JSON.stringify(buzonsalida));
             actualizarInterfazOffline();
         });
     });
 
-    document.getElementById('printBtn').addEventListener('click', function() {
-        window.print();
+    document.getElementById('btnReimprimir').addEventListener('click', function() {
+        const productoBase = document.getElementById('producto').value;
+        if(!productoBase) { alert("Selecciona un producto para generar la etiqueta."); return; }
+        const folioBase = document.getElementById('folio').value.trim();
+        if(!folioBase) { alert("Ingresa el número de folio maestro."); return; }
+        
+        const certificado = document.getElementById('certificado').value;
+        const numTarima = document.getElementById('numeroTarima').value.trim();
+        const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
+        const productoFinal = `${productoBase} Original`; 
+        const fechaData = document.getElementById('fecha').value;
+
+        generarEtiquetaVisual(folioFinal, productoFinal, fechaData);
+        alert(`Etiqueta ${folioFinal} generada en pantalla lista para reimpresión.`);
     });
 
-    // LÓGICA DEL BOTÓN DE DESCARGA RESTAURADA
+    document.getElementById('printBtn').addEventListener('click', function() { window.print(); });
+
     document.getElementById('downloadBtn').addEventListener('click', function() {
-        // html2canvas toma una "foto" del div completo de la etiqueta (con el producto y la fecha)
         html2canvas(document.getElementById('printLabelArea'), {scale: 2}).then(function(canvas) {
             const link = document.createElement('a');
-            link.download = `Etiqueta_${ultimoFolioGenerado}.png`; // Nombre del archivo automático
+            link.download = `Etiqueta_${ultimoFolioGenerado}.png`; 
             link.href = canvas.toDataURL("image/png");
             link.click();
         });
