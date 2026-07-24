@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS - Recepción</title>
+    <!-- Librería para el Código de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <!-- NUEVO: Librería para descargar la etiqueta completa como imagen -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --info: #17a2b8; --danger: #dc3545; --warning: #ffc107; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         
-        /* BANNER OFFLINE */
         .offline-banner { width: 100%; max-width: 650px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         
@@ -62,7 +64,6 @@
 </head>
 <body>
 
-<!-- BARRA DE AVISO OFFLINE -->
 <div id="offlineBanner" class="offline-banner">
     <span id="offlineText">⚠️ Sin conexión: 0 tarimas pendientes</span>
     <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
@@ -148,7 +149,8 @@
 
         <div class="action-buttons">
             <button id="printBtn" class="print-btn" type="button">🖨️ Imprimir Etiqueta</button>
-            <button id="downloadBtn" class="download-btn" type="button" style="display:none;">⬇️ Descargar</button>
+            <!-- BOTÓN DE DESCARGAR RESTAURADO -->
+            <button id="downloadBtn" class="download-btn" type="button">⬇️ Descargar PNG</button>
         </div>
     </div>
 </div>
@@ -158,6 +160,9 @@
     
     // === SISTEMA DE ALMACENAMIENTO OFFLINE ===
     let buzonsalida = JSON.parse(localStorage.getItem('wms_recepcion_offline')) || [];
+    
+    // Variable para recordar el folio exacto de la última etiqueta generada
+    let ultimoFolioGenerado = "";
 
     window.onload = function() { 
         document.getElementById('fecha').valueAsDate = new Date(); 
@@ -194,19 +199,16 @@
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify(buzonsalida[i]) 
                 });
-                // Si pasa sin error, se subió a Google Sheets
             } catch (error) {
-                // Si falla, lo devolvemos a la lista de pendientes
                 pendientes.push(buzonsalida[i]);
             }
         }
 
-        buzonsalida = pendientes; // Actualizamos el buzón solo con los que fallaron
+        buzonsalida = pendientes; 
         localStorage.setItem('wms_recepcion_offline', JSON.stringify(buzonsalida));
         actualizarInterfazOffline();
 
         if (buzonsalida.length === 0) {
-            // Un pequeño aviso flotante que desaparece
             alert("¡Todas las tarimas pendientes fueron sincronizadas con éxito!");
         }
     }
@@ -239,8 +241,11 @@
             pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: document.getElementById('pesoNeto').value,
             fecha: fechaData, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value 
         };
+        
+        // Guardamos el folio para el nombre del archivo al descargar
+        ultimoFolioGenerado = folioFinal;
 
-        // 1. GENERAMOS ETIQUETA INMEDIATAMENTE PARA NO FRENAR LA OPERACIÓN
+        // 1. GENERAMOS ETIQUETA INMEDIATAMENTE
         document.getElementById('lbl-producto').innerText = productoFinal;
         document.getElementById('lbl-fecha').innerText = fechaData;
 
@@ -261,9 +266,9 @@
         // 3. INTENTAMOS GUARDAR EN SEGUNDO PLANO
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) })
         .then(() => {
-            // Guardado exitoso, no hacemos nada más.
+            // Guardado exitoso
         }).catch(() => {
-            // Si el internet falló, lo metemos al buzón de salida
+            // Modo Offline
             buzonsalida.push(datos);
             localStorage.setItem('wms_recepcion_offline', JSON.stringify(buzonsalida));
             actualizarInterfazOffline();
@@ -272,6 +277,17 @@
 
     document.getElementById('printBtn').addEventListener('click', function() {
         window.print();
+    });
+
+    // LÓGICA DEL BOTÓN DE DESCARGA RESTAURADA
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        // html2canvas toma una "foto" del div completo de la etiqueta (con el producto y la fecha)
+        html2canvas(document.getElementById('printLabelArea'), {scale: 2}).then(function(canvas) {
+            const link = document.createElement('a');
+            link.download = `Etiqueta_${ultimoFolioGenerado}.png`; // Nombre del archivo automático
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        });
     });
 </script>
 </body>
