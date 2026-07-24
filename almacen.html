@@ -6,9 +6,12 @@
     <title>WMS - Almacenaje</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --rack-green: #548235; }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --rack-green: #548235; --danger: #dc3545; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
+        .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
@@ -36,6 +39,11 @@
     </style>
 </head>
 <body>
+
+<div id="offlineBanner" class="offline-banner">
+    <span id="offlineText">⚠️ Sin conexión: 0 ubicaciones pendientes</span>
+    <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
+</div>
 
 <div class="nav-header">
     <a href="index.html" class="nav-btn">Recepción</a>
@@ -87,7 +95,6 @@
     </div>
 
     <div class="rack-map-section">
-        <!-- El título ahora tiene el ID rackTitle para cambiar dinámicamente -->
         <h2 id="rackTitle" style="color:var(--primary); margin-top:0;">Vista de Rack</h2>
         <p style="font-size:11px; margin-top:-10px; color: #666;">Selecciona una fila vacía para asignar.</p>
         
@@ -120,59 +127,75 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
     let inventarioGlobal = [];
+    let buzonsalida = JSON.parse(localStorage.getItem('wms_almacen_offline')) || [];
 
     window.addEventListener('load', () => { 
         iniciarCamara(); 
         cargarInventario(); 
+        actualizarInterfazOffline();
     });
 
+    function actualizarInterfazOffline() {
+        const banner = document.getElementById('offlineBanner');
+        if (buzonsalida.length > 0) {
+            banner.style.display = 'flex';
+            document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} ubicaciones pendientes`;
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    window.addEventListener('online', sincronizarDatos);
+
+    async function sincronizarDatos() {
+        if (buzonsalida.length === 0) return;
+        if (!navigator.onLine) { alert("Aún no tienes conexión a internet estable."); return; }
+
+        document.getElementById('offlineText').innerText = "🔄 Sincronizando datos...";
+        let pendientes = [];
+
+        for (let i = 0; i < buzonsalida.length; i++) {
+            try {
+                await fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buzonsalida[i]) });
+            } catch (error) {
+                pendientes.push(buzonsalida[i]);
+            }
+        }
+        buzonsalida = pendientes;
+        localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida));
+        actualizarInterfazOffline();
+        if (buzonsalida.length === 0) { cargarInventario(); } // Recarga mapa al terminar
+    }
+
     function cargarInventario() {
-        document.getElementById('status-area').innerHTML = "<span style='color:var(--primary);'>Cargando inventario actual...</span>";
         fetch(urlGoogleScript + "?t=" + new Date().getTime())
-        .then(res => res.json())
-        .then(data => {
+        .then(res => res.json()).then(data => {
             inventarioGlobal = data; 
-            document.getElementById('status-area').innerHTML = ""; 
             actualizarTablaMapa();
-        })
-        .catch(error => {
-            document.getElementById('status-area').innerHTML = "<span style='color:red;'>Error de conexión. Intenta recargar la página.</span>";
-        });
+        }).catch(error => { console.log("Cargando con caché local"); });
     }
 
     function actualizarTablaMapa() {
         const c = document.getElementById('cuartoFrio').value; 
         const e = document.getElementById('espacioRack').value;
         const tituloRack = document.getElementById('rackTitle');
-        
-        // Actualizamos el título dinámicamente
-        if(e) {
-            tituloRack.innerText = "Vista de Rack - " + e;
-        } else {
-            tituloRack.innerText = "Vista de Rack";
-        }
+        if(e) tituloRack.innerText = "Vista de Rack - " + e;
+        else tituloRack.innerText = "Vista de Rack";
         
         document.querySelectorAll('.rack-row').forEach(row => {
             row.className = 'rack-row empty'; 
-            const tds = row.querySelectorAll('td'); 
-            for(let i=0; i<5; i++) tds[i].innerText = "";
+            const tds = row.querySelectorAll('td'); for(let i=0; i<5; i++) tds[i].innerText = "";
         });
         
         if (!c || !e) return;
-        
         inventarioGlobal.forEach(item => {
             if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
                 const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
                 if(match) {
                     const row = document.querySelector(`.rack-row[data-level="${match[1]}"][data-depth="${match[2]}"]`);
                     if(row) {
-                        row.className = 'rack-row filled'; 
-                        const tds = row.querySelectorAll('td');
-                        tds[0].innerText = item.folio; 
-                        tds[1].innerText = item.producto; 
-                        tds[2].innerText = item.pesoNeto + " kg"; 
-                        tds[3].innerText = item.tipoCaja; 
-                        tds[4].innerText = item.tarima;
+                        row.className = 'rack-row filled'; const tds = row.querySelectorAll('td');
+                        tds[0].innerText = item.folio; tds[1].innerText = item.producto; tds[2].innerText = item.pesoNeto + " kg"; tds[3].innerText = item.tipoCaja; tds[4].innerText = item.tarima;
                     }
                 }
             }
@@ -186,53 +209,30 @@
     document.getElementById('rackTable').addEventListener('click', function(e) {
         const row = e.target.closest('.rack-row');
         if (!row || row.classList.contains('filled')) return;
-        
         document.querySelectorAll('.rack-row').forEach(r => r.classList.remove('selected'));
         row.classList.add('selected');
-        
         document.getElementById('levelSelected').value = row.getAttribute('data-level');
         document.getElementById('depthSelected').value = row.getAttribute('data-depth');
         checkForm();
     });
 
     function checkForm() {
-        const folio = document.getElementById('folioDisplay').value.trim();
-        const nivel = document.getElementById('levelSelected').value;
-        const espacio = document.getElementById('espacioRack').value;
-        
-        if(folio && nivel && espacio) {
+        if(document.getElementById('folioDisplay').value.trim() && document.getElementById('levelSelected').value && document.getElementById('espacioRack').value) {
             document.getElementById('saveBtn').disabled = false;
-        } else {
-            document.getElementById('saveBtn').disabled = true;
-        }
+        } else { document.getElementById('saveBtn').disabled = true; }
     }
 
     const html5QrCode = new Html5Qrcode("reader");
     function iniciarCamara() {
         Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) { 
-                html5QrCode.start(
-                    { facingMode: "environment" }, 
-                    { fps: 30, qrbox: { width: 250, height: 100 } }, 
-                    text => {
-                        document.getElementById('folioDisplay').value = text; 
-                        document.getElementById('reader-container').style.display = 'none'; 
-                        html5QrCode.stop(); 
-                        checkForm();
-                    }
-                ); 
-            }
-        }).catch(err => {
-            console.log("Error al iniciar cámara: ", err);
-        });
+            if (devices && devices.length) { html5QrCode.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 250, height: 100 } }, text => {
+                document.getElementById('folioDisplay').value = text; document.getElementById('reader-container').style.display = 'none'; html5QrCode.stop(); checkForm();
+            });}
+        }).catch(err => { console.log(err); });
     }
 
     document.getElementById('almacenForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        const btn = document.getElementById('saveBtn'); 
-        btn.disabled = true; 
-        btn.innerText = "Guardando...";
         
         const datos = {
             action: 'update_location', 
@@ -243,22 +243,30 @@
             depth: document.getElementById('depthSelected').value
         };
 
-        fetch(urlGoogleScript, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            headers: {'Content-Type':'application/json'}, 
-            body: JSON.stringify(datos)
-        }).then(() => {
-            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Ubicación asignada correctamente!</span>";
+        // UI Optimista: Simulamos que se guardó rápido para no trabar al operador
+        document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Procesando ubicación!</span>";
+        
+        // Coloreamos la fila seleccionada temporalmente
+        const filaActiva = document.querySelector('.rack-row.selected');
+        if(filaActiva) {
+            filaActiva.className = 'rack-row filled';
+            const tds = filaActiva.querySelectorAll('td');
+            tds[0].innerText = datos.folio; tds[1].innerText = "Pendiente sync...";
+        }
+
+        document.getElementById('almacenForm').reset(); 
+        document.getElementById('levelSelected').value = ""; document.getElementById('depthSelected').value = "";
+        document.getElementById('saveBtn').disabled = true;
+
+        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+        .then(() => {
+            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Ubicación asignada en servidor!</span>";
             cargarInventario(); 
-            document.getElementById('almacenForm').reset(); 
-            document.getElementById('levelSelected').value = "";
-            document.getElementById('depthSelected').value = "";
-            btn.innerText = "Confirmar Ubicación";
-        }).catch(error => {
-            document.getElementById('status-area').innerHTML = "<span style='color:red'>Error de conexión al guardar.</span>";
-            btn.innerText = "Confirmar Ubicación";
-            btn.disabled = false;
+        }).catch(() => {
+            buzonsalida.push(datos);
+            localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida));
+            actualizarInterfazOffline();
+            document.getElementById('status-area').innerHTML = "<span style='color:#ffc107'>Ubicación guardada localmente.</span>";
         });
     });
 </script>
