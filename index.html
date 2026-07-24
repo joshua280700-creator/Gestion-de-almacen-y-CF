@@ -6,8 +6,13 @@
     <title>WMS - Recepción</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --info: #17a2b8; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --info: #17a2b8; --danger: #dc3545; --warning: #ffc107; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        
+        /* BANNER OFFLINE */
+        .offline-banner { width: 100%; max-width: 650px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        
         .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
         .nav-header { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s ease; }
@@ -24,14 +29,14 @@
         .product-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(31, 78, 120, 0.3); }
 
         .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
-        .submit-btn:hover:not(:disabled) { background-color: #153a5c; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
+        .submit-btn:hover:not(:disabled) { background-color: #153a5c; }
         
         #barcode-container { margin-top: 25px; display: none; }
         
         /* === DISEÑO DE ETIQUETA A MEDIDA EXACTA (10.20cm x 5.01cm) === */
         .print-label { 
             background: white; border: 2px dashed #ccc; border-radius: 8px; 
-            width: 10.20cm; height: 5.01cm; /* Medidas exactas de tu Zebra */
+            width: 10.20cm; height: 5.01cm; 
             margin: 0 auto 20px auto; color: black; box-sizing: border-box;
             display: flex; flex-direction: column; justify-content: space-between; padding: 15px;
         }
@@ -40,8 +45,8 @@
         
         .action-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .download-btn, .print-btn { color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
-        .download-btn { background-color: var(--success); } .download-btn:hover { background-color: #218838; }
-        .print-btn { background-color: var(--info); } .print-btn:hover { background-color: #138496; }
+        .download-btn { background-color: var(--success); }
+        .print-btn { background-color: var(--info); }
 
         @media print {
             body * { visibility: hidden; } 
@@ -56,6 +61,12 @@
     </style>
 </head>
 <body>
+
+<!-- BARRA DE AVISO OFFLINE -->
+<div id="offlineBanner" class="offline-banner">
+    <span id="offlineText">⚠️ Sin conexión: 0 tarimas pendientes</span>
+    <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
+</div>
 
 <div class="container">
     <div class="nav-header">
@@ -115,7 +126,6 @@
             </div>
             <div class="form-group third">
                 <label>Tipo de Tarima</label>
-                <!-- Solo las dos opciones requeridas -->
                 <select id="tipoTarima" required>
                     <option value="" disabled selected>Selecciona...</option>
                     <option value="Tarima azul">Tarima azul</option>
@@ -123,7 +133,7 @@
                 </select>
             </div>
         </div>
-        <button type="submit" class="submit-btn">Registrar y Generar Etiqueta</button>
+        <button type="submit" class="submit-btn" id="btnGuardar">Registrar y Generar Etiqueta</button>
     </form>
 
     <div id="barcode-container">
@@ -133,7 +143,6 @@
                 <span id="lbl-producto">PRODUCTO</span>
                 <span id="lbl-fecha">FECHA</span>
             </div>
-            <!-- El código de barras será el protagonista -->
             <img id="barcode" />
         </div>
 
@@ -146,8 +155,62 @@
 
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
+    
+    // === SISTEMA DE ALMACENAMIENTO OFFLINE ===
+    let buzonsalida = JSON.parse(localStorage.getItem('wms_recepcion_offline')) || [];
 
-    window.onload = function() { document.getElementById('fecha').valueAsDate = new Date(); };
+    window.onload = function() { 
+        document.getElementById('fecha').valueAsDate = new Date(); 
+        actualizarInterfazOffline();
+    };
+
+    function actualizarInterfazOffline() {
+        const banner = document.getElementById('offlineBanner');
+        if (buzonsalida.length > 0) {
+            banner.style.display = 'flex';
+            document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} tarimas en espera`;
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    // El vigilante: detecta automáticamente cuando regresa el internet
+    window.addEventListener('online', sincronizarDatos);
+
+    async function sincronizarDatos() {
+        if (buzonsalida.length === 0) return;
+        if (!navigator.onLine) {
+            alert("Aún no tienes conexión a internet estable.");
+            return;
+        }
+
+        document.getElementById('offlineText').innerText = "🔄 Sincronizando datos...";
+        let pendientes = [];
+
+        for (let i = 0; i < buzonsalida.length; i++) {
+            try {
+                await fetch(urlGoogleScript, { 
+                    method: 'POST', mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(buzonsalida[i]) 
+                });
+                // Si pasa sin error, se subió a Google Sheets
+            } catch (error) {
+                // Si falla, lo devolvemos a la lista de pendientes
+                pendientes.push(buzonsalida[i]);
+            }
+        }
+
+        buzonsalida = pendientes; // Actualizamos el buzón solo con los que fallaron
+        localStorage.setItem('wms_recepcion_offline', JSON.stringify(buzonsalida));
+        actualizarInterfazOffline();
+
+        if (buzonsalida.length === 0) {
+            // Un pequeño aviso flotante que desaparece
+            alert("¡Todas las tarimas pendientes fueron sincronizadas con éxito!");
+        }
+    }
+    // ==========================================
 
     document.querySelectorAll('.product-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -161,64 +224,50 @@
         event.preventDefault(); 
         
         const productoBase = document.getElementById('producto').value;
-        if(!productoBase) {
-            alert("Por favor, selecciona un producto tocando uno de los botones.");
-            return;
-        }
-
-        const submitBtn = document.querySelector('.submit-btn');
-        submitBtn.innerText = "Registrando..."; submitBtn.disabled = true;
+        if(!productoBase) { alert("Por favor, selecciona un producto."); return; }
 
         const folioBase = document.getElementById('folio').value.trim();
         const certificado = document.getElementById('certificado').value;
         const numTarima = document.getElementById('numeroTarima').value.trim();
-        
         const folioFinal = numTarima ? `${folioBase}${certificado}-${numTarima}` : `${folioBase}${certificado}`;
         const productoFinal = `${productoBase} Original`; 
         
-        const pesoNetoData = document.getElementById('pesoNeto').value;
         const fechaData = document.getElementById('fecha').value;
-        const cajaData = document.getElementById('tipoCaja').value;
-        const tarimaData = document.getElementById('tipoTarima').value;
 
         const datos = {
             producto: productoFinal, folio: folioFinal,
-            pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: pesoNetoData,
-            fecha: fechaData, tipoCaja: cajaData, tarima: tarimaData 
+            pesoBruto: document.getElementById('pesoBruto').value, pesoNeto: document.getElementById('pesoNeto').value,
+            fecha: fechaData, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value 
         };
 
+        // 1. GENERAMOS ETIQUETA INMEDIATAMENTE PARA NO FRENAR LA OPERACIÓN
+        document.getElementById('lbl-producto').innerText = productoFinal;
+        document.getElementById('lbl-fecha').innerText = fechaData;
+
+        JsBarcode("#barcode", datos.folio, { 
+            format: "CODE128", width: 3, height: 90, 
+            displayValue: true, fontSize: 26, fontOptions: "bold",
+            margin: 10, background: "#ffffff", lineColor: "#000000"
+        });
+        
+        document.getElementById('barcode-container').style.display = 'block';
+        
+        // 2. CONGELAMOS VARIABLES Y LIMPIAMOS PESOS AL INSTANTE
+        document.getElementById('pesoBruto').value = "";
+        document.getElementById('pesoNeto').value = "";
+        if(numTarima !== "") { document.getElementById('numeroTarima').value = parseInt(numTarima) + 1; }
+        document.getElementById('pesoBruto').focus();
+
+        // 3. INTENTAMOS GUARDAR EN SEGUNDO PLANO
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) })
         .then(() => {
-            
-            // Llenamos solo lo esencial en la etiqueta
-            document.getElementById('lbl-producto').innerText = productoFinal;
-            document.getElementById('lbl-fecha').innerText = fechaData;
-
-            // Ajustado para el tamaño exacto de tu rollo de etiquetas (10.20x5.01)
-            JsBarcode("#barcode", datos.folio, { 
-                format: "CODE128", 
-                width: 3, 
-                height: 90, 
-                displayValue: true, 
-                fontSize: 26, 
-                fontOptions: "bold",
-                margin: 10,
-                background: "#ffffff",
-                lineColor: "#000000"
-            });
-            
-            document.getElementById('barcode-container').style.display = 'block';
-            submitBtn.innerText = "Registrar y Generar Etiqueta"; submitBtn.disabled = false;
-            
-            // Congelamos variables maestras y limpiamos pesos
-            document.getElementById('pesoBruto').value = "";
-            document.getElementById('pesoNeto').value = "";
-            if(numTarima !== "") {
-                document.getElementById('numeroTarima').value = parseInt(numTarima) + 1;
-            }
-            document.getElementById('pesoBruto').focus();
-            
-        }).catch(() => { alert("Error al guardar."); submitBtn.disabled = false; });
+            // Guardado exitoso, no hacemos nada más.
+        }).catch(() => {
+            // Si el internet falló, lo metemos al buzón de salida
+            buzonsalida.push(datos);
+            localStorage.setItem('wms_recepcion_offline', JSON.stringify(buzonsalida));
+            actualizarInterfazOffline();
+        });
     });
 
     document.getElementById('printBtn').addEventListener('click', function() {
