@@ -3,130 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Salidas</title>
+    <title>WMS - Salidas a PT</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --danger: #dc3545; --rack-green: #548235; }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --danger: #dc3545; --success: #28a745; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        
+        .offline-banner { width: 100%; max-width: 600px; background-color: var(--warning); color: #333; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        .sync-btn { background-color: #333; color: white; border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
+        .nav-header { width: 100%; max-width: 600px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
-        .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1.8fr; gap: 20px; }
-        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
-        select, input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 15px;}
-        label { font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;}
-        .submit-btn { background-color: var(--danger); color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; }
-        .submit-btn:disabled { background-color: #999; }
-        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; }
-        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px 5px; }
-        .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
-        .rack-row.empty { background-color: #fff; cursor: not-allowed; }
-        .rack-row.filled { background-color: #f9f9f9; cursor: pointer; } .rack-row.filled:hover { background-color: #fce8e8; }
-        .rack-row.selected-exit td { background-color: #f8d7da; border: 2px solid var(--danger); color: #721c24; font-weight: bold; }
-        #status-area { margin-top: 20px; font-weight: bold; text-align: center; }
+        
+        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h2 { text-align: center; color: var(--danger); margin-top: 0; }
+        
+        #reader-container { width: 100%; border-radius: 8px; overflow: hidden; background-color: #000; margin-bottom: 20px; }
+        #reader { width: 100%; }
+        
+        .form-group { margin-bottom: 15px; } label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 18px; box-sizing: border-box; text-align: center; font-weight: bold;}
+        
+        .submit-btn { background-color: var(--danger); color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; margin-top: 10px; transition: 0.3s;}
+        .submit-btn:hover:not(:disabled) { background-color: #c82333; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
+        
+        #status-area { margin-top: 20px; text-align: center; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
 
+<div id="offlineBanner" class="offline-banner">
+    <span id="offlineText">⚠️ Sin conexión: 0 salidas pendientes</span>
+    <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
+</div>
+
 <div class="nav-header">
     <a href="index.html" class="nav-btn">Recepción</a>
     <a href="almacen.html" class="nav-btn">Almacenaje</a>
-    <a href="salidas.html" class="nav-btn">Salidas</a>
-    <a href="ajustes.html" class="nav-btn">Ajustes</a>
+    <a href="salidas.html" class="nav-btn active">Salidas</a>
+    <a href="ajustes.html" class="nav-btn">Ajustes / Reubicación</a>
     <a href="rastreador.html" class="nav-btn">Rastreador</a>
     <a href="dashboard.html" class="nav-btn">Dashboard</a>
 </div>
 
 <div class="container">
-    <div>
-        <h2 style="color:var(--danger); margin-top:0;">Salida a Producción</h2>
-        <form id="salidaForm">
-            <label>1. Cuarto Frío</label><select id="cuartoFrio" required><option value="" disabled selected>Selecciona...</option><option value="Cuarto 1">Cuarto 1</option><option value="Cuarto 2">Cuarto 2</option><option value="Cuarto 3">Cuarto 3</option><option value="Cuarto 4">Cuarto 4</option><option value="Cuarto 5">Cuarto 5</option></select>
-            <label>2. Espacio/Andén</label><select id="espacioRack" required><option value="" disabled selected>Selecciona...</option><option value="Espacio 1">Espacio 1</option><option value="Espacio 2">Espacio 2</option><option value="Espacio 3">Espacio 3</option><option value="Espacio 4">Espacio 4</option><option value="Espacio 5">Espacio 5</option></select>
-            <label>Folio a despachar:</label><input type="text" id="folioDisplay" readonly style="color:var(--danger); font-weight:bold;">
-            <input type="hidden" id="levelSelected"><input type="hidden" id="depthSelected">
-            <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Salida</button>
-        </form>
-    </div>
-
-    <div class="rack-map-section">
-        <h3 style="margin-top:0;">Haz clic en la tarima para sacarla</h3>
-        <table class="rack-table" id="rackTable">
-            <thead><tr><th>Folio</th><th>Producto</th><th>Peso neto</th><th>Caja</th><th>Tarima</th></tr></thead>
-            <tbody>
-                <tr class="level-separator"><td colspan="5">Nivel 3 (Alto)</td></tr>
-                <tr class="rack-row empty" data-level="3" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="3" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="3" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="3" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="level-separator"><td colspan="5">Nivel 2 (Medio)</td></tr>
-                <tr class="rack-row empty" data-level="2" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
-                <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
-            </tbody>
-        </table>
-    </div>
+    <h2>Despacho a PT</h2>
+    
+    <div id="reader-container"><div id="reader"></div></div>
+    
+    <form id="salidaForm">
+        <div class="form-group">
+            <label>Escanea el Folio para dar Salida:</label>
+            <input type="text" id="folioDisplay" placeholder="EJ: 7085C-1" required autocomplete="off">
+        </div>
+        <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Salida a PT</button>
+    </form>
+    
+    <div id="status-area"></div>
 </div>
-<div id="status-area"></div>
 
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
-    let inventarioGlobal = [];
-    window.addEventListener('load', cargarInventario);
+    let buzonsalida = JSON.parse(localStorage.getItem('wms_salidas_offline')) || [];
 
-    function cargarInventario() {
-        document.getElementById('status-area').innerHTML = "Cargando...";
-        fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(res => res.json()).then(data => {
-            inventarioGlobal = data; document.getElementById('status-area').innerHTML = ""; actualizarTablaMapa();
-        });
-    }
-
-    function actualizarTablaMapa() {
-        const c = document.getElementById('cuartoFrio').value; const e = document.getElementById('espacioRack').value;
-        document.querySelectorAll('.rack-row').forEach(row => { row.className = 'rack-row empty'; const tds = row.querySelectorAll('td'); for(let i=0; i<5; i++) tds[i].innerText = ""; });
-        document.getElementById('folioDisplay').value = ""; document.getElementById('saveBtn').disabled = true;
-        if (!c || !e) return;
-        inventarioGlobal.forEach(item => {
-            if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
-                const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
-                if(match) {
-                    const row = document.querySelector(`.rack-row[data-level="${match[1]}"][data-depth="${match[2]}"]`);
-                    if(row) {
-                        row.className = 'rack-row filled'; const tds = row.querySelectorAll('td');
-                        tds[0].innerText = item.folio; tds[1].innerText = item.producto; tds[2].innerText = item.pesoNeto; tds[3].innerText = item.tipoCaja; tds[4].innerText = item.tarima;
-                    }
-                }
-            }
-        });
-    }
-
-    document.getElementById('cuartoFrio').addEventListener('change', actualizarTablaMapa); document.getElementById('espacioRack').addEventListener('change', actualizarTablaMapa);
-
-    document.getElementById('rackTable').addEventListener('click', function(e) {
-        const row = e.target.closest('.rack-row');
-        if (!row || row.classList.contains('empty')) return; 
-        document.querySelectorAll('.rack-row').forEach(r => { if(r.classList.contains('selected-exit')) { r.classList.remove('selected-exit'); r.classList.add('filled'); } });
-        row.classList.remove('filled'); row.classList.add('selected-exit');
-        document.getElementById('folioDisplay').value = row.querySelectorAll('td')[0].innerText;
-        document.getElementById('levelSelected').value = row.getAttribute('data-level');
-        document.getElementById('depthSelected').value = row.getAttribute('data-depth');
-        document.getElementById('saveBtn').disabled = false;
+    window.addEventListener('load', () => { 
+        iniciarCamara(); 
+        actualizarInterfazOffline();
+        document.getElementById('folioDisplay').focus();
     });
 
+    function actualizarInterfazOffline() {
+        const banner = document.getElementById('offlineBanner');
+        if (buzonsalida.length > 0) {
+            banner.style.display = 'flex';
+            document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} salidas pendientes`;
+        } else { banner.style.display = 'none'; }
+    }
+
+    window.addEventListener('online', sincronizarDatos);
+
+    async function sincronizarDatos() {
+        if (buzonsalida.length === 0) return;
+        if (!navigator.onLine) { alert("Aún no tienes conexión."); return; }
+
+        document.getElementById('offlineText').innerText = "🔄 Sincronizando salidas...";
+        let pendientes = [];
+
+        for (let i = 0; i < buzonsalida.length; i++) {
+            try {
+                await fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buzonsalida[i]) });
+            } catch (error) { pendientes.push(buzonsalida[i]); }
+        }
+        buzonsalida = pendientes;
+        localStorage.setItem('wms_salidas_offline', JSON.stringify(buzonsalida));
+        actualizarInterfazOffline();
+    }
+
+    document.getElementById('folioDisplay').addEventListener('input', function() {
+        document.getElementById('saveBtn').disabled = this.value.trim() === "";
+    });
+
+    const html5QrCode = new Html5Qrcode("reader");
+    function iniciarCamara() {
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) { html5QrCode.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 250, height: 100 } }, text => {
+                document.getElementById('folioDisplay').value = text;
+                document.getElementById('saveBtn').disabled = false;
+                
+                // Si están en modo código de barras, podemos auto-enviar el formulario
+                document.getElementById('salidaForm').dispatchEvent(new Event('submit'));
+                
+                // Reiniciamos cámara rápido para la siguiente
+                setTimeout(() => { document.getElementById('folioDisplay').value = ""; }, 1500);
+            }); }
+        });
+    }
+
     document.getElementById('salidaForm').addEventListener('submit', function(e) {
-        e.preventDefault(); 
-        const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = "Registrando...";
-        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-            action: 'salida_produccion', folio: document.getElementById('folioDisplay').value, cuarto: document.getElementById('cuartoFrio').value, espacio: document.getElementById('espacioRack').value, level: document.getElementById('levelSelected').value, depth: document.getElementById('depthSelected').value
-        })}).then(() => {
-            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Despachado!</span>";
-            cargarInventario(); btn.innerText = "Confirmar Salida";
+        e.preventDefault();
+        
+        const folio = document.getElementById('folioDisplay').value.trim();
+        const datos = { action: 'salida_produccion', folio: folio };
+
+        // UI Optimista
+        const statusArea = document.getElementById('status-area');
+        statusArea.innerHTML = `<span style='color:var(--danger)'>¡Folio ${folio} enviado a PT!</span>`;
+        document.getElementById('salidaForm').reset();
+        document.getElementById('saveBtn').disabled = true;
+        document.getElementById('folioDisplay').focus();
+
+        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos) })
+        .then(() => {
+            // Guardado exitoso
+            setTimeout(() => { statusArea.innerHTML = ""; }, 2500);
+        }).catch(() => {
+            buzonsalida.push(datos);
+            localStorage.setItem('wms_salidas_offline', JSON.stringify(buzonsalida));
+            actualizarInterfazOffline();
+            statusArea.innerHTML += "<br><span style='font-size:14px; color:#ffc107'>Guardado localmente.</span>";
         });
     });
 </script>
