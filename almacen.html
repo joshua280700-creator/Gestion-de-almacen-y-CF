@@ -87,7 +87,8 @@
     </div>
 
     <div class="rack-map-section">
-        <h2 style="color:var(--primary); margin-top:0;">Vista de Rack</h2>
+        <!-- El título ahora tiene el ID rackTitle para cambiar dinámicamente -->
+        <h2 id="rackTitle" style="color:var(--primary); margin-top:0;">Vista de Rack</h2>
         <p style="font-size:11px; margin-top:-10px; color: #666;">Selecciona una fila vacía para asignar.</p>
         
         <table class="rack-table" id="rackTable">
@@ -142,6 +143,14 @@
     function actualizarTablaMapa() {
         const c = document.getElementById('cuartoFrio').value; 
         const e = document.getElementById('espacioRack').value;
+        const tituloRack = document.getElementById('rackTitle');
+        
+        // Actualizamos el título dinámicamente
+        if(e) {
+            tituloRack.innerText = "Vista de Rack - " + e;
+        } else {
+            tituloRack.innerText = "Vista de Rack";
+        }
         
         document.querySelectorAll('.rack-row').forEach(row => {
             row.className = 'rack-row empty'; 
