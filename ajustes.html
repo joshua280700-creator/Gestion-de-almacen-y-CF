@@ -6,8 +6,12 @@
     <title>WMS - Ajustes y Reubicación</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; --rack-green: #548235; --success: #28a745;}
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; --rack-green: #548235; --success: #28a745; --danger: #dc3545;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
@@ -34,6 +38,11 @@
     </style>
 </head>
 <body>
+
+<div id="offlineBanner" class="offline-banner">
+    <span id="offlineText">⚠️ Sin conexión: 0 ajustes pendientes</span>
+    <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
+</div>
 
 <div class="nav-header">
     <a href="index.html" class="nav-btn">Recepción</a>
@@ -77,7 +86,7 @@
     </div>
 
     <div class="rack-map-section">
-        <h3 style="margin-top:0;">Mapa de Rack (Selecciona una posición)</h3>
+        <h3 id="rackTitle" style="margin-top:0;">Mapa de Rack</h3>
         <table class="rack-table" id="rackTable">
             <thead><tr><th>Folio</th><th>Producto</th><th>Peso neto</th><th>Caja</th><th>Tarima</th></tr></thead>
             <tbody>
@@ -104,22 +113,53 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbxXRbtug4JByvxMoGSuXMdSMcLgmcYWehX4q3Yb4j3iUixVUjnn4UyU62WDs_RdnLk8Lg/exec";
     let inventarioGlobal = [];
+    let buzonsalida = JSON.parse(localStorage.getItem('wms_ajustes_offline')) || [];
 
     window.addEventListener('load', () => { 
         iniciarCamara();
+        cargarInventario();
+        actualizarInterfazOffline();
+    });
+
+    function actualizarInterfazOffline() {
+        const banner = document.getElementById('offlineBanner');
+        if (buzonsalida.length > 0) {
+            banner.style.display = 'flex';
+            document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} ajustes pendientes`;
+        } else { banner.style.display = 'none'; }
+    }
+
+    window.addEventListener('online', sincronizarDatos);
+
+    async function sincronizarDatos() {
+        if (buzonsalida.length === 0) return;
+        if (!navigator.onLine) { alert("Aún no tienes conexión a internet estable."); return; }
+
+        document.getElementById('offlineText').innerText = "🔄 Sincronizando datos...";
+        let pendientes = [];
+
+        for (let i = 0; i < buzonsalida.length; i++) {
+            try {
+                await fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buzonsalida[i]) });
+            } catch (error) { pendientes.push(buzonsalida[i]); }
+        }
+        buzonsalida = pendientes;
+        localStorage.setItem('wms_ajustes_offline', JSON.stringify(buzonsalida));
+        actualizarInterfazOffline();
+        if (buzonsalida.length === 0) { cargarInventario(); }
+    }
+
+    function cargarInventario() {
         fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(res => res.json()).then(data => {
             inventarioGlobal = data; 
         });
-    });
+    }
 
     const html5QrCode = new Html5Qrcode("reader");
     function iniciarCamara() {
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) { html5QrCode.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 250, height: 100 } }, text => {
-                document.getElementById('folioDisplay').value = text; 
-                document.getElementById('reader-container').style.display='none'; 
-                html5QrCode.stop(); 
-                buscarPesosAnteriores();
+                document.getElementById('folioDisplay').value = text; document.getElementById('reader-container').style.display='none'; html5QrCode.stop(); buscarPesosAnteriores();
             }); }
         });
     }
@@ -138,6 +178,10 @@
 
     function actualizarTablaMapa() {
         const c = document.getElementById('cuartoFrio').value; const e = document.getElementById('espacioRack').value;
+        const tituloRack = document.getElementById('rackTitle');
+        if(e) tituloRack.innerText = "Mapa de Rack - " + e;
+        else tituloRack.innerText = "Mapa de Rack";
+
         document.querySelectorAll('.rack-row').forEach(row => {
             row.className = 'rack-row empty'; const tds = row.querySelectorAll('td'); for(let i=0; i<5; i++) tds[i].innerText = "";
         });
@@ -176,17 +220,15 @@
 
         if(document.getElementById('folioDisplay').value && pesosLogicos && document.getElementById('levelSelected').value && document.getElementById('espacioRack').value) {
             document.getElementById('saveBtn').disabled = false;
-        } else {
-            document.getElementById('saveBtn').disabled = true;
-        }
+        } else { document.getElementById('saveBtn').disabled = true; }
     }
     
     document.querySelectorAll('input').forEach(i => i.addEventListener('input', checkForm));
 
     document.getElementById('ajusteForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.innerText = "Guardando...";
-        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+        
+        const datos = {
             action: 'ajuste_reubicacion', 
             folio: document.getElementById('folioDisplay').value, 
             pesoBruto: document.getElementById('nuevoPesoBruto').value, 
@@ -195,9 +237,22 @@
             espacio: document.getElementById('espacioRack').value, 
             level: document.getElementById('levelSelected').value, 
             depth: document.getElementById('depthSelected').value
-        })}).then(() => {
-            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Pesos y Ubicación Actualizados!</span>";
-            setTimeout(() => { location.reload(); }, 1500);
+        };
+
+        // UI Optimista
+        document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Ajuste procesado localmente!</span>";
+        document.getElementById('ajusteForm').reset();
+        document.getElementById('saveBtn').disabled = true;
+
+        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
+        .then(() => {
+            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Pesos y Ubicación Actualizados en Servidor!</span>";
+            cargarInventario();
+        }).catch(() => {
+            buzonsalida.push(datos);
+            localStorage.setItem('wms_ajustes_offline', JSON.stringify(buzonsalida));
+            actualizarInterfazOffline();
+            document.getElementById('status-area').innerHTML = "<span style='color:#ffc107'>Ajuste guardado localmente.</span>";
         });
     });
 </script>
