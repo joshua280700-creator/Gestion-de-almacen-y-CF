@@ -25,7 +25,7 @@
 
 <div class="login-card">
     <h2>WMS Rombo</h2>
-    <p>Control de Acceso</p>
+    <p>Control de Acceso Seguro</p>
     
     <form id="loginForm">
         <div class="form-group">
@@ -55,15 +55,22 @@
 </div>
 
 <script>
-    // Aquí están configurados tus PINs
-    const PINES_VALIDOS = {
-        "Admin": "7391",
-        "Recepcion": "4028",
-        "Almacen": "8156",
-        "Directivos": "2940"
+    // 🛡️ BÓVEDA DE HUELLAS DIGITALES (Hashes SHA-256)
+    // Los números de PIN reales ya NO existen en este código.
+    const HASHES_VALIDOS = {
+        "Admin": "a3683a3038676d1a5fa2b2e8fb7a346e96996841b52c0cdadcb0a221f2010834",      // Corresponde a tu PIN Admin
+        "Recepcion": "6e7a2b2586b6a22b07e7b6d1927de2262d5e3efbfed3a8c8e1e79cb4d59f6362",  // Corresponde a tu PIN Recepción
+        "Almacen": "1c22a316c09b49911e3b6e7fae4eb245131ccb1f28b76ce836a0ed7d6c268884",    // Corresponde a tu PIN Almacén
+        "Directivos": "e250e32b0ecb38b33230a133f8beadca275c6d37be5a04eefebc7a40ab7ecbce" // Corresponde a tu PIN Directivos
     };
 
-    // Si ya hay sesión iniciada, lo mandamos directo a su pantalla
+    // Función matemática para convertir lo que teclean en huella digital
+    async function cifrarPIN(pinTexto) {
+        const buffer = new TextEncoder().encode(pinTexto);
+        const hash = await crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     window.onload = function() {
         const sesionActual = JSON.parse(localStorage.getItem('wms_session'));
         if(sesionActual) {
@@ -71,16 +78,19 @@
         }
     };
 
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const nombre = document.getElementById('nombreUsuario').value.trim();
         const rol = document.getElementById('rolUsuario').value;
-        const pin = document.getElementById('pinUsuario').value.trim();
+        const pinIngresado = document.getElementById('pinUsuario').value.trim();
         const errorMsg = document.getElementById('error-msg');
 
-        if (PINES_VALIDOS[rol] === pin) {
-            // Guardamos el "Gafete" en la tablet
+        // Convertimos el PIN ingresado a su versión cifrada
+        const hashCalculado = await cifrarPIN(pinIngresado);
+
+        // Comparamos el cifrado contra la bóveda
+        if (HASHES_VALIDOS[rol] === hashCalculado) {
             const datosSesion = { nombre: nombre, rol: rol };
             localStorage.setItem('wms_session', JSON.stringify(datosSesion));
             
@@ -89,16 +99,17 @@
         } else {
             errorMsg.style.display = 'block';
             document.getElementById('pinUsuario').value = "";
+            document.getElementById('pinUsuario').focus();
         }
     });
 
     function redirigirSegunRol(rol) {
         if (rol === "Admin" || rol === "Recepcion") {
-            window.location.href = "index.html"; // Recepción
+            window.location.href = "index.html"; 
         } else if (rol === "Almacen") {
-            window.location.href = "almacen.html"; // Almacén
+            window.location.href = "almacen.html"; 
         } else if (rol === "Directivos") {
-            window.location.href = "dashboard.html"; // Directivos
+            window.location.href = "dashboard.html"; 
         }
     }
 </script>
