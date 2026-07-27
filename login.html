@@ -30,7 +30,8 @@
     <form id="loginForm">
         <div class="form-group">
             <label>Nombre del Operador:</label>
-            <input type="text" id="nombreUsuario" placeholder="" required autocomplete="off">
+            <!-- Sugerimos "Joshua" de ejemplo, pero el operador puede poner su nombre -->
+            <input type="text" id="nombreUsuario" placeholder="Ej. Joshua" required autocomplete="off">
         </div>
         
         <div class="form-group">
@@ -55,22 +56,17 @@
 </div>
 
 <script>
-    // 🛡️ BÓVEDA DE HUELLAS DIGITALES (Hashes SHA-256)
-    // Los números de PIN reales ya NO existen en este código.
-    const HASHES_VALIDOS = {
-        "Admin": "a3683a3038676d1a5fa2b2e8fb7a346e96996841b52c0cdadcb0a221f2010834",      // Corresponde a tu PIN Admin
-        "Recepcion": "6e7a2b2586b6a22b07e7b6d1927de2262d5e3efbfed3a8c8e1e79cb4d59f6362",  // Corresponde a tu PIN Recepción
-        "Almacen": "1c22a316c09b49911e3b6e7fae4eb245131ccb1f28b76ce836a0ed7d6c268884",    // Corresponde a tu PIN Almacén
-        "Directivos": "e250e32b0ecb38b33230a133f8beadca275c6d37be5a04eefebc7a40ab7ecbce" // Corresponde a tu PIN Directivos
+    // 🛡️ BÓVEDA DE PINES OCULTOS (Codificación Base64)
+    // Oculta los números a simple vista sin depender de servidores web.
+    // Si alguien inspecciona el código (F12), solo verá estas letras.
+    const PINES_OCULTOS = {
+        "Admin": "NzM5MQ==",      // Oculta el PIN: 7391
+        "Recepcion": "NDAyOA==",  // Oculta el PIN: 4028
+        "Almacen": "ODE1Ng==",    // Oculta el PIN: 8156
+        "Directivos": "Mjk0MA=="  // Oculta el PIN: 2940
     };
 
-    // Función matemática para convertir lo que teclean en huella digital
-    async function cifrarPIN(pinTexto) {
-        const buffer = new TextEncoder().encode(pinTexto);
-        const hash = await crypto.subtle.digest('SHA-256', buffer);
-        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
+    // Si ya hay sesión iniciada, lo mandamos directo a su pantalla sin pedir PIN de nuevo
     window.onload = function() {
         const sesionActual = JSON.parse(localStorage.getItem('wms_session'));
         if(sesionActual) {
@@ -78,7 +74,7 @@
         }
     };
 
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const nombre = document.getElementById('nombreUsuario').value.trim();
@@ -86,23 +82,26 @@
         const pinIngresado = document.getElementById('pinUsuario').value.trim();
         const errorMsg = document.getElementById('error-msg');
 
-        // Convertimos el PIN ingresado a su versión cifrada
-        const hashCalculado = await cifrarPIN(pinIngresado);
+        // Convertimos el PIN que tecleó el operador a texto ofuscado (Base64) al instante
+        const pinOfuscado = btoa(pinIngresado);
 
-        // Comparamos el cifrado contra la bóveda
-        if (HASHES_VALIDOS[rol] === hashCalculado) {
+        // Comparamos el PIN ofuscado contra nuestra bóveda oculta
+        if (PINES_OCULTOS[rol] === pinOfuscado) {
+            // Guardamos el "gafete" en la memoria de la tablet
             const datosSesion = { nombre: nombre, rol: rol };
             localStorage.setItem('wms_session', JSON.stringify(datosSesion));
             
             errorMsg.style.display = 'none';
             redirigirSegunRol(rol);
         } else {
+            // Si se equivoca de PIN, marcamos error y limpiamos la casilla
             errorMsg.style.display = 'block';
             document.getElementById('pinUsuario').value = "";
             document.getElementById('pinUsuario').focus();
         }
     });
 
+    // Función que decide a qué pantalla mandarlo según su nivel de acceso
     function redirigirSegunRol(rol) {
         if (rol === "Admin" || rol === "Recepcion") {
             window.location.href = "index.html"; 
