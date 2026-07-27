@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS Rombo - Acceso</title>
+    <title>WMS Vegxpress - Acceso</title>
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --danger: #dc3545; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--primary); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
@@ -24,13 +24,12 @@
 <body>
 
 <div class="login-card">
-    <h2>WMS Rombo</h2>
+    <h2>WMS Vegxpress</h2>
     <p>Control de Acceso Seguro</p>
     
     <form id="loginForm">
         <div class="form-group">
             <label>Nombre del Operador:</label>
-            <!-- Sugerimos "Joshua" de ejemplo, pero el operador puede poner su nombre -->
             <input type="text" id="nombreUsuario" placeholder="Ej. Joshua" required autocomplete="off">
         </div>
         
@@ -57,8 +56,6 @@
 
 <script>
     // 🛡️ BÓVEDA DE PINES OCULTOS (Codificación Base64)
-    // Oculta los números a simple vista sin depender de servidores web.
-    // Si alguien inspecciona el código (F12), solo verá estas letras.
     const PINES_OCULTOS = {
         "Admin": "NzM5MQ==",      // Oculta el PIN: 7391
         "Recepcion": "NDAyOA==",  // Oculta el PIN: 4028
@@ -66,7 +63,6 @@
         "Directivos": "Mjk0MA=="  // Oculta el PIN: 2940
     };
 
-    // Si ya hay sesión iniciada, lo mandamos directo a su pantalla sin pedir PIN de nuevo
     window.onload = function() {
         const sesionActual = JSON.parse(localStorage.getItem('wms_session'));
         if(sesionActual) {
@@ -82,26 +78,21 @@
         const pinIngresado = document.getElementById('pinUsuario').value.trim();
         const errorMsg = document.getElementById('error-msg');
 
-        // Convertimos el PIN que tecleó el operador a texto ofuscado (Base64) al instante
         const pinOfuscado = btoa(pinIngresado);
 
-        // Comparamos el PIN ofuscado contra nuestra bóveda oculta
         if (PINES_OCULTOS[rol] === pinOfuscado) {
-            // Guardamos el "gafete" en la memoria de la tablet
             const datosSesion = { nombre: nombre, rol: rol };
             localStorage.setItem('wms_session', JSON.stringify(datosSesion));
             
             errorMsg.style.display = 'none';
             redirigirSegunRol(rol);
         } else {
-            // Si se equivoca de PIN, marcamos error y limpiamos la casilla
             errorMsg.style.display = 'block';
             document.getElementById('pinUsuario').value = "";
             document.getElementById('pinUsuario').focus();
         }
     });
 
-    // Función que decide a qué pantalla mandarlo según su nivel de acceso
     function redirigirSegunRol(rol) {
         if (rol === "Admin" || rol === "Recepcion") {
             window.location.href = "index.html"; 
