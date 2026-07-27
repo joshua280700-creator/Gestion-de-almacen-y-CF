@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS Rombo - Acceso</title>
+    <style>
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --danger: #dc3545; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--primary); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 40px 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; max-width: 350px; text-align: center; }
+        .login-card h2 { margin-top: 0; color: var(--primary); margin-bottom: 5px; }
+        .login-card p { color: #666; font-size: 14px; margin-bottom: 25px; }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+        
+        .login-btn { background-color: var(--primary); color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; margin-top: 10px; transition: 0.3s;}
+        .login-btn:hover { background-color: #153a5c; }
+        
+        #error-msg { color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>WMS Rombo</h2>
+    <p>Control de Acceso</p>
+    
+    <form id="loginForm">
+        <div class="form-group">
+            <label>Nombre del Operador:</label>
+            <input type="text" id="nombreUsuario" placeholder="Ej. Joshua" required autocomplete="off">
+        </div>
+        
+        <div class="form-group">
+            <label>Rol de Acceso:</label>
+            <select id="rolUsuario" required>
+                <option value="" disabled selected>Selecciona tu área...</option>
+                <option value="Admin">Administrador / Captura</option>
+                <option value="Recepcion">Recepción</option>
+                <option value="Almacen">Almacén</option>
+                <option value="Directivos">Directivos</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>PIN de Seguridad:</label>
+            <input type="password" id="pinUsuario" placeholder="****" required autocomplete="off" maxlength="4">
+        </div>
+        
+        <button type="submit" class="login-btn">Ingresar al Sistema</button>
+        <div id="error-msg">PIN incorrecto para el rol seleccionado.</div>
+    </form>
+</div>
+
+<script>
+    // Aquí están configurados tus PINs
+    const PINES_VALIDOS = {
+        "Admin": "7391",
+        "Recepcion": "4028",
+        "Almacen": "8156",
+        "Directivos": "2940"
+    };
+
+    // Si ya hay sesión iniciada, lo mandamos directo a su pantalla
+    window.onload = function() {
+        const sesionActual = JSON.parse(localStorage.getItem('wms_session'));
+        if(sesionActual) {
+            redirigirSegunRol(sesionActual.rol);
+        }
+    };
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const nombre = document.getElementById('nombreUsuario').value.trim();
+        const rol = document.getElementById('rolUsuario').value;
+        const pin = document.getElementById('pinUsuario').value.trim();
+        const errorMsg = document.getElementById('error-msg');
+
+        if (PINES_VALIDOS[rol] === pin) {
+            // Guardamos el "Gafete" en la tablet
+            const datosSesion = { nombre: nombre, rol: rol };
+            localStorage.setItem('wms_session', JSON.stringify(datosSesion));
+            
+            errorMsg.style.display = 'none';
+            redirigirSegunRol(rol);
+        } else {
+            errorMsg.style.display = 'block';
+            document.getElementById('pinUsuario').value = "";
+        }
+    });
+
+    function redirigirSegunRol(rol) {
+        if (rol === "Admin" || rol === "Recepcion") {
+            window.location.href = "index.html"; // Recepción
+        } else if (rol === "Almacen") {
+            window.location.href = "almacen.html"; // Almacén
+        } else if (rol === "Directivos") {
+            window.location.href = "dashboard.html"; // Directivos
+        }
+    }
+</script>
+</body>
+</html>
