@@ -9,56 +9,60 @@
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --info: #17a2b8; --danger: #dc3545; --warning: #ffc107; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        
         .offline-banner { width: 100%; max-width: 650px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        
         .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
         .nav-header { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s ease; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
         h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        
         .form-group { margin-bottom: 15px; } .form-row { display: flex; gap: 10px; } .form-group.third { flex: 1; margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; font-size: 14px;}
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box; }
-        
         .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .product-btn { background-color: #f8f9fa; border: 2px solid #ddd; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #555; transition: 0.2s; }
         .product-btn:hover { border-color: var(--primary); }
         .product-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(31, 78, 120, 0.3); }
-
         .submit-btn { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
         .submit-btn:hover:not(:disabled) { background-color: #153a5c; }
-        
         .reprint-btn { background-color: var(--warning); color: #333; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 10px;}
         .reprint-btn:hover { background-color: #e0a800; }
-
         #barcode-container { margin-top: 25px; display: none; }
-        
-        .print-label { 
-            background: white; border: 2px dashed #ccc; border-radius: 8px; 
-            width: 10.20cm; height: 5.01cm; 
-            margin: 0 auto 20px auto; color: black; box-sizing: border-box;
-            display: flex; flex-direction: column; justify-content: space-between; padding: 15px;
-        }
+        .print-label { background: white; border: 2px dashed #ccc; border-radius: 8px; width: 10.20cm; height: 5.01cm; margin: 0 auto 20px auto; color: black; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; padding: 15px; }
         .label-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; border-bottom: 2px solid #000; padding-bottom: 5px; text-transform: uppercase;}
         #barcode { max-width: 100%; max-height: 70%; align-self: center; margin-top: 5px;}
-        
         .action-buttons { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .download-btn, .print-btn { color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; }
-        .download-btn { background-color: var(--success); }
-        .print-btn { background-color: var(--info); }
-
-        @media print {
-            body * { visibility: hidden; } 
-            .print-label, .print-label * { visibility: visible; } 
-            .print-label { position: absolute; left: 0; top: 0; width: 10.20cm; height: 5.01cm; border: none; padding: 2mm; }
-            @page { size: 10.20cm 5.01cm; margin: 0; } 
-        }
+        .download-btn { background-color: var(--success); } .print-btn { background-color: var(--info); }
+        @media print { body * { visibility: hidden; } .print-label, .print-label * { visibility: visible; } .print-label { position: absolute; left: 0; top: 0; width: 10.20cm; height: 5.01cm; border: none; padding: 2mm; } @page { size: 10.20cm 5.01cm; margin: 0; } }
     </style>
 </head>
 <body>
+
+<!-- CANDADO DE SEGURIDAD -->
+<script>
+    const sesion = JSON.parse(localStorage.getItem('wms_session'));
+    const rolPermitido = "Recepcion";
+    
+    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== rolPermitido)) {
+        window.location.href = "login.html";
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const navHeader = document.querySelector('.nav-header');
+        if(sesion.rol !== "Admin") {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(!btn.classList.contains('active')) btn.style.display = 'none';
+            });
+        }
+        navHeader.innerHTML += `<button onclick="cerrarSesion()" class="nav-btn" style="border-color:red; color:red;">Cerrar Sesión (${sesion.nombre})</button>`;
+    });
+
+    function cerrarSesion() {
+        localStorage.removeItem('wms_session');
+        window.location.href = "login.html";
+    }
+</script>
 
 <div id="offlineBanner" class="offline-banner">
     <span id="offlineText">⚠️ Sin conexión: 0 tarimas pendientes</span>
@@ -77,7 +81,6 @@
     
     <h2>Registro de Entrada</h2>
     <form id="registroForm">
-        
         <label>Selecciona el Producto</label>
         <div class="product-grid" id="productGrid">
             <button type="button" class="product-btn" data-val="Serrano">Serrano</button>
@@ -127,7 +130,7 @@
 </div>
 
 <script>
-    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwHM9dAeRsDsr4nMhlTWqTKPjse90wgcVu0wj81ogE-6EsrcTiXlDv-ldZY-kPUp5gFrQ/exec";
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let buzonsalida = JSON.parse(localStorage.getItem('wms_recepcion_offline')) || [];
     let ultimoFolioGenerado = "";
 
@@ -184,24 +187,12 @@
 
     document.getElementById('registroForm').addEventListener('submit', function(event) {
         event.preventDefault(); 
-        
         const productoBase = document.getElementById('producto').value;
         if(!productoBase) { alert("Por favor, selecciona un producto."); return; }
-
-        // === CANDADO LÓGICO DE PESOS ===
         const pBruto = parseFloat(document.getElementById('pesoBruto').value);
         const pNeto = parseFloat(document.getElementById('pesoNeto').value);
-        
-        if(!pBruto || !pNeto) { 
-            alert("⚠️ Error: Necesitas ingresar los pesos para registrar."); 
-            return; 
-        }
-        
-        if(pNeto > pBruto) {
-            alert("⚠️ Error: El Peso Neto no puede ser mayor que el Peso Bruto. Por favor, verifica la báscula.");
-            return;
-        }
-        // ================================
+        if(!pBruto || !pNeto) { alert("⚠️ Error: Necesitas ingresar los pesos para registrar."); return; }
+        if(pNeto > pBruto) { alert("⚠️ Error: El Peso Neto no puede ser mayor que el Peso Bruto."); return; }
 
         const folioBase = document.getElementById('folio').value.trim();
         const certificado = document.getElementById('certificado').value;
@@ -211,15 +202,13 @@
         const fechaData = document.getElementById('fecha').value;
         
         const datos = {
-            producto: productoFinal, folio: folioFinal,
-            pesoBruto: pBruto, pesoNeto: pNeto,
-            fecha: fechaData, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value 
+            producto: productoFinal, folio: folioFinal, pesoBruto: pBruto, pesoNeto: pNeto,
+            fecha: fechaData, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value,
+            operador: sesion.nombre // FIRMA DEL OPERADOR
         };
 
         generarEtiquetaVisual(folioFinal, productoFinal, fechaData);
-        
-        document.getElementById('pesoBruto').value = "";
-        document.getElementById('pesoNeto').value = "";
+        document.getElementById('pesoBruto').value = ""; document.getElementById('pesoNeto').value = "";
         if(numTarima !== "") { document.getElementById('numeroTarima').value = parseInt(numTarima) + 1; }
         document.getElementById('pesoBruto').focus();
 
@@ -248,13 +237,9 @@
     });
 
     document.getElementById('printBtn').addEventListener('click', function() { window.print(); });
-
     document.getElementById('downloadBtn').addEventListener('click', function() {
         html2canvas(document.getElementById('printLabelArea'), {scale: 2}).then(function(canvas) {
-            const link = document.createElement('a');
-            link.download = `Etiqueta_${ultimoFolioGenerado}.png`; 
-            link.href = canvas.toDataURL("image/png");
-            link.click();
+            const link = document.createElement('a'); link.download = `Etiqueta_${ultimoFolioGenerado}.png`; link.href = canvas.toDataURL("image/png"); link.click();
         });
     });
 </script>
