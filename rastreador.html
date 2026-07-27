@@ -3,34 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS - Rastreador</title>
+    <title>WMS Vegxspress - Rastreador</title>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --rack-green: #548235; --danger: #dc3545; --success: #28a745;}
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .nav-header { width: 100%; max-width: 1000px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .nav-header { width: 100%; max-width: 800px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
-        .container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 20px; }
-        .panel { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .search-box { display: flex; gap: 10px; }
-        .search-box input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px;}
-        .search-box button { background-color: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight:bold; font-size: 16px;}
-        .result-card { margin-top: 15px; padding: 15px; background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; display: none; }
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
-        .bg-recibido { background-color: #ffc107; color: #333;} .bg-almacenado { background-color: #28a745; } .bg-produccion { background-color: #dc3545; }
-        .controls select { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px; font-size: 15px;}
+        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 800px; }
+        h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px;}
         
-        .racks-container { display: flex; flex-direction: column; gap: 30px; margin-top: 10px;}
-        .rack-wrapper { border: 1px solid #eee; border-radius: 8px; padding: 15px; background-color: #fafafa; overflow-x: auto;}
-        .rack-wrapper h4 { margin-top: 0; margin-bottom: 10px; color: var(--primary); font-size: 16px; border-bottom: 2px solid var(--rack-green); padding-bottom: 5px;}
-        .rack-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 600px;}
-        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 6px 8px; }
-        .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
-        .rack-row.empty { background-color: #fff; color: #aaa; text-align: center; }
-        .rack-row.filled { background-color: #e8f5e9; border-left: 4px solid var(--rack-green); color: #222;}
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .search-box input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        .search-box button { background-color: var(--primary); color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+        .search-box button:hover { background-color: #153a5c; }
+        
+        .result-card { background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 20px; display: none; }
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .data-group { background: white; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        .data-group label { display: block; font-size: 12px; color: #666; font-weight: bold; text-transform: uppercase; }
+        .data-group span { font-size: 16px; font-weight: bold; color: #333; }
+        
+        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; color: white; margin-top: 5px;}
+        .bg-recibido { background-color: var(--info); }
+        .bg-almacenado { background-color: var(--success); }
+        .bg-pt { background-color: var(--danger); }
+
+        /* ESTILO DEL BOTÓN DE CERRAR SESIÓN FLOTANTE */
+        .logout-btn {
+            position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
+            border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000;
+        }
+        .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
     </style>
 </head>
 <body>
+
+<!-- CANDADO DE SEGURIDAD DIRECTIVOS/ADMIN -->
+<script>
+    const sesion = JSON.parse(localStorage.getItem('wms_session'));
+    
+    // Solo Admin y Directivos pueden entrar aquí
+    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== "Directivos")) { 
+        window.location.href = "login.html"; 
+    }
+    
+    window.addEventListener('DOMContentLoaded', () => {
+        if(sesion.rol === "Directivos") {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const txt = btn.innerText.trim();
+                // Ocultar todo lo que NO sea Dashboard o Rastreador
+                if(txt !== "Dashboard" && txt !== "Rastreador") {
+                    btn.style.display = 'none';
+                }
+            });
+        }
+        
+        // Botón flotante
+        const btnSalir = document.createElement('button');
+        btnSalir.className = 'logout-btn';
+        btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
+        btnSalir.onclick = () => {
+            localStorage.removeItem('wms_session');
+            window.location.href = "login.html";
+        };
+        document.body.appendChild(btnSalir);
+    });
+</script>
 
 <div class="nav-header">
     <a href="index.html" class="nav-btn">Recepción</a>
@@ -42,147 +82,93 @@
 </div>
 
 <div class="container">
-    <div class="panel" style="border-left: 5px solid var(--primary);">
-        <h3 style="margin-top:0; color:var(--primary);">🔍 Rastreador de Folios</h3>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Ingresa el folio (Ej. 7085C-1)">
-            <button onclick="buscarFolio()">Buscar</button>
-        </div>
-        <div id="resultCard" class="result-card">
-            <h4 style="margin:0 0 10px 0;">Folio: <span id="resFolio"></span></h4>
-            <p style="margin:5px 0;">Producto: <strong id="resProducto"></strong> | Peso Neto: <strong id="resPeso"></strong></p>
-            <hr>
-            <p style="margin:5px 0;">Estatus: <span id="resEstatus" class="badge"></span></p>
-            <p style="margin:5px 0;">Ubicación: <strong id="resUbicacion"></strong></p>
-        </div>
+    <h2>🔍 Trazabilidad de Inventario</h2>
+    
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Ingresa el Folio Master (Ej. 7084C-1)" autocomplete="off">
+        <button onclick="buscarFolio()">Buscar Tarima</button>
     </div>
 
-    <div class="panel">
-        <h3 style="margin-top:0; color:var(--rack-green);">🗺️ Vista General por Cuarto</h3>
-        <p style="font-size: 13px; color: #666; margin-top: -10px;">Selecciona un cuarto para visualizar todos sus carriles simultáneamente.</p>
-        
-        <div class="controls">
-            <select id="cuartoFrio">
-                <option value="" disabled selected>Selecciona un Cuarto...</option>
-                <option value="Cuarto 1">Cuarto 1</option>
-                <option value="Cuarto 2">Cuarto 2</option>
-                <option value="Cuarto 3">Cuarto 3</option>
-                <option value="Cuarto 4">Cuarto 4</option>
-                <option value="Cuarto 5">Cuarto 5</option>
-            </select>
+    <div id="loadingMsg" style="display:none; text-align:center; font-weight:bold; color:var(--info);">Consultando base de datos...</div>
+    <div id="errorMsg" style="display:none; text-align:center; font-weight:bold; color:var(--danger);">Folio no encontrado.</div>
+
+    <div class="result-card" id="resultCard">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #ddd; padding-bottom:10px;">
+            <h3 style="margin:0; color:var(--primary);">Folio: <span id="resFolio"></span></h3>
+            <span id="resEstatus" class="status-badge"></span>
         </div>
         
-        <div id="racksContainer" class="racks-container"></div>
-        
+        <div class="result-grid">
+            <div class="data-group"><label>Producto</label><span id="resProducto"></span></div>
+            <div class="data-group"><label>Peso Neto</label><span id="resPeso"></span> kg</div>
+            <div class="data-group"><label>Cuarto Frío</label><span id="resCuarto"></span></div>
+            <div class="data-group"><label>Ubicación Física</label><span id="resUbi"></span></div>
+        </div>
+
+        <h4 style="margin-top:20px; margin-bottom:10px; color:#555; border-bottom:1px solid #ccc;">Firma de Operadores</h4>
+        <div class="result-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-top:0;">
+            <div class="data-group" style="border-left-color:#17a2b8;"><label>Recibió</label><span id="resRecibio" style="font-size:14px;">-</span></div>
+            <div class="data-group" style="border-left-color:#28a745;"><label>Ubicó</label><span id="resUbico" style="font-size:14px;">-</span></div>
+            <div class="data-group" style="border-left-color:#ffc107;"><label>Ajustó</label><span id="resAjusto" style="font-size:14px;">-</span></div>
+            <div class="data-group" style="border-left-color:#dc3545;"><label>Despachó</label><span id="resDespacho" style="font-size:14px;">-</span></div>
+        </div>
     </div>
 </div>
 
 <script>
-    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbwHM9dAeRsDsr4nMhlTWqTKPjse90wgcVu0wj81ogE-6EsrcTiXlDv-ldZY-kPUp5gFrQ/exec";
-    let inventarioGlobal = [];
-    
-    window.addEventListener('load', () => { 
-        fetch(urlGoogleScript + "?t=" + new Date().getTime())
-        .then(r => r.json())
-        .then(d => inventarioGlobal = d); 
-    });
-
-    function buscarFolio() {
-        const query = document.getElementById('searchInput').value.trim().toUpperCase();
-        if (!query) return;
-        
-        const res = inventarioGlobal.filter(i => String(i.folio).toUpperCase() === query);
-        const c = document.getElementById('resultCard'); 
-        c.style.display = 'block';
-        
-        if (res.length > 0) {
-            const t = res[res.length - 1];
-            document.getElementById('resFolio').innerText = t.folio; 
-            document.getElementById('resProducto').innerText = t.producto;
-            document.getElementById('resPeso').innerText = t.pesoNeto + " kg";
-            
-            const badge = document.getElementById('resEstatus'); 
-            badge.innerText = t.estatus; 
-            badge.className = 'badge';
-            
-            if (t.estatus === "Recibido") badge.classList.add("bg-recibido"); 
-            else if (t.estatus === "Almacenado") badge.classList.add("bg-almacenado"); 
-            else if (t.estatus === "PT") badge.classList.add("bg-produccion"); 
-            
-            document.getElementById('resUbicacion').innerText = t.estatus === "Recibido" ? "Área de Recepción" : (t.estatus === "PT" ? "Salió a PT (Producto Terminado)" : `${t.cuarto} | ${t.ubicacion}`);
-            
-            c.style.borderLeft = "5px solid var(--success)";
-        } else {
-            document.getElementById('resFolio').innerText = query; 
-            document.getElementById('resProducto').innerText = "---"; 
-            document.getElementById('resPeso').innerText = "---";
-            document.getElementById('resEstatus').innerText = "NO ENCONTRADO"; 
-            document.getElementById('resEstatus').className = 'badge bg-produccion'; 
-            document.getElementById('resUbicacion').innerText = "Verifica que el folio sea correcto.";
-            
-            c.style.borderLeft = "5px solid var(--danger)";
-        }
-    }
+    const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
 
     document.getElementById('searchInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') buscarFolio();
     });
 
-    function actualizarMapaGeneral() {
-        const c = document.getElementById('cuartoFrio').value; 
-        const container = document.getElementById('racksContainer');
-        container.innerHTML = ""; 
-        
-        if (!c) return;
-        
-        // ¡El cambio principal está aquí! Cambiamos "Espacio" por "Carril"
-        const espacios = ["Carril 1", "Carril 2", "Carril 3", "Carril 4", "Carril 5"];
-        
-        espacios.forEach(e => {
-            let idTabla = 'tabla-' + e.replace(' ', '');
-            let htmlTabla = `
-            <div class="rack-wrapper">
-                <h4>🗄️ ${e}</h4>
-                <table class="rack-table" id="${idTabla}">
-                    <thead><tr><th>Folio</th><th>Producto</th><th>Peso</th><th>Caja</th><th>Tarima</th></tr></thead>
-                    <tbody>
-                        <tr class="level-separator"><td colspan="5">Nivel 3 (Alto)</td></tr>
-                        <tr class="rack-row empty" data-level="3" data-depth="4"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="3" data-depth="3"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="3" data-depth="2"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="3" data-depth="1"><td colspan="5">Libre</td></tr>
-                        <tr class="level-separator"><td colspan="5">Nivel 2 (Medio)</td></tr>
-                        <tr class="rack-row empty" data-level="2" data-depth="4"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="2" data-depth="3"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="2" data-depth="2"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="2" data-depth="1"><td colspan="5">Libre</td></tr>
-                        <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
-                        <tr class="rack-row empty" data-level="1" data-depth="4"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="1" data-depth="3"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="1" data-depth="2"><td colspan="5">Libre</td></tr><tr class="rack-row empty" data-level="1" data-depth="1"><td colspan="5">Libre</td></tr>
-                    </tbody>
-                </table>
-            </div>`;
-            container.innerHTML += htmlTabla;
-        });
+    function buscarFolio() {
+        const query = document.getElementById('searchInput').value.trim().toUpperCase();
+        if(!query) return;
 
-        inventarioGlobal.forEach(item => {
-            if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion) {
-                let partes = item.ubicacion.split(" - ");
-                if (partes.length === 2) {
-                    let nombreEspacio = partes[0];
-                    let coordenada = partes[1];
-                    const match = coordenada.match(/Nivel (\d+), Pos (\d+)/);
-                    
-                    if(match && espacios.includes(nombreEspacio)) {
-                        let idTabla = 'tabla-' + nombreEspacio.replace(' ', '');
-                        let tabla = document.getElementById(idTabla);
-                        if(tabla) {
-                            let row = tabla.querySelector(`.rack-row[data-level="${match[1]}"][data-depth="${match[2]}"]`);
-                            if(row) { 
-                                row.className = 'rack-row filled'; 
-                                row.innerHTML = `<td>${item.folio}</td><td>${item.producto}</td><td>${item.pesoNeto}kg</td><td>${item.tipoCaja}</td><td>${item.tarima}</td>`; 
-                            }
-                        }
-                    }
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('errorMsg').style.display = 'none';
+        document.getElementById('loadingMsg').style.display = 'block';
+
+        fetch(urlGoogleScript + "?t=" + new Date().getTime())
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loadingMsg').style.display = 'none';
+                const tarima = data.find(item => String(item.folio).toUpperCase() === query);
+                
+                if(tarima) {
+                    mostrarResultados(tarima);
+                } else {
+                    document.getElementById('errorMsg').style.display = 'block';
                 }
-            }
-        });
+            }).catch(err => {
+                document.getElementById('loadingMsg').style.display = 'none';
+                document.getElementById('errorMsg').innerText = "Error de conexión.";
+                document.getElementById('errorMsg').style.display = 'block';
+            });
     }
-    
-    document.getElementById('cuartoFrio').addEventListener('change', actualizarMapaGeneral); 
+
+    function mostrarResultados(item) {
+        document.getElementById('resFolio').innerText = item.folio;
+        document.getElementById('resProducto').innerText = item.producto;
+        document.getElementById('resPeso').innerText = item.pesoNeto;
+        document.getElementById('resCuarto').innerText = item.cuarto || "Sin asignar";
+        document.getElementById('resUbi').innerText = item.ubicacion || "En zona de recepción";
+        
+        document.getElementById('resRecibio').innerText = item.recibio || "-";
+        document.getElementById('resUbico').innerText = item.ubico || "-";
+        document.getElementById('resAjusto').innerText = item.ajusto || "-";
+        document.getElementById('resDespacho').innerText = item.despacho || "-";
+
+        const badge = document.getElementById('resEstatus');
+        badge.innerText = item.estatus;
+        badge.className = "status-badge"; 
+        if(item.estatus === "Recibido") badge.classList.add("bg-recibido");
+        if(item.estatus === "Almacenado") badge.classList.add("bg-almacenado");
+        if(item.estatus === "PT") badge.classList.add("bg-pt");
+
+        document.getElementById('resultCard').style.display = 'block';
+    }
 </script>
 </body>
 </html>
