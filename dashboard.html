@@ -21,8 +21,13 @@
         .metric-card h3 { margin: 0; color: #666; font-size: 16px; text-transform: uppercase;}
         .metric-card .number { font-size: 40px; font-weight: bold; color: var(--primary); margin: 10px 0;}
         .metric-card p { margin: 0; color: #888; font-size: 13px; font-weight: bold;}
-
-        /* ESTILO DEL BOTÓN DE CERRAR SESIÓN FLOTANTE */
+        
+        /* Contenedor de la Barra de Ocupación */
+        .capacity-section { margin-top: 30px; background: #f8f9fa; padding: 25px; border-radius: 10px; border: 1px solid #eee;}
+        .capacity-bar-bg { background: #ddd; border-radius: 20px; height: 30px; width: 100%; overflow: hidden; position: relative; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);}
+        .capacity-bar-fill { background: var(--success); width: 0%; height: 100%; transition: width 1.5s ease-in-out; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-weight: bold; font-size: 13px; box-sizing: border-box;}
+        
+        /* Botón Flotante */
         .logout-btn {
             position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
             border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
@@ -33,34 +38,22 @@
 </head>
 <body>
 
-<!-- CANDADO DE SEGURIDAD DIRECTIVOS/ADMIN -->
 <script>
     const sesion = JSON.parse(localStorage.getItem('wms_session'));
-    
-    // Solo Admin y Directivos pueden entrar aquí
-    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== "Directivos")) { 
-        window.location.href = "login.html"; 
-    }
+    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== "Directivos")) { window.location.href = "login.html"; }
     
     window.addEventListener('DOMContentLoaded', () => {
         if(sesion.rol === "Directivos") {
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const txt = btn.innerText.trim();
-                // Ocultar todo lo que NO sea Dashboard o Rastreador
-                if(txt !== "Dashboard" && txt !== "Rastreador") {
-                    btn.style.display = 'none';
-                }
+                if(txt !== "Dashboard" && txt !== "Rastreador") btn.style.display = 'none';
             });
         }
         
-        // Botón flotante
         const btnSalir = document.createElement('button');
         btnSalir.className = 'logout-btn';
         btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
-        btnSalir.onclick = () => {
-            localStorage.removeItem('wms_session');
-            window.location.href = "login.html";
-        };
+        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; };
         document.body.appendChild(btnSalir);
     });
 </script>
@@ -78,31 +71,50 @@
     <h2>📊 Resumen de Operación (Vegxspress)</h2>
     <div style="text-align:center; color:#666; font-size:13px; margin-top:-10px; margin-bottom:20px;">Actualizado en tiempo real</div>
     
-    <div id="loadingBox" style="text-align:center; padding: 40px; font-weight:bold; color:var(--primary);">Calculando métricas...</div>
+    <div id="loadingBox" style="text-align:center; padding: 40px; font-weight:bold; color:var(--primary);">Calculando métricas y ocupación...</div>
 
-    <div class="metrics-grid" id="metricsGrid" style="display:none;">
-        <div class="metric-card m-recibido">
-            <h3>En Andén (Pendiente)</h3>
-            <div class="number" id="kpiRecibidos">0</div>
-            <p>Tarimas por reubicar</p>
+    <div id="dashboardContent" style="display:none;">
+        <div class="metrics-grid">
+            <div class="metric-card m-recibido">
+                <h3>En Andén (Pendiente)</h3>
+                <div class="number" id="kpiRecibidos">0</div>
+                <p>Tarimas por reubicar</p>
+            </div>
+            
+            <div class="metric-card m-almacenado">
+                <h3>En Cuartos Fríos</h3>
+                <div class="number" id="kpiAlmacenados">0</div>
+                <p>Tarimas en Rack</p>
+            </div>
+
+            <div class="metric-card m-pt">
+                <h3>Salidas a Producción</h3>
+                <div class="number" id="kpiPT">0</div>
+                <p>Tarimas despachadas</p>
+            </div>
         </div>
         
-        <div class="metric-card m-almacenado">
-            <h3>En Cuartos Fríos</h3>
-            <div class="number" id="kpiAlmacenados">0</div>
-            <p>Tarimas en Rack</p>
-        </div>
-
-        <div class="metric-card m-pt">
-            <h3>Salidas a Producción</h3>
-            <div class="number" id="kpiPT">0</div>
-            <p>Tarimas despachadas</p>
+        <!-- Indicador de Capacidad del Almacén -->
+        <div class="capacity-section">
+            <h3 style="margin-top:0; color:var(--primary);">Utilización del Almacén</h3>
+            <div class="capacity-bar-bg">
+                <div id="capacityBarFill" class="capacity-bar-fill">0%</div>
+            </div>
+            <p style="text-align:center; font-weight:bold; color:#555; margin-top:15px; margin-bottom:0;">
+                Ocupación: <span id="capTextNum" style="color:var(--primary); font-size:16px;">0</span> de 300 posiciones disponibles.
+            </p>
+            <p style="text-align:center; font-size:11px; color:#888; margin-top:5px;">
+                *Basado en 5 cuartos, 5 carriles y 12 posiciones por carril.
+            </p>
         </div>
     </div>
 </div>
 
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
+
+    // Capacidad Máxima Teórica (Ajusta este número si tus racks son más grandes/chicos)
+    const MAX_CAPACITY = 300; 
 
     window.onload = function() {
         fetch(urlGoogleScript + "?t=" + new Date().getTime())
@@ -121,9 +133,28 @@
                 document.getElementById('kpiRecibidos').innerText = countRecibido;
                 document.getElementById('kpiAlmacenados').innerText = countAlmacenado;
                 document.getElementById('kpiPT').innerText = countPT;
+                
+                // Cálculo de la barra de ocupación
+                let porcentaje = Math.round((countAlmacenado / MAX_CAPACITY) * 100);
+                if (porcentaje > 100) porcentaje = 100; // Por si hay sobrecupo teórico
 
+                const barraFill = document.getElementById('capacityBarFill');
+                document.getElementById('capTextNum').innerText = countAlmacenado;
+                
+                // Cambiamos el color si se está llenando demasiado el almacén
+                if(porcentaje > 85) barraFill.style.background = "var(--danger)";
+                else if(porcentaje > 70) barraFill.style.background = "var(--warning)";
+                
                 document.getElementById('loadingBox').style.display = 'none';
-                document.getElementById('metricsGrid').style.display = 'grid';
+                document.getElementById('dashboardContent').style.display = 'block';
+                
+                // Animación de la barra (retraso ligero para el efecto visual)
+                setTimeout(() => {
+                    barraFill.style.width = porcentaje + "%";
+                    if(porcentaje > 5) barraFill.innerText = porcentaje + "%"; // Oculta el texto si es muy pequeña
+                    else barraFill.innerText = "";
+                }, 300);
+
             })
             .catch(err => {
                 document.getElementById('loadingBox').innerText = "Error al cargar la información. Revisa tu conexión.";
