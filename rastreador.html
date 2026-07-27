@@ -31,18 +31,20 @@
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; color: white; margin-top: 5px;}
         .bg-recibido { background-color: var(--info); } .bg-almacenado { background-color: var(--success); } .bg-pt { background-color: var(--danger); }
 
-        /* Sección Derecha: Mapa de Racks */
-        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; }
+        /* Sección Derecha: Mapa de Racks Dinámicos */
+        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-y: auto; max-height: 700px; padding-right:10px;}
         .form-group { margin-bottom: 10px; } 
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: var(--primary);}
         .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        .rack-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 10px;}
-        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 6px 4px; } .rack-table th { background-color: #f9f9f9; }
+        
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 5px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);}
+        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 6px 4px; } 
+        .rack-table th { background-color: #f9f9f9; }
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
         .rack-row { height: 35px; } 
         .rack-row.empty { background-color: #fff; }
-        .rack-row.filled { background-color: #f9f9f9; color: #555; }
-        .rack-row.highlighted td { background-color: #fff3cd; border-top: 2px solid var(--warning); border-bottom: 2px solid var(--warning); font-weight:bold; color:#000;}
+        .rack-row.filled { background-color: #f9f9f9; color: #333; font-weight:500;}
+        .rack-row.highlighted td { background-color: #fff3cd !important; border-top: 2px solid var(--warning); border-bottom: 2px solid var(--warning); font-weight:bold; color:#000;}
 
         /* Botón de Cerrar Sesión Flotante */
         .logout-btn {
@@ -55,31 +57,20 @@
 </head>
 <body>
 
-<!-- CANDADO DE SEGURIDAD DIRECTIVOS/ADMIN -->
 <script>
     const sesion = JSON.parse(localStorage.getItem('wms_session'));
-    
-    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== "Directivos")) { 
-        window.location.href = "login.html"; 
-    }
-    
+    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== "Directivos")) { window.location.href = "login.html"; }
     window.addEventListener('DOMContentLoaded', () => {
         if(sesion.rol === "Directivos") {
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const txt = btn.innerText.trim();
-                if(txt !== "Dashboard" && txt !== "Rastreador") {
-                    btn.style.display = 'none';
-                }
+                if(txt !== "Dashboard" && txt !== "Rastreador") btn.style.display = 'none';
             });
         }
-        
         const btnSalir = document.createElement('button');
         btnSalir.className = 'logout-btn';
         btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
-        btnSalir.onclick = () => {
-            localStorage.removeItem('wms_session');
-            window.location.href = "login.html";
-        };
+        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; };
         document.body.appendChild(btnSalir);
     });
 </script>
@@ -95,11 +86,9 @@
 
 <div class="container">
     <h2>🔍 Trazabilidad de Inventario</h2>
-    
     <div id="loadingMsg" style="text-align:center; font-weight:bold; color:var(--info); margin-bottom:15px;">Sincronizando base de datos...</div>
     
     <div class="layout-grid">
-        
         <!-- COLUMNA IZQUIERDA: Buscador Rápido -->
         <div>
             <div class="search-box">
@@ -107,22 +96,18 @@
                 <input type="text" id="searchInput" placeholder="Ej. 7084C-1" autocomplete="off">
                 <button onclick="buscarFolio()">Buscar Tarima</button>
             </div>
-
             <div id="errorMsg" style="display:none; text-align:center; font-weight:bold; color:var(--danger); margin-bottom:10px;">Folio no encontrado.</div>
-
             <div class="result-card" id="resultCard">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #ddd; padding-bottom:5px;">
                     <h3 style="margin:0; color:var(--primary);">Folio: <span id="resFolio"></span></h3>
                     <span id="resEstatus" class="status-badge"></span>
                 </div>
-                
                 <div class="result-grid">
                     <div class="data-group"><label>Producto</label><span id="resProducto"></span></div>
                     <div class="data-group"><label>Peso Neto</label><span id="resPeso"></span> kg</div>
                     <div class="data-group"><label>Cuarto Frío</label><span id="resCuarto"></span></div>
                     <div class="data-group"><label>Ubicación</label><span id="resUbi"></span></div>
                 </div>
-
                 <h4 style="margin-top:15px; margin-bottom:5px; color:#555; border-bottom:1px solid #ccc; font-size:12px;">Firmas Operativas</h4>
                 <div class="result-grid" style="grid-template-columns: 1fr 1fr; margin-top:0;">
                     <div class="data-group" style="border-left-color:#17a2b8;"><label>Recibió</label><span id="resRecibio" style="font-size:12px;">-</span></div>
@@ -133,47 +118,25 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA: Mapa de Racks -->
+        <!-- COLUMNA DERECHA: Mapa de Cuartos Fríos (TODOS LOS CARRILES) -->
         <div class="rack-map-section">
-            <div style="display:flex; gap:10px;">
-                <div class="form-group" style="flex:1;">
-                    <label>Filtro: Cuarto Frío</label>
-                    <select id="cuartoFrio">
-                        <option value="" disabled selected>Selecciona...</option>
-                        <option value="Cuarto 1">Cuarto 1 (Terminado)</option>
-                        <option value="Cuarto 2">Cuarto 2 (General)</option>
-                        <option value="Cuarto 3">Cuarto 3 (General)</option>
-                        <option value="Cuarto 4">Cuarto 4 (General)</option>
-                        <option value="Cuarto 5">Cuarto 5 (Tomatillo)</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Filtro: Carril</label>
-                    <select id="espacioRack">
-                        <option value="" disabled selected>Selecciona...</option>
-                        <option value="Carril 1">Carril 1</option>
-                        <option value="Carril 2">Carril 2</option>
-                        <option value="Carril 3">Carril 3</option>
-                        <option value="Carril 4">Carril 4</option>
-                        <option value="Carril 5">Carril 5</option>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label>Filtro: Selecciona un Cuarto Frío para ver todos sus carriles</label>
+                <select id="cuartoFrio">
+                    <option value="" disabled selected>Selecciona un Cuarto...</option>
+                    <option value="Cuarto 1">Cuarto 1 (Terminado)</option>
+                    <option value="Cuarto 2">Cuarto 2 (General)</option>
+                    <option value="Cuarto 3">Cuarto 3 (General)</option>
+                    <option value="Cuarto 4">Cuarto 4 (General)</option>
+                    <option value="Cuarto 5">Cuarto 5 (Tomatillo)</option>
+                </select>
             </div>
-
-            <h3 id="rackTitle" style="color:var(--primary); margin-top:5px; margin-bottom:5px; font-size:15px;">Vista General de Rack</h3>
-            <table class="rack-table" id="rackTable">
-                <thead><tr><th>Folio</th><th>Producto</th><th>P. Neto</th><th>Caja</th><th>Tarima</th></tr></thead>
-                <tbody>
-                    <tr class="level-separator"><td colspan="5">Nivel 3 (Alto)</td></tr>
-                    <tr class="rack-row empty" data-level="3" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
-                    <tr class="level-separator"><td colspan="5">Nivel 2 (Medio)</td></tr>
-                    <tr class="rack-row empty" data-level="2" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
-                    <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
-                    <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
-                </tbody>
-            </table>
+            
+            <div id="allRacksContainer">
+                <!-- Aquí se generarán las tablas de los 5 carriles dinámicamente -->
+                <p style="text-align:center; color:#888; font-size:13px; margin-top:30px;">Selecciona un cuarto para cargar la vista panorámica.</p>
+            </div>
         </div>
-
     </div>
 </div>
 
@@ -194,45 +157,54 @@
             });
     });
 
-    document.getElementById('cuartoFrio').addEventListener('change', actualizarTablaMapa);
-    document.getElementById('espacioRack').addEventListener('change', actualizarTablaMapa);
+    document.getElementById('cuartoFrio').addEventListener('change', () => actualizarTablaMapa(null));
 
+    // Generador Dinámico de los 5 Carriles
     function actualizarTablaMapa(folioResaltar = null) {
         const c = document.getElementById('cuartoFrio').value; 
-        const e = document.getElementById('espacioRack').value;
-        const tituloRack = document.getElementById('rackTitle');
+        const container = document.getElementById('allRacksContainer');
+        container.innerHTML = ""; 
         
-        if(e) tituloRack.innerText = "Vista de Rack - " + e; else tituloRack.innerText = "Vista General de Rack";
-        
-        // Limpiar tabla
-        document.querySelectorAll('.rack-row').forEach(row => { 
-            row.className = 'rack-row empty'; 
-            const tds = row.querySelectorAll('td'); 
-            for(let i=0; i<5; i++) tds[i].innerText = ""; 
-        });
-        
-        if (!c || !e) return;
+        if (!c) return;
 
-        inventarioGlobal.forEach(item => {
-            if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
-                const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
-                if(match) {
-                    const row = document.querySelector(`.rack-row[data-level="${match[1]}"][data-depth="${match[2]}"]`);
-                    if(row) {
-                        row.className = 'rack-row filled'; 
-                        if (folioResaltar && String(item.folio).toUpperCase() === folioResaltar) {
-                            row.classList.add('highlighted');
-                        }
-                        const tds = row.querySelectorAll('td');
-                        tds[0].innerText = item.folio; 
-                        tds[1].innerText = item.producto; 
-                        tds[2].innerText = item.pesoNeto; 
-                        tds[3].innerText = item.tipoCaja; 
-                        tds[4].innerText = item.tarima;
+        // Generamos los 5 carriles en bucle
+        for(let cNum = 1; cNum <= 5; cNum++) {
+            let carrilName = "Carril " + cNum;
+            let htmlTable = `<h3 style="color:var(--primary); margin-top:15px; margin-bottom:5px; border-bottom:1px solid #ccc;">📍 ${carrilName}</h3>
+                             <table class="rack-table">
+                                <thead><tr><th>Folio</th><th>Producto</th><th>P. Neto</th><th>Caja</th><th>Tarima</th></tr></thead>
+                                <tbody>`;
+            
+            // Niveles del 3 (Alto) al 1 (Piso)
+            for(let lvl = 3; lvl >= 1; lvl--) {
+                let lvlLabel = lvl === 3 ? "Alto" : lvl === 2 ? "Medio" : "Piso";
+                htmlTable += `<tr class="level-separator"><td colspan="5">Nivel ${lvl} (${lvlLabel})</td></tr>`;
+                
+                // Posiciones de la 4 (Fondo) a la 1 (Frente)
+                for(let pos = 4; pos >= 1; pos--) {
+                    let ubiBuscada = `${carrilName} - Nivel ${lvl}, Pos ${pos}`;
+                    let item = inventarioGlobal.find(i => i.estatus === "Almacenado" && i.cuarto === c && i.ubicacion === ubiBuscada);
+                    
+                    if(item) {
+                        let highlight = (folioResaltar && String(item.folio).toUpperCase() === folioResaltar) ? "highlighted" : "";
+                        let idFila = (highlight !== "") ? `id="filaBuscada"` : ""; // Le ponemos ID a la fila para que la pantalla baje hacia ella
+                        htmlTable += `<tr class="rack-row filled ${highlight}" ${idFila}><td>${item.folio}</td><td>${item.producto}</td><td>${item.pesoNeto}</td><td>${item.tipoCaja}</td><td>${item.tarima}</td></tr>`;
+                    } else {
+                        htmlTable += `<tr class="rack-row empty"><td></td><td></td><td></td><td></td><td></td></tr>`;
                     }
                 }
             }
-        });
+            htmlTable += `</tbody></table>`;
+            container.innerHTML += htmlTable;
+        }
+
+        // Si venimos de una búsqueda y hubo resalte, hacemos scroll automático hacia esa tabla
+        if(folioResaltar) {
+            setTimeout(() => {
+                const filaEncontrada = document.getElementById('filaBuscada');
+                if(filaEncontrada) filaEncontrada.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        }
     }
 
     document.getElementById('searchInput').addEventListener('keypress', function (e) {
@@ -251,16 +223,10 @@
         if(tarima) {
             mostrarResultados(tarima);
             
-            // Si está almacenada, cambiar los selectores visuales automáticamente y resaltar
-            if(tarima.estatus === "Almacenado" && tarima.cuarto && tarima.ubicacion) {
+            // Si está almacenada, cambiar el Cuarto Frío automáticamente y mostrar TODOS sus carriles resaltando el folio
+            if(tarima.estatus === "Almacenado" && tarima.cuarto) {
                 document.getElementById('cuartoFrio').value = tarima.cuarto;
-                
-                // Extraer el carril (Ej: "Carril 3") de la cadena "Carril 3 - Nivel 2, Pos 1"
-                const carrilMatch = tarima.ubicacion.split(" - ")[0];
-                if(carrilMatch) {
-                    document.getElementById('espacioRack').value = carrilMatch;
-                    actualizarTablaMapa(query);
-                }
+                actualizarTablaMapa(query);
             }
         } else {
             document.getElementById('errorMsg').style.display = 'block';
