@@ -30,53 +30,29 @@
         .rack-row.filled { background-color: #f9f9f9; cursor: not-allowed; color: #555; }
         #status-area { margin-top: 20px; text-align: center; font-weight: bold; }
         
-        /* ESTILO DEL BOTÓN DE CERRAR SESIÓN FLOTANTE */
-        .logout-btn {
-            position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
-            border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
-            cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000;
-        }
+        .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
     </style>
 </head>
 <body>
 
-<!-- CANDADO DE SEGURIDAD -->
 <script>
     const sesion = JSON.parse(localStorage.getItem('wms_session'));
     const rolPermitido = "Almacen";
-    
-    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== rolPermitido)) {
-        window.location.href = "login.html";
-    }
-
+    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== rolPermitido)) { window.location.href = "login.html"; }
     window.addEventListener('DOMContentLoaded', () => {
         if(sesion.rol !== "Admin") {
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const txt = btn.innerText.trim();
-                // El rol almacén puede ver estas tres pestañas
-                if(txt !== "Almacenaje" && txt !== "Salidas" && txt !== "Ajustes / Reubicación") {
-                    btn.style.display = 'none';
-                }
+                if(txt !== "Almacenaje" && txt !== "Salidas" && txt !== "Ajustes / Reubicación") btn.style.display = 'none';
             });
         }
-        
-        // Botón elegante flotante
-        const btnSalir = document.createElement('button');
-        btnSalir.className = 'logout-btn';
-        btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
-        btnSalir.onclick = () => {
-            localStorage.removeItem('wms_session');
-            window.location.href = "login.html";
-        };
-        document.body.appendChild(btnSalir);
+        const btnSalir = document.createElement('button'); btnSalir.className = 'logout-btn'; btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
+        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; }; document.body.appendChild(btnSalir);
     });
 </script>
 
-<div id="offlineBanner" class="offline-banner">
-    <span id="offlineText">⚠️ Sin conexión: 0 ubicaciones pendientes</span>
-    <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
-</div>
+<div id="offlineBanner" class="offline-banner"><span id="offlineText">⚠️ Sin conexión: 0 ubicaciones pendientes</span><button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button></div>
 
 <div class="nav-header">
     <a href="index.html" class="nav-btn">Recepción</a>
@@ -94,11 +70,20 @@
             <div class="form-group"><label>Folio (Escanear o teclear)</label><input type="text" id="folioDisplay" placeholder="Ej. 7084C-1" required></div>
             <div class="form-group">
                 <label>1. Cuarto Frío</label>
-                <select id="cuartoFrio" required><option value="" disabled selected>Selecciona...</option><option value="Cuarto 1">Cuarto 1 (Terminado)</option><option value="Cuarto 2">Cuarto 2 (General)</option><option value="Cuarto 3">Cuarto 3 (General)</option><option value="Cuarto 4">Cuarto 4 (General)</option><option value="Cuarto 5">Cuarto 5 (Tomatillo)</option></select>
+                <select id="cuartoFrio" required>
+                    <option value="" disabled selected>Selecciona...</option>
+                    <option value="Cuarto 1">Cuarto 1 (Terminado) - 6 Carriles</option>
+                    <option value="Cuarto 2">Cuarto 2 (General) - 6 Carriles</option>
+                    <option value="Cuarto 3">Cuarto 3 (General) - 4 Carriles</option>
+                    <option value="Cuarto 4">Cuarto 4 (General) - 3 Carriles</option>
+                    <option value="Cuarto 5">Cuarto 5 (Tomatillo) - 4 Carriles</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>2. Carril</label>
-                <select id="espacioRack" required><option value="" disabled selected>Selecciona Carril...</option><option value="Carril 1">Carril 1</option><option value="Carril 2">Carril 2</option><option value="Carril 3">Carril 3</option><option value="Carril 4">Carril 4</option><option value="Carril 5">Carril 5</option></select>
+                <select id="espacioRack" required disabled>
+                    <option value="" disabled selected>Selecciona primero un cuarto...</option>
+                </select>
             </div>
             <input type="hidden" id="levelSelected"><input type="hidden" id="depthSelected">
             <button type="submit" id="saveBtn" class="submit-btn" disabled>Confirmar Ubicación</button>
@@ -128,6 +113,9 @@
     let inventarioGlobal = [];
     let buzonsalida = JSON.parse(localStorage.getItem('wms_almacen_offline')) || [];
 
+    // CONFIGURACIÓN DINÁMICA DE CARRILES
+    const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
+
     window.addEventListener('load', () => { iniciarCamara(); cargarInventario(); actualizarInterfazOffline(); });
 
     function actualizarInterfazOffline() {
@@ -155,6 +143,25 @@
         }).catch(error => { console.log("Cargando con caché local"); });
     }
 
+    // LÓGICA DE CARRILES DINÁMICOS
+    document.getElementById('cuartoFrio').addEventListener('change', (e) => {
+        const cuartoSeleccionado = e.target.value;
+        const selectorCarril = document.getElementById('espacioRack');
+        selectorCarril.innerHTML = '<option value="" disabled selected>Selecciona Carril...</option>';
+        
+        if(configCarriles[cuartoSeleccionado]) {
+            selectorCarril.disabled = false;
+            for(let i = 1; i <= configCarriles[cuartoSeleccionado]; i++) {
+                selectorCarril.innerHTML += `<option value="Carril ${i}">Carril ${i}</option>`;
+            }
+        }
+        actualizarTablaMapa(); 
+        checkForm();
+    });
+
+    document.getElementById('espacioRack').addEventListener('change', () => { actualizarTablaMapa(); checkForm(); });
+    document.getElementById('folioDisplay').addEventListener('input', checkForm);
+
     function actualizarTablaMapa() {
         const c = document.getElementById('cuartoFrio').value; const e = document.getElementById('espacioRack').value;
         const tituloRack = document.getElementById('rackTitle');
@@ -175,10 +182,6 @@
             }
         });
     }
-
-    document.getElementById('cuartoFrio').addEventListener('change', () => { actualizarTablaMapa(); checkForm(); });
-    document.getElementById('espacioRack').addEventListener('change', () => { actualizarTablaMapa(); checkForm(); });
-    document.getElementById('folioDisplay').addEventListener('input', checkForm);
 
     document.getElementById('rackTable').addEventListener('click', function(e) {
         const row = e.target.closest('.rack-row');
@@ -202,10 +205,8 @@
 
     document.getElementById('almacenForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
         const datos = {
-            action: 'update_location', 
-            folio: document.getElementById('folioDisplay').value.trim(), 
+            action: 'update_location', folio: document.getElementById('folioDisplay').value.trim(), 
             cuarto: document.getElementById('cuartoFrio').value, espacio: document.getElementById('espacioRack').value, 
             level: document.getElementById('levelSelected').value, depth: document.getElementById('depthSelected').value,
             operador: sesion.nombre 
@@ -219,6 +220,8 @@
         }
 
         document.getElementById('almacenForm').reset(); 
+        document.getElementById('espacioRack').innerHTML = '<option value="" disabled selected>Selecciona primero un cuarto...</option>';
+        document.getElementById('espacioRack').disabled = true;
         document.getElementById('levelSelected').value = ""; document.getElementById('depthSelected').value = "";
         document.getElementById('saveBtn').disabled = true;
 
