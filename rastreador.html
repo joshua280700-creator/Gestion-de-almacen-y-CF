@@ -46,12 +46,7 @@
         .rack-row.filled { background-color: #f9f9f9; color: #333; font-weight:500;}
         .rack-row.highlighted td { background-color: #fff3cd !important; border-top: 2px solid var(--warning); border-bottom: 2px solid var(--warning); font-weight:bold; color:#000;}
 
-        /* Botón de Cerrar Sesión Flotante */
-        .logout-btn {
-            position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
-            border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
-            cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000;
-        }
+        .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
     </style>
 </head>
@@ -67,11 +62,8 @@
                 if(txt !== "Dashboard" && txt !== "Rastreador") btn.style.display = 'none';
             });
         }
-        const btnSalir = document.createElement('button');
-        btnSalir.className = 'logout-btn';
-        btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
-        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; };
-        document.body.appendChild(btnSalir);
+        const btnSalir = document.createElement('button'); btnSalir.className = 'logout-btn'; btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
+        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; }; document.body.appendChild(btnSalir);
     });
 </script>
 
@@ -118,22 +110,21 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA: Mapa de Cuartos Fríos (TODOS LOS CARRILES) -->
+        <!-- COLUMNA DERECHA: Mapa Dinámico -->
         <div class="rack-map-section">
             <div class="form-group">
                 <label>Filtro: Selecciona un Cuarto Frío para ver todos sus carriles</label>
                 <select id="cuartoFrio">
                     <option value="" disabled selected>Selecciona un Cuarto...</option>
-                    <option value="Cuarto 1">Cuarto 1 (Terminado)</option>
-                    <option value="Cuarto 2">Cuarto 2 (General)</option>
-                    <option value="Cuarto 3">Cuarto 3 (General)</option>
-                    <option value="Cuarto 4">Cuarto 4 (General)</option>
-                    <option value="Cuarto 5">Cuarto 5 (Tomatillo)</option>
+                    <option value="Cuarto 1">Cuarto 1 (Terminado) - 6 Carriles</option>
+                    <option value="Cuarto 2">Cuarto 2 (General) - 6 Carriles</option>
+                    <option value="Cuarto 3">Cuarto 3 (General) - 4 Carriles</option>
+                    <option value="Cuarto 4">Cuarto 4 (General) - 3 Carriles</option>
+                    <option value="Cuarto 5">Cuarto 5 (Tomatillo) - 4 Carriles</option>
                 </select>
             </div>
             
             <div id="allRacksContainer">
-                <!-- Aquí se generarán las tablas de los 5 carriles dinámicamente -->
                 <p style="text-align:center; color:#888; font-size:13px; margin-top:30px;">Selecciona un cuarto para cargar la vista panorámica.</p>
             </div>
         </div>
@@ -143,6 +134,9 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let inventarioGlobal = [];
+
+    // CONFIGURACIÓN EXACTA DE CARRILES POR CUARTO
+    const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
 
     window.addEventListener('load', () => {
         fetch(urlGoogleScript + "?t=" + new Date().getTime())
@@ -159,16 +153,19 @@
 
     document.getElementById('cuartoFrio').addEventListener('change', () => actualizarTablaMapa(null));
 
-    // Generador Dinámico de los 5 Carriles
+    // Generador Dinámico de Carriles
     function actualizarTablaMapa(folioResaltar = null) {
         const c = document.getElementById('cuartoFrio').value; 
         const container = document.getElementById('allRacksContainer');
         container.innerHTML = ""; 
         
-        if (!c) return;
+        if (!c || !configCarriles[c]) return;
 
-        // Generamos los 5 carriles en bucle
-        for(let cNum = 1; cNum <= 5; cNum++) {
+        // Leemos cuántos carriles tiene el cuarto exacto que seleccionaste
+        const maxCarriles = configCarriles[c];
+
+        // Generamos únicamente los carriles que existen
+        for(let cNum = 1; cNum <= maxCarriles; cNum++) {
             let carrilName = "Carril " + cNum;
             let htmlTable = `<h3 style="color:var(--primary); margin-top:15px; margin-bottom:5px; border-bottom:1px solid #ccc;">📍 ${carrilName}</h3>
                              <table class="rack-table">
@@ -187,7 +184,7 @@
                     
                     if(item) {
                         let highlight = (folioResaltar && String(item.folio).toUpperCase() === folioResaltar) ? "highlighted" : "";
-                        let idFila = (highlight !== "") ? `id="filaBuscada"` : ""; // Le ponemos ID a la fila para que la pantalla baje hacia ella
+                        let idFila = (highlight !== "") ? `id="filaBuscada"` : ""; 
                         htmlTable += `<tr class="rack-row filled ${highlight}" ${idFila}><td>${item.folio}</td><td>${item.producto}</td><td>${item.pesoNeto}</td><td>${item.tipoCaja}</td><td>${item.tarima}</td></tr>`;
                     } else {
                         htmlTable += `<tr class="rack-row empty"><td></td><td></td><td></td><td></td><td></td></tr>`;
@@ -198,7 +195,6 @@
             container.innerHTML += htmlTable;
         }
 
-        // Si venimos de una búsqueda y hubo resalte, hacemos scroll automático hacia esa tabla
         if(folioResaltar) {
             setTimeout(() => {
                 const filaEncontrada = document.getElementById('filaBuscada');
@@ -222,8 +218,6 @@
         
         if(tarima) {
             mostrarResultados(tarima);
-            
-            // Si está almacenada, cambiar el Cuarto Frío automáticamente y mostrar TODOS sus carriles resaltando el folio
             if(tarima.estatus === "Almacenado" && tarima.cuarto) {
                 document.getElementById('cuartoFrio').value = tarima.cuarto;
                 actualizarTablaMapa(query);
