@@ -30,43 +30,25 @@
         .rack-row.filled { background-color: #f9f9f9; cursor: not-allowed; color:#888;}
         #status-area { margin-top: 15px; text-align: center; font-weight: bold; }
         
-        /* ESTILO DEL BOTÓN DE CERRAR SESIÓN FLOTANTE */
-        .logout-btn {
-            position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
-            border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
-            cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000;
-        }
+        .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
     </style>
 </head>
 <body>
 
-<!-- CANDADO DE SEGURIDAD -->
 <script>
     const sesion = JSON.parse(localStorage.getItem('wms_session'));
     const rolPermitido = "Almacen";
-    
     if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== rolPermitido)) { window.location.href = "login.html"; }
-    
     window.addEventListener('DOMContentLoaded', () => {
         if(sesion.rol !== "Admin") {
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const txt = btn.innerText.trim();
-                if(txt !== "Almacenaje" && txt !== "Salidas" && txt !== "Ajustes / Reubicación") {
-                    btn.style.display = 'none';
-                }
+                if(txt !== "Almacenaje" && txt !== "Salidas" && txt !== "Ajustes / Reubicación") btn.style.display = 'none';
             });
         }
-        
-        // Botón elegante flotante
-        const btnSalir = document.createElement('button');
-        btnSalir.className = 'logout-btn';
-        btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
-        btnSalir.onclick = () => {
-            localStorage.removeItem('wms_session');
-            window.location.href = "login.html";
-        };
-        document.body.appendChild(btnSalir);
+        const btnSalir = document.createElement('button'); btnSalir.className = 'logout-btn'; btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
+        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; }; document.body.appendChild(btnSalir);
     });
 </script>
 
@@ -93,8 +75,17 @@
             </div>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
             <h3 style="margin-top:0; color:var(--rack-green);">2. Nueva Ubicación</h3>
-            <select id="cuartoFrio" required><option value="" disabled selected>Selecciona Cuarto...</option><option value="Cuarto 1">Cuarto 1</option><option value="Cuarto 2">Cuarto 2</option><option value="Cuarto 3">Cuarto 3</option><option value="Cuarto 4">Cuarto 4</option><option value="Cuarto 5">Cuarto 5</option></select>
-            <select id="espacioRack" required><option value="" disabled selected>Selecciona Carril...</option><option value="Carril 1">Carril 1</option><option value="Carril 2">Carril 2</option><option value="Carril 3">Carril 3</option><option value="Carril 4">Carril 4</option><option value="Carril 5">Carril 5</option></select>
+            <select id="cuartoFrio" required>
+                <option value="" disabled selected>Selecciona Cuarto...</option>
+                <option value="Cuarto 1">Cuarto 1 (Terminado) - 6 Carriles</option>
+                <option value="Cuarto 2">Cuarto 2 (General) - 6 Carriles</option>
+                <option value="Cuarto 3">Cuarto 3 (General) - 4 Carriles</option>
+                <option value="Cuarto 4">Cuarto 4 (General) - 3 Carriles</option>
+                <option value="Cuarto 5">Cuarto 5 (Tomatillo) - 4 Carriles</option>
+            </select>
+            <select id="espacioRack" required disabled>
+                <option value="" disabled selected>Selecciona primero un cuarto...</option>
+            </select>
             <input type="hidden" id="levelSelected"><input type="hidden" id="depthSelected">
             <button type="submit" id="saveBtn" class="submit-btn" disabled>Actualizar y Guardar en Rack</button>
         </form>
@@ -120,6 +111,9 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let inventarioGlobal = []; let buzonsalida = JSON.parse(localStorage.getItem('wms_ajustes_offline')) || [];
+    
+    // CONFIGURACIÓN DINÁMICA DE CARRILES
+    const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
 
     window.addEventListener('load', () => { iniciarCamara(); cargarInventario(); actualizarInterfazOffline(); });
 
@@ -143,6 +137,22 @@
     }
 
     function cargarInventario() { fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(res => res.json()).then(data => { inventarioGlobal = data; }); }
+
+    // LÓGICA DE CARRILES DINÁMICOS
+    document.getElementById('cuartoFrio').addEventListener('change', (e) => {
+        const cuartoSeleccionado = e.target.value;
+        const selectorCarril = document.getElementById('espacioRack');
+        selectorCarril.innerHTML = '<option value="" disabled selected>Selecciona Carril...</option>';
+        
+        if(configCarriles[cuartoSeleccionado]) {
+            selectorCarril.disabled = false;
+            for(let i = 1; i <= configCarriles[cuartoSeleccionado]; i++) {
+                selectorCarril.innerHTML += `<option value="Carril ${i}">Carril ${i}</option>`;
+            }
+        }
+        actualizarTablaMapa(); 
+        checkForm();
+    });
 
     const html5QrCode = new Html5Qrcode("reader");
     function iniciarCamara() {
@@ -176,7 +186,6 @@
         });
     }
 
-    document.getElementById('cuartoFrio').addEventListener('change', () => { actualizarTablaMapa(); checkForm(); });
     document.getElementById('espacioRack').addEventListener('change', () => { actualizarTablaMapa(); checkForm(); });
     
     document.getElementById('rackTable').addEventListener('click', function(e) {
@@ -203,7 +212,10 @@
         };
 
         document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Ajuste procesado localmente!</span>";
-        document.getElementById('ajusteForm').reset(); document.getElementById('saveBtn').disabled = true;
+        document.getElementById('ajusteForm').reset(); 
+        document.getElementById('espacioRack').innerHTML = '<option value="" disabled selected>Selecciona primero un cuarto...</option>';
+        document.getElementById('espacioRack').disabled = true;
+        document.getElementById('saveBtn').disabled = true;
 
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
         .then(() => { document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Pesos y Ubicación Actualizados en Servidor!</span>"; cargarInventario();
