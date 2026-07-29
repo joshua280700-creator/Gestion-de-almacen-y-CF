@@ -113,9 +113,9 @@
         <!-- COLUMNA DERECHA: Mapa Dinámico -->
         <div class="rack-map-section">
             <div class="form-group">
-                <label>Filtro: Selecciona un Cuarto Frío para ver todos sus carriles</label>
+                <label>Filtro: Cuarto Frío Actual</label>
+                <!-- Quité el 'disabled' falso y la opción vacía para que no se vea el hueco en blanco -->
                 <select id="cuartoFrio">
-                    <option value="" disabled selected>Selecciona un Cuarto...</option>
                     <option value="Cuarto 1">Cuarto 1 (Terminado) - 6 Carriles</option>
                     <option value="Cuarto 2">Cuarto 2 (General) - 6 Carriles</option>
                     <option value="Cuarto 3">Cuarto 3 (General) - 4 Carriles</option>
@@ -125,7 +125,7 @@
             </div>
             
             <div id="allRacksContainer">
-                <p style="text-align:center; color:#888; font-size:13px; margin-top:30px;">Selecciona un cuarto para cargar la vista panorámica.</p>
+                <!-- Se llenará automáticamente al cargar -->
             </div>
         </div>
     </div>
@@ -144,6 +144,10 @@
             .then(data => {
                 inventarioGlobal = data;
                 document.getElementById('loadingMsg').style.display = 'none';
+                
+                // === NUEVO: CARGAR EL MAPA AUTOMÁTICAMENTE ===
+                document.getElementById('cuartoFrio').value = "Cuarto 1";
+                actualizarTablaMapa(null);
             })
             .catch(err => {
                 document.getElementById('loadingMsg').innerText = "Error al conectar con la base de datos.";
@@ -151,9 +155,10 @@
             });
     });
 
+    // Escuchador manual para cuando elijas otro cuarto desde la lista desplegable
     document.getElementById('cuartoFrio').addEventListener('change', () => actualizarTablaMapa(null));
 
-    // Generador Dinámico de Carriles
+    // Generador Dinámico de Carriles con REGEX
     function actualizarTablaMapa(folioResaltar = null) {
         const c = document.getElementById('cuartoFrio').value; 
         const container = document.getElementById('allRacksContainer');
@@ -161,10 +166,9 @@
         
         if (!c || !configCarriles[c]) return;
 
-        // Leemos cuántos carriles tiene el cuarto exacto que seleccionaste
         const maxCarriles = configCarriles[c];
 
-        // Generamos únicamente los carriles que existen
+        // 1. Armamos las tablas HTML vacías
         for(let cNum = 1; cNum <= maxCarriles; cNum++) {
             let carrilName = "Carril " + cNum;
             let htmlTable = `<h3 style="color:var(--primary); margin-top:15px; margin-bottom:5px; border-bottom:1px solid #ccc;">📍 ${carrilName}</h3>
@@ -172,29 +176,52 @@
                                 <thead><tr><th>Folio</th><th>Producto</th><th>P. Neto</th><th>Caja</th><th>Tarima</th></tr></thead>
                                 <tbody>`;
             
-            // Niveles del 3 (Alto) al 1 (Piso)
             for(let lvl = 3; lvl >= 1; lvl--) {
                 let lvlLabel = lvl === 3 ? "Alto" : lvl === 2 ? "Medio" : "Piso";
                 htmlTable += `<tr class="level-separator"><td colspan="5">Nivel ${lvl} (${lvlLabel})</td></tr>`;
                 
-                // Posiciones de la 4 (Fondo) a la 1 (Frente)
                 for(let pos = 4; pos >= 1; pos--) {
-                    let ubiBuscada = `${carrilName} - Nivel ${lvl}, Pos ${pos}`;
-                    let item = inventarioGlobal.find(i => i.estatus === "Almacenado" && i.cuarto === c && i.ubicacion === ubiBuscada);
-                    
-                    if(item) {
-                        let highlight = (folioResaltar && String(item.folio).toUpperCase() === folioResaltar) ? "highlighted" : "";
-                        let idFila = (highlight !== "") ? `id="filaBuscada"` : ""; 
-                        htmlTable += `<tr class="rack-row filled ${highlight}" ${idFila}><td>${item.folio}</td><td>${item.producto}</td><td>${item.pesoNeto}</td><td>${item.tipoCaja}</td><td>${item.tarima}</td></tr>`;
-                    } else {
-                        htmlTable += `<tr class="rack-row empty"><td></td><td></td><td></td><td></td><td></td></tr>`;
-                    }
+                    htmlTable += `<tr class="rack-row empty" data-carril="${cNum}" data-level="${lvl}" data-depth="${pos}">
+                                    <td></td><td></td><td></td><td></td><td></td>
+                                  </tr>`;
                 }
             }
             htmlTable += `</tbody></table>`;
             container.innerHTML += htmlTable;
         }
 
+        // 2. Leemos la base de datos y ubicamos las tarimas
+        inventarioGlobal.forEach(item => {
+            if (item.estatus === "Almacenado" && item.cuarto && item.cuarto.trim() === c.trim() && item.ubicacion) {
+                
+                const matchCarril = item.ubicacion.match(/Carril\s*(\d+)/i);
+                const matchPos = item.ubicacion.match(/Nivel\s*(\d+),\s*Pos\s*(\d+)/i);
+                
+                if(matchCarril && matchPos) {
+                    const cNum = matchCarril[1];
+                    const lvl = matchPos[1];
+                    const pos = matchPos[2];
+                    
+                    const row = container.querySelector(`.rack-row[data-carril="${cNum}"][data-level="${lvl}"][data-depth="${pos}"]`);
+                    
+                    if(row) {
+                        row.className = 'rack-row filled'; 
+                        if (folioResaltar && String(item.folio).toUpperCase() === folioResaltar) {
+                            row.classList.add('highlighted');
+                            row.id = "filaBuscada"; 
+                        }
+                        const tds = row.querySelectorAll('td');
+                        tds[0].innerText = item.folio; 
+                        tds[1].innerText = item.producto; 
+                        tds[2].innerText = item.pesoNeto; 
+                        tds[3].innerText = item.tipoCaja; 
+                        tds[4].innerText = item.tarima;
+                    }
+                }
+            }
+        });
+
+        // 3. Scroll automático
         if(folioResaltar) {
             setTimeout(() => {
                 const filaEncontrada = document.getElementById('filaBuscada');
@@ -219,7 +246,14 @@
         if(tarima) {
             mostrarResultados(tarima);
             if(tarima.estatus === "Almacenado" && tarima.cuarto) {
-                document.getElementById('cuartoFrio').value = tarima.cuarto;
+                const selectCuarto = document.getElementById('cuartoFrio');
+                const cleanCuarto = tarima.cuarto.trim();
+                for(let i=0; i<selectCuarto.options.length; i++) {
+                    if(selectCuarto.options[i].value.trim() === cleanCuarto) {
+                        selectCuarto.selectedIndex = i;
+                        break;
+                    }
+                }
                 actualizarTablaMapa(query);
             }
         } else {
