@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS Vegxspress - Dashboard</title>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545;}
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545; --purple: #6f42c1;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
@@ -18,21 +18,23 @@
         .metric-card.m-recibido { border-color: var(--info); }
         .metric-card.m-almacenado { border-color: var(--success); }
         .metric-card.m-pt { border-color: var(--danger); }
-        .metric-card h3 { margin: 0; color: #666; font-size: 16px; text-transform: uppercase;}
-        .metric-card .number { font-size: 40px; font-weight: bold; color: var(--primary); margin: 10px 0;}
-        .metric-card p { margin: 0; color: #888; font-size: 13px; font-weight: bold;}
+        .metric-card.m-kilos { border-color: var(--purple); }
+        .metric-card h3 { margin: 0; color: #666; font-size: 14px; text-transform: uppercase;}
+        .metric-card .number { font-size: 34px; font-weight: bold; color: var(--primary); margin: 10px 0;}
+        .metric-card p { margin: 0; color: #888; font-size: 12px; font-weight: bold;}
         
-        /* Contenedor de la Barra de Ocupación */
         .capacity-section { margin-top: 30px; background: #f8f9fa; padding: 25px; border-radius: 10px; border: 1px solid #eee;}
         .capacity-bar-bg { background: #ddd; border-radius: 20px; height: 30px; width: 100%; overflow: hidden; position: relative; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);}
         .capacity-bar-fill { background: var(--success); width: 0%; height: 100%; transition: width 1.5s ease-in-out; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-weight: bold; font-size: 13px; box-sizing: border-box;}
         
-        /* Botón Flotante */
-        .logout-btn {
-            position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
-            border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
-            cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000;
-        }
+        .list-section { margin-top: 30px; background: #fff; padding: 25px; border-radius: 10px; border: 1px solid #eee;}
+        .table-container { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 0;}
+        .list-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;}
+        .list-table th { background-color: var(--primary); color: white; padding: 12px; position: sticky; top: 0; z-index: 10;}
+        .list-table td { padding: 10px 12px; border-bottom: 1px solid #eee;}
+        .list-table tr:hover { background-color: #f1f1f1;}
+
+        .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
     </style>
 </head>
@@ -49,12 +51,8 @@
                 if(txt !== "Dashboard" && txt !== "Rastreador") btn.style.display = 'none';
             });
         }
-        
-        const btnSalir = document.createElement('button');
-        btnSalir.className = 'logout-btn';
-        btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
-        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; };
-        document.body.appendChild(btnSalir);
+        const btnSalir = document.createElement('button'); btnSalir.className = 'logout-btn'; btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
+        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; }; document.body.appendChild(btnSalir);
     });
 </script>
 
@@ -87,6 +85,13 @@
                 <p>Tarimas en Rack</p>
             </div>
 
+            <!-- Nueva Tarjeta de Kilos -->
+            <div class="metric-card m-kilos">
+                <h3>Total Kilos (Rack)</h3>
+                <div class="number" id="kpiKilos">0</div>
+                <p>KG Almacenados</p>
+            </div>
+
             <div class="metric-card m-pt">
                 <h3>Salidas a Producción</h3>
                 <div class="number" id="kpiPT">0</div>
@@ -101,20 +106,40 @@
                 <div id="capacityBarFill" class="capacity-bar-fill">0%</div>
             </div>
             <p style="text-align:center; font-weight:bold; color:#555; margin-top:15px; margin-bottom:0;">
-                Ocupación: <span id="capTextNum" style="color:var(--primary); font-size:16px;">0</span> de 300 posiciones disponibles.
+                Ocupación: <span id="capTextNum" style="color:var(--primary); font-size:16px;">0</span> de 276 posiciones disponibles.
             </p>
             <p style="text-align:center; font-size:11px; color:#888; margin-top:5px;">
-                *Basado en 5 cuartos, 5 carriles y 12 posiciones por carril.
+                *Basado en los 23 carriles totales de los 5 cuartos x 12 posiciones c/u.
             </p>
         </div>
+
+        <!-- Tabla Desglose de Kilos por Folio -->
+        <div class="list-section">
+            <h3 style="margin-top:0; color:var(--primary);">Detalle de Folios Almacenados (Rack)</h3>
+            <div class="table-container">
+                <table class="list-table">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Ubicación</th>
+                            <th>Peso (KG)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaFoliosTabla">
+                        <!-- Las filas se insertan solas aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
 
-    // Capacidad Máxima Teórica (Ajusta este número si tus racks son más grandes/chicos)
-    const MAX_CAPACITY = 300; 
+    // Capacidad Máxima Teórica (23 carriles * 12 posiciones = 276)
+    const MAX_CAPACITY = 276; 
 
     window.onload = function() {
         fetch(urlGoogleScript + "?t=" + new Date().getTime())
@@ -123,35 +148,62 @@
                 let countRecibido = 0;
                 let countAlmacenado = 0;
                 let countPT = 0;
+                let totalKgAlmacenado = 0;
+                let htmlTablaFolios = "";
 
                 data.forEach(item => {
                     if(item.estatus === "Recibido") countRecibido++;
-                    if(item.estatus === "Almacenado") countAlmacenado++;
                     if(item.estatus === "PT") countPT++;
+                    
+                    if(item.estatus === "Almacenado") {
+                        countAlmacenado++;
+                        
+                        // Asegurarnos de que el peso sea un número para sumarlo
+                        let peso = parseFloat(item.pesoNeto) || 0;
+                        totalKgAlmacenado += peso;
+
+                        // Armamos la fila para la tabla inferior
+                        let cuartoDisplay = item.cuarto ? item.cuarto.split(' ')[0] + ' ' + item.cuarto.split(' ')[1] : ""; // Ejemplo: "Cuarto 1"
+                        htmlTablaFolios += `
+                            <tr>
+                                <td><strong>${item.folio}</strong></td>
+                                <td style="font-size:12px; color:#555;">${cuartoDisplay} | ${item.ubicacion}</td>
+                                <td><span style="color:var(--success); font-weight:bold;">${peso.toLocaleString('es-MX')}</span> KG</td>
+                            </tr>
+                        `;
+                    }
                 });
 
                 document.getElementById('kpiRecibidos').innerText = countRecibido;
                 document.getElementById('kpiAlmacenados').innerText = countAlmacenado;
                 document.getElementById('kpiPT').innerText = countPT;
                 
+                // Formateamos el número de Kilos (Ej: 5,000.50)
+                document.getElementById('kpiKilos').innerText = totalKgAlmacenado.toLocaleString('es-MX', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+                
+                // Inyectamos las filas a la tabla
+                if(htmlTablaFolios === "") {
+                    document.getElementById('listaFoliosTabla').innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">No hay tarimas almacenadas en Rack actualmente.</td></tr>`;
+                } else {
+                    document.getElementById('listaFoliosTabla').innerHTML = htmlTablaFolios;
+                }
+
                 // Cálculo de la barra de ocupación
                 let porcentaje = Math.round((countAlmacenado / MAX_CAPACITY) * 100);
-                if (porcentaje > 100) porcentaje = 100; // Por si hay sobrecupo teórico
+                if (porcentaje > 100) porcentaje = 100; 
 
                 const barraFill = document.getElementById('capacityBarFill');
                 document.getElementById('capTextNum').innerText = countAlmacenado;
                 
-                // Cambiamos el color si se está llenando demasiado el almacén
                 if(porcentaje > 85) barraFill.style.background = "var(--danger)";
                 else if(porcentaje > 70) barraFill.style.background = "var(--warning)";
                 
                 document.getElementById('loadingBox').style.display = 'none';
                 document.getElementById('dashboardContent').style.display = 'block';
                 
-                // Animación de la barra (retraso ligero para el efecto visual)
                 setTimeout(() => {
                     barraFill.style.width = porcentaje + "%";
-                    if(porcentaje > 5) barraFill.innerText = porcentaje + "%"; // Oculta el texto si es muy pequeña
+                    if(porcentaje > 5) barraFill.innerText = porcentaje + "%"; 
                     else barraFill.innerText = "";
                 }, 300);
 
