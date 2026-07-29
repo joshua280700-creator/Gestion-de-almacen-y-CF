@@ -33,6 +33,7 @@
         .list-table th { background-color: var(--primary); color: white; padding: 12px; position: sticky; top: 0; z-index: 10;}
         .list-table td { padding: 10px 12px; border-bottom: 1px solid #eee;}
         .list-table tr:hover { background-color: #f1f1f1;}
+        .tag-tarimas { display: inline-block; background-color: #e9ecef; color: #555; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; margin-left: 8px;}
 
         .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
@@ -69,7 +70,7 @@
     <h2>📊 Resumen de Operación (Vegxspress)</h2>
     <div style="text-align:center; color:#666; font-size:13px; margin-top:-10px; margin-bottom:20px;">Actualizado en tiempo real</div>
     
-    <div id="loadingBox" style="text-align:center; padding: 40px; font-weight:bold; color:var(--primary);">Calculando métricas y ocupación...</div>
+    <div id="loadingBox" style="text-align:center; padding: 40px; font-weight:bold; color:var(--primary);">Calculando métricas y agrupando folios...</div>
 
     <div id="dashboardContent" style="display:none;">
         <div class="metrics-grid">
@@ -85,7 +86,6 @@
                 <p>Tarimas en Rack</p>
             </div>
 
-            <!-- Nueva Tarjeta de Kilos -->
             <div class="metric-card m-kilos">
                 <h3>Total Kilos (Rack)</h3>
                 <div class="number" id="kpiKilos">0</div>
@@ -99,7 +99,6 @@
             </div>
         </div>
         
-        <!-- Indicador de Capacidad del Almacén -->
         <div class="capacity-section">
             <h3 style="margin-top:0; color:var(--primary);">Utilización del Almacén</h3>
             <div class="capacity-bar-bg">
@@ -113,16 +112,15 @@
             </p>
         </div>
 
-        <!-- Tabla Desglose de Kilos por Folio -->
         <div class="list-section">
-            <h3 style="margin-top:0; color:var(--primary);">Detalle de Folios Almacenados (Rack)</h3>
+            <h3 style="margin-top:0; color:var(--primary);">Detalle de Folios Almacenados (Agrupados)</h3>
             <div class="table-container">
                 <table class="list-table">
                     <thead>
                         <tr>
-                            <th>Folio</th>
-                            <th>Ubicación</th>
-                            <th>Peso (KG)</th>
+                            <th>Folio Master</th>
+                            <th>Ubicación (Cuartos)</th>
+                            <th>Peso Total Sumado</th>
                         </tr>
                     </thead>
                     <tbody id="listaFoliosTabla">
@@ -149,7 +147,9 @@
                 let countAlmacenado = 0;
                 let countPT = 0;
                 let totalKgAlmacenado = 0;
-                let htmlTablaFolios = "";
+                
+                // Objeto donde guardaremos los folios agrupados
+                let foliosAgrupados = {};
 
                 data.forEach(item => {
                     if(item.estatus === "Recibido") countRecibido++;
@@ -158,32 +158,57 @@
                     if(item.estatus === "Almacenado") {
                         countAlmacenado++;
                         
-                        // Asegurarnos de que el peso sea un número para sumarlo
                         let peso = parseFloat(item.pesoNeto) || 0;
                         totalKgAlmacenado += peso;
 
-                        // Armamos la fila para la tabla inferior
-                        let cuartoDisplay = item.cuarto ? item.cuarto.split(' ')[0] + ' ' + item.cuarto.split(' ')[1] : ""; // Ejemplo: "Cuarto 1"
-                        htmlTablaFolios += `
-                            <tr>
-                                <td><strong>${item.folio}</strong></td>
-                                <td style="font-size:12px; color:#555;">${cuartoDisplay} | ${item.ubicacion}</td>
-                                <td><span style="color:var(--success); font-weight:bold;">${peso.toLocaleString('es-MX')}</span> KG</td>
-                            </tr>
-                        `;
+                        // 1. Extraemos el Folio Master (quitando el -1, -2, etc.)
+                        // Ej: "7141N-1" se convierte en "7141N"
+                        let folioMaster = String(item.folio).includes('-') ? String(item.folio).split('-')[0] : String(item.folio);
+
+                        // 2. Si es la primera vez que vemos este folio, lo creamos en la memoria
+                        if(!foliosAgrupados[folioMaster]) {
+                            foliosAgrupados[folioMaster] = {
+                                pesoTotal: 0,
+                                tarimasContadas: 0,
+                                cuartosDondeEsta: new Set() // Usamos Set para evitar cuartos repetidos
+                            };
+                        }
+
+                        // 3. Sumamos los datos de esta tarima a su Folio Master
+                        foliosAgrupados[folioMaster].pesoTotal += peso;
+                        foliosAgrupados[folioMaster].tarimasContadas += 1;
+                        
+                        if(item.cuarto) {
+                            // Solo guardamos el nombre principal (Ej: "Cuarto 1")
+                            let cuartoCorto = item.cuarto.split(' ')[0] + ' ' + item.cuarto.split(' ')[1];
+                            foliosAgrupados[folioMaster].cuartosDondeEsta.add(cuartoCorto);
+                        }
                     }
                 });
 
                 document.getElementById('kpiRecibidos').innerText = countRecibido;
                 document.getElementById('kpiAlmacenados').innerText = countAlmacenado;
                 document.getElementById('kpiPT').innerText = countPT;
-                
-                // Formateamos el número de Kilos (Ej: 5,000.50)
                 document.getElementById('kpiKilos').innerText = totalKgAlmacenado.toLocaleString('es-MX', {minimumFractionDigits: 0, maximumFractionDigits: 2});
                 
-                // Inyectamos las filas a la tabla
+                // 4. Transformamos los datos agrupados en filas HTML para la tabla
+                let htmlTablaFolios = "";
+                
+                for (const master in foliosAgrupados) {
+                    let info = foliosAgrupados[master];
+                    let cuartosString = Array.from(info.cuartosDondeEsta).join(', ') || "Sin asignar";
+                    
+                    htmlTablaFolios += `
+                        <tr>
+                            <td><strong>${master}</strong> <span class="tag-tarimas">${info.tarimasContadas} tarimas</span></td>
+                            <td style="font-size:12px; color:#555;">${cuartosString}</td>
+                            <td><span style="color:var(--success); font-weight:bold;">${info.pesoTotal.toLocaleString('es-MX', {minimumFractionDigits: 0, maximumFractionDigits: 2})}</span> KG</td>
+                        </tr>
+                    `;
+                }
+
                 if(htmlTablaFolios === "") {
-                    document.getElementById('listaFoliosTabla').innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">No hay tarimas almacenadas en Rack actualmente.</td></tr>`;
+                    document.getElementById('listaFoliosTabla').innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999; padding: 20px;">No hay tarimas almacenadas en Rack actualmente.</td></tr>`;
                 } else {
                     document.getElementById('listaFoliosTabla').innerHTML = htmlTablaFolios;
                 }
