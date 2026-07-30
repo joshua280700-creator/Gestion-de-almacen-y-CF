@@ -65,14 +65,38 @@
 
 <div class="container">
     <div class="form-section">
-        <h3 style="margin-top:0; color:var(--primary);">1. Ajuste de Pesos</h3>
+        <h3 style="margin-top:0; color:var(--primary);">1. Ajuste de Pesos y Empaque</h3>
         <div id="reader-container"><div id="reader"></div></div>
         <form id="ajusteForm">
             <input type="text" id="folioDisplay" placeholder="Escanea o escribe folio..." required>
+            
             <div style="display:flex; gap:10px;">
                 <div style="flex:1;"><label>Nuevo P. Bruto</label><input type="number" id="nuevoPesoBruto" step="0.01" required></div>
-                <div style="flex:1;"><label>Nuevo P. Neto</label><input type="number" id="nuevoPesoNeto" step="0.01" required></div>
+                <div style="flex:1;"><label>Nuevo P. Neto</label><input type="text" id="nuevoPesoNeto" readonly style="background-color: #e9ecef; font-weight: bold; color: var(--success);" placeholder="Auto"></div>
             </div>
+
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;"><label>Cant. Cajas</label><input type="number" id="cantidadCajas" min="1" required></div>
+                <div style="flex:1;">
+                    <label>Tipo Caja</label>
+                    <select id="tipoCaja" required>
+                        <option value="" disabled selected>Selecciona...</option>
+                        <option value="Morelia">Morelia</option>
+                        <option value="Naylea">Naylea</option>
+                        <option value="Limonera">Limonera</option>
+                        <option value="Arpilla">Arpilla</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label>Tipo Tarima</label>
+                    <select id="tipoTarima" required>
+                        <option value="" disabled selected>Selecciona...</option>
+                        <option value="Tarima azul">Tarima azul</option>
+                        <option value="Tarima 2da">Tarima 2da</option>
+                    </select>
+                </div>
+            </div>
+
             <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
             <h3 style="margin-top:0; color:var(--rack-green);">2. Nueva Ubicación</h3>
             <select id="cuartoFrio" required>
@@ -112,8 +136,10 @@
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let inventarioGlobal = []; let buzonsalida = JSON.parse(localStorage.getItem('wms_ajustes_offline')) || [];
     
-    // CONFIGURACIÓN DINÁMICA DE CARRILES
+    // CONFIGURACIÓN DINÁMICA DE CARRILES Y PESOS (TARA)
     const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
+    const pesosCajas = { "Morelia": 2.0, "Naylea": 0.850, "Limonera": 0.780, "Arpilla": 0 };
+    const pesosTarimas = { "Tarima azul": 23.0, "Tarima 2da": 12.0 };
 
     window.addEventListener('load', () => { iniciarCamara(); cargarInventario(); actualizarInterfazOffline(); });
 
@@ -137,6 +163,26 @@
     }
 
     function cargarInventario() { fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(res => res.json()).then(data => { inventarioGlobal = data; }); }
+
+    function calcularPesoNetoAutomático() {
+        let pBruto = parseFloat(document.getElementById('nuevoPesoBruto').value) || 0;
+        let cantCajas = parseInt(document.getElementById('cantidadCajas').value) || 0;
+        let tCaja = document.getElementById('tipoCaja').value;
+        let tTarima = document.getElementById('tipoTarima').value;
+
+        if (pBruto > 0 && cantCajas > 0 && tCaja && tTarima) {
+            let pesoPorCaja = pesosCajas[tCaja] || 0;
+            let pesoPorTarima = pesosTarimas[tTarima] || 0;
+            let taraTotal = (cantCajas * pesoPorCaja) + pesoPorTarima;
+            let pNetoCalculado = pBruto - taraTotal;
+            
+            if(pNetoCalculado < 0) pNetoCalculado = 0; 
+            document.getElementById('nuevoPesoNeto').value = pNetoCalculado.toFixed(2);
+        } else {
+            document.getElementById('nuevoPesoNeto').value = "";
+        }
+        checkForm();
+    }
 
     // LÓGICA DE CARRILES DINÁMICOS
     document.getElementById('cuartoFrio').addEventListener('change', (e) => {
@@ -164,7 +210,15 @@
     function buscarPesosAnteriores() {
         const folio = document.getElementById('folioDisplay').value.trim().toUpperCase();
         const tarima = inventarioGlobal.find(i => String(i.folio).toUpperCase() === folio);
-        if(tarima) { document.getElementById('nuevoPesoBruto').value = tarima.pesoBruto; document.getElementById('nuevoPesoNeto').value = tarima.pesoNeto; }
+        if(tarima) { 
+            // Cargar datos previos para no tener que escribirlos desde cero
+            document.getElementById('nuevoPesoBruto').value = tarima.pesoBruto; 
+            if(tarima.cantidadCajas) document.getElementById('cantidadCajas').value = tarima.cantidadCajas;
+            if(tarima.tipoCaja) document.getElementById('tipoCaja').value = tarima.tipoCaja;
+            if(tarima.tarima) document.getElementById('tipoTarima').value = tarima.tarima;
+            
+            calcularPesoNetoAutomático(); 
+        }
         checkForm();
     }
     document.getElementById('folioDisplay').addEventListener('change', buscarPesosAnteriores);
@@ -195,19 +249,39 @@
     });
 
     function checkForm() {
-        let pBruto = parseFloat(document.getElementById('nuevoPesoBruto').value); let pNeto = parseFloat(document.getElementById('nuevoPesoNeto').value);
-        let pesosLogicos = (pBruto > 0 && pNeto > 0 && pBruto >= pNeto);
-        if(document.getElementById('folioDisplay').value && pesosLogicos && document.getElementById('levelSelected').value && document.getElementById('espacioRack').value) { document.getElementById('saveBtn').disabled = false; } else { document.getElementById('saveBtn').disabled = true; }
+        let pBruto = parseFloat(document.getElementById('nuevoPesoBruto').value); 
+        let pNeto = parseFloat(document.getElementById('nuevoPesoNeto').value);
+        let cCajas = parseInt(document.getElementById('cantidadCajas').value);
+        let tCaja = document.getElementById('tipoCaja').value;
+        let tTarima = document.getElementById('tipoTarima').value;
+
+        // Ahora evaluamos que estén llenos todos los campos del empaque también
+        let datosCompletos = (pBruto > 0 && !isNaN(pNeto) && cCajas > 0 && tCaja !== "" && tTarima !== "");
+        
+        if(document.getElementById('folioDisplay').value && datosCompletos && document.getElementById('levelSelected').value && document.getElementById('espacioRack').value) { 
+            document.getElementById('saveBtn').disabled = false; 
+        } else { 
+            document.getElementById('saveBtn').disabled = true; 
+        }
     }
-    document.querySelectorAll('input').forEach(i => i.addEventListener('input', checkForm));
+    
+    // Activar cálculos dinámicos al teclear
+    document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', calcularPesoNetoAutomático));
 
     document.getElementById('ajusteForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const datos = {
-            action: 'ajuste_reubicacion', folio: document.getElementById('folioDisplay').value, 
-            pesoBruto: document.getElementById('nuevoPesoBruto').value, pesoNeto: document.getElementById('nuevoPesoNeto').value,
-            cuarto: document.getElementById('cuartoFrio').value, espacio: document.getElementById('espacioRack').value, 
-            level: document.getElementById('levelSelected').value, depth: document.getElementById('depthSelected').value,
+            action: 'ajuste_reubicacion', 
+            folio: document.getElementById('folioDisplay').value, 
+            pesoBruto: document.getElementById('nuevoPesoBruto').value, 
+            pesoNeto: document.getElementById('nuevoPesoNeto').value,
+            cantidadCajas: parseInt(document.getElementById('cantidadCajas').value),
+            tipoCaja: document.getElementById('tipoCaja').value,
+            tarima: document.getElementById('tipoTarima').value,
+            cuarto: document.getElementById('cuartoFrio').value, 
+            espacio: document.getElementById('espacioRack').value, 
+            level: document.getElementById('levelSelected').value, 
+            depth: document.getElementById('depthSelected').value,
             operador: sesion.nombre 
         };
 
@@ -218,7 +292,7 @@
         document.getElementById('saveBtn').disabled = true;
 
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
-        .then(() => { document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Pesos y Ubicación Actualizados en Servidor!</span>"; cargarInventario();
+        .then(() => { document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Datos y Ubicación Actualizados en Servidor!</span>"; cargarInventario();
         }).catch(() => { buzonsalida.push(datos); localStorage.setItem('wms_ajustes_offline', JSON.stringify(buzonsalida)); actualizarInterfazOffline(); document.getElementById('status-area').innerHTML = "<span style='color:#ffc107'>Ajuste guardado localmente.</span>"; });
     });
 </script>
