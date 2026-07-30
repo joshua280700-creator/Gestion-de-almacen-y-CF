@@ -36,7 +36,6 @@
         .download-btn { background-color: var(--success); } .print-btn { background-color: var(--info); }
         @media print { body * { visibility: hidden; } .print-label, .print-label * { visibility: visible; } .print-label { position: absolute; left: 0; top: 0; width: 10.20cm; height: 5.01cm; border: none; padding: 2mm; } @page { size: 10.20cm 5.01cm; margin: 0; } }
         
-        /* ESTILO DEL BOTÓN DE CERRAR SESIÓN FLOTANTE */
         .logout-btn {
             position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
             border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
@@ -47,7 +46,6 @@
 </head>
 <body>
 
-<!-- CANDADO DE SEGURIDAD -->
 <script>
     const sesion = JSON.parse(localStorage.getItem('wms_session'));
     const rolPermitido = "Recepcion";
@@ -63,7 +61,6 @@
             });
         }
         
-        // Botón elegante flotante
         const btnSalir = document.createElement('button');
         btnSalir.className = 'logout-btn';
         btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
@@ -111,16 +108,42 @@
         </div>
 
         <div class="form-row">
-            <div class="form-group third"><label>Peso Bruto (kg)</label><input type="number" id="pesoBruto" step="0.01"></div>
-            <div class="form-group third"><label>Peso Neto (kg)</label><input type="number" id="pesoNeto" step="0.01"></div>
-            <div class="form-group third"><label>Fecha</label><input type="date" id="fecha" required></div>
+            <div class="form-group third">
+                <label>Peso Bruto (kg)</label>
+                <input type="number" id="pesoBruto" step="0.01" required>
+            </div>
+            <div class="form-group third">
+                <label>Cantidad Cajas</label>
+                <input type="number" id="cantidadCajas" min="1" required>
+            </div>
+            <div class="form-group third">
+                <label>Peso Neto (kg)</label>
+                <input type="text" id="pesoNeto" readonly style="background-color: #e9ecef; font-weight: bold; color: var(--success);" placeholder="Auto">
+            </div>
         </div>
 
         <div class="form-row">
-            <div class="form-group third"><label>Tipo de caja</label><input type="text" id="tipoCaja" list="tipoCajaList"><datalist id="tipoCajaList"><option value="Morelia"><option value="Naylea"><option value="Arpilla"><option value="Madera"><option value="Cartón"></datalist></div>
+            <div class="form-group third">
+                <label>Fecha</label>
+                <input type="date" id="fecha" required>
+            </div>
+            <div class="form-group third">
+                <label>Tipo de caja</label>
+                <select id="tipoCaja" required>
+                    <option value="" disabled selected>Selecciona...</option>
+                    <option value="Morelia">Morelia</option>
+                    <option value="Naylea">Naylea</option>
+                    <option value="Limonera">Limonera</option>
+                    <option value="Arpilla">Arpilla</option>
+                </select>
+            </div>
             <div class="form-group third">
                 <label>Tipo de Tarima</label>
-                <select id="tipoTarima"><option value="" disabled selected>Selecciona...</option><option value="Tarima azul">Tarima azul</option><option value="Tarima 2da">Tarima 2da</option></select>
+                <select id="tipoTarima" required>
+                    <option value="" disabled selected>Selecciona...</option>
+                    <option value="Tarima azul">Tarima azul</option>
+                    <option value="Tarima 2da">Tarima 2da</option>
+                </select>
             </div>
         </div>
         
@@ -144,6 +167,46 @@
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let buzonsalida = JSON.parse(localStorage.getItem('wms_recepcion_offline')) || [];
     let ultimoFolioGenerado = "";
+
+    // === CONFIGURACIÓN DE PESOS (TARA) ===
+    const pesosCajas = {
+        "Morelia": 2.0,
+        "Naylea": 0.850,
+        "Limonera": 0.780,
+        "Arpilla": 0 
+    };
+    
+    const pesosTarimas = {
+        "Tarima azul": 23.0,
+        "Tarima 2da": 12.0
+    };
+
+    function calcularPesoNetoAutomático() {
+        let pBruto = parseFloat(document.getElementById('pesoBruto').value) || 0;
+        let cantCajas = parseInt(document.getElementById('cantidadCajas').value) || 0;
+        let tCaja = document.getElementById('tipoCaja').value;
+        let tTarima = document.getElementById('tipoTarima').value;
+
+        let pesoPorCaja = pesosCajas[tCaja] || 0;
+        let pesoPorTarima = pesosTarimas[tTarima] || 0;
+
+        if (pBruto > 0 && cantCajas > 0 && tCaja && tTarima) {
+            let taraTotal = (cantCajas * pesoPorCaja) + pesoPorTarima;
+            let pNetoCalculado = pBruto - taraTotal;
+            
+            if(pNetoCalculado < 0) pNetoCalculado = 0; 
+            
+            document.getElementById('pesoNeto').value = pNetoCalculado.toFixed(2);
+        } else {
+            document.getElementById('pesoNeto').value = "";
+        }
+    }
+
+    document.getElementById('pesoBruto').addEventListener('input', calcularPesoNetoAutomático);
+    document.getElementById('cantidadCajas').addEventListener('input', calcularPesoNetoAutomático);
+    document.getElementById('tipoCaja').addEventListener('change', calcularPesoNetoAutomático);
+    document.getElementById('tipoTarima').addEventListener('change', calcularPesoNetoAutomático);
+
 
     window.onload = function() { 
         document.getElementById('fecha').valueAsDate = new Date(); 
@@ -200,10 +263,12 @@
         event.preventDefault(); 
         const productoBase = document.getElementById('producto').value;
         if(!productoBase) { alert("Por favor, selecciona un producto."); return; }
+        
         const pBruto = parseFloat(document.getElementById('pesoBruto').value);
         const pNeto = parseFloat(document.getElementById('pesoNeto').value);
-        if(!pBruto || !pNeto) { alert("⚠️ Error: Necesitas ingresar los pesos para registrar."); return; }
-        if(pNeto > pBruto) { alert("⚠️ Error: El Peso Neto no puede ser mayor que el Peso Bruto."); return; }
+        
+        if(!pBruto || isNaN(pNeto)) { alert("⚠️ Error: Necesitas ingresar los datos para calcular el peso."); return; }
+        if(pNeto <= 0) { alert("⚠️ Error: El Peso Neto calculado es 0 o negativo. Revisa la cantidad de cajas y el peso bruto."); return; }
 
         const folioBase = document.getElementById('folio').value.trim();
         const certificado = document.getElementById('certificado').value;
@@ -219,7 +284,11 @@
         };
 
         generarEtiquetaVisual(folioFinal, productoFinal, fechaData);
-        document.getElementById('pesoBruto').value = ""; document.getElementById('pesoNeto').value = "";
+        
+        document.getElementById('pesoBruto').value = ""; 
+        document.getElementById('cantidadCajas').value = ""; 
+        document.getElementById('pesoNeto').value = "";
+        
         if(numTarima !== "") { document.getElementById('numeroTarima').value = parseInt(numTarima) + 1; }
         document.getElementById('pesoBruto').focus();
 
