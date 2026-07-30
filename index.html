@@ -107,14 +107,15 @@
             <div class="form-group third"><label>Tarima #</label><input type="number" id="numeroTarima" min="1" placeholder="Ej. 1"></div>
         </div>
 
+        <!-- Fila 2: Todo lo referente a fechas y pesos globales -->
         <div class="form-row">
+            <div class="form-group third">
+                <label>Fecha</label>
+                <input type="date" id="fecha" required>
+            </div>
             <div class="form-group third">
                 <label>Peso Bruto (kg)</label>
                 <input type="number" id="pesoBruto" step="0.01" required>
-            </div>
-            <div class="form-group third">
-                <label>Cantidad Cajas</label>
-                <input type="number" id="cantidadCajas" min="1" required>
             </div>
             <div class="form-group third">
                 <label>Peso Neto (kg)</label>
@@ -122,10 +123,11 @@
             </div>
         </div>
 
+        <!-- Fila 3: Todo lo referente al empaque físico -->
         <div class="form-row">
             <div class="form-group third">
-                <label>Fecha</label>
-                <input type="date" id="fecha" required>
+                <label>Cantidad Cajas</label>
+                <input type="number" id="cantidadCajas" min="1" required>
             </div>
             <div class="form-group third">
                 <label>Tipo de caja</label>
@@ -202,11 +204,11 @@
         }
     }
 
+    // Se activan los listeners para que la matemática se ejecute en vivo
     document.getElementById('pesoBruto').addEventListener('input', calcularPesoNetoAutomático);
     document.getElementById('cantidadCajas').addEventListener('input', calcularPesoNetoAutomático);
     document.getElementById('tipoCaja').addEventListener('change', calcularPesoNetoAutomático);
     document.getElementById('tipoTarima').addEventListener('change', calcularPesoNetoAutomático);
-
 
     window.onload = function() { 
         document.getElementById('fecha').valueAsDate = new Date(); 
@@ -266,6 +268,7 @@
         
         const pBruto = parseFloat(document.getElementById('pesoBruto').value);
         const pNeto = parseFloat(document.getElementById('pesoNeto').value);
+        const cantCajasData = parseInt(document.getElementById('cantidadCajas').value) || 0;
         
         if(!pBruto || isNaN(pNeto)) { alert("⚠️ Error: Necesitas ingresar los datos para calcular el peso."); return; }
         if(pNeto <= 0) { alert("⚠️ Error: El Peso Neto calculado es 0 o negativo. Revisa la cantidad de cajas y el peso bruto."); return; }
@@ -278,13 +281,20 @@
         const fechaData = document.getElementById('fecha').value;
         
         const datos = {
-            producto: productoFinal, folio: folioFinal, pesoBruto: pBruto, pesoNeto: pNeto,
-            fecha: fechaData, tipoCaja: document.getElementById('tipoCaja').value, tarima: document.getElementById('tipoTarima').value,
+            producto: productoFinal, 
+            folio: folioFinal, 
+            pesoBruto: pBruto, 
+            pesoNeto: pNeto,
+            fecha: fechaData, 
+            cantidadCajas: cantCajasData,
+            tipoCaja: document.getElementById('tipoCaja').value, 
+            tarima: document.getElementById('tipoTarima').value,
             operador: sesion.nombre 
         };
 
         generarEtiquetaVisual(folioFinal, productoFinal, fechaData);
         
+        // Limpiamos los campos del peso y cajas para el próximo escaneo
         document.getElementById('pesoBruto').value = ""; 
         document.getElementById('cantidadCajas').value = ""; 
         document.getElementById('pesoNeto').value = "";
