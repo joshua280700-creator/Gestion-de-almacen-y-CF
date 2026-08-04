@@ -8,7 +8,8 @@
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --danger: #dc3545; --success: #28a745; --warning: #ffc107;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .offline-banner { width: 100%; max-width: 600px; background-color: var(--warning); color: #333; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        /* AQUI ESTÁ EL CAMBIO DE CSS PARA CENTRAR EL BANNER */
+        .offline-banner { width: 100%; max-width: 600px; background-color: var(--warning); color: #333; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: #333; color: white; border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .nav-header { width: 100%; max-width: 600px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
@@ -22,7 +23,6 @@
         .submit-btn:hover:not(:disabled) { background-color: #c82333; } .submit-btn:disabled { background-color: #999; cursor: not-allowed; }
         #status-area { margin-top: 20px; text-align: center; font-size: 18px; font-weight: bold; }
         
-        /* ESTILO DEL BOTÓN DE CERRAR SESIÓN FLOTANTE */
         .logout-btn {
             position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white;
             border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;
@@ -33,7 +33,6 @@
 </head>
 <body>
 
-<!-- CANDADO DE SEGURIDAD -->
 <script>
     const sesion = JSON.parse(localStorage.getItem('wms_session'));
     const rolPermitido = "Almacen";
@@ -50,7 +49,6 @@
             });
         }
         
-        // Botón elegante flotante
         const btnSalir = document.createElement('button');
         btnSalir.className = 'logout-btn';
         btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
