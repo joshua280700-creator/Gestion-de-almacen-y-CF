@@ -8,7 +8,8 @@
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --rack-green: #548235; --danger: #dc3545; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        /* AQUI ESTÁ EL CAMBIO DE CSS PARA CENTRAR EL BANNER */
+        .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
@@ -113,7 +114,6 @@
     let inventarioGlobal = [];
     let buzonsalida = JSON.parse(localStorage.getItem('wms_almacen_offline')) || [];
 
-    // CONFIGURACIÓN DINÁMICA DE CARRILES
     const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
 
     window.addEventListener('load', () => { iniciarCamara(); cargarInventario(); actualizarInterfazOffline(); });
@@ -143,7 +143,6 @@
         }).catch(error => { console.log("Cargando con caché local"); });
     }
 
-    // LÓGICA DE CARRILES DINÁMICOS
     document.getElementById('cuartoFrio').addEventListener('change', (e) => {
         const cuartoSeleccionado = e.target.value;
         const selectorCarril = document.getElementById('espacioRack');
