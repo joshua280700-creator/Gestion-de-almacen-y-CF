@@ -8,7 +8,8 @@
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; --rack-green: #548235; --success: #28a745; --danger: #dc3545;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        /* AQUI ESTÁ EL CAMBIO DE CSS PARA CENTRAR EL BANNER */
+        .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
@@ -136,7 +137,6 @@
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let inventarioGlobal = []; let buzonsalida = JSON.parse(localStorage.getItem('wms_ajustes_offline')) || [];
     
-    // CONFIGURACIÓN DINÁMICA DE CARRILES Y PESOS (TARA)
     const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
     const pesosCajas = { "Morelia": 2.0, "Naylea": 0.850, "Limonera": 0.780, "Arpilla": 0 };
     const pesosTarimas = { "Tarima azul": 23.0, "Tarima 2da": 12.0 };
@@ -184,7 +184,6 @@
         checkForm();
     }
 
-    // LÓGICA DE CARRILES DINÁMICOS
     document.getElementById('cuartoFrio').addEventListener('change', (e) => {
         const cuartoSeleccionado = e.target.value;
         const selectorCarril = document.getElementById('espacioRack');
@@ -211,7 +210,6 @@
         const folio = document.getElementById('folioDisplay').value.trim().toUpperCase();
         const tarima = inventarioGlobal.find(i => String(i.folio).toUpperCase() === folio);
         if(tarima) { 
-            // Cargar datos previos para no tener que escribirlos desde cero
             document.getElementById('nuevoPesoBruto').value = tarima.pesoBruto; 
             if(tarima.cantidadCajas) document.getElementById('cantidadCajas').value = tarima.cantidadCajas;
             if(tarima.tipoCaja) document.getElementById('tipoCaja').value = tarima.tipoCaja;
@@ -255,7 +253,6 @@
         let tCaja = document.getElementById('tipoCaja').value;
         let tTarima = document.getElementById('tipoTarima').value;
 
-        // Ahora evaluamos que estén llenos todos los campos del empaque también
         let datosCompletos = (pBruto > 0 && !isNaN(pNeto) && cCajas > 0 && tCaja !== "" && tTarima !== "");
         
         if(document.getElementById('folioDisplay').value && datosCompletos && document.getElementById('levelSelected').value && document.getElementById('espacioRack').value) { 
@@ -265,7 +262,6 @@
         }
     }
     
-    // Activar cálculos dinámicos al teclear
     document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', calcularPesoNetoAutomático));
 
     document.getElementById('ajusteForm').addEventListener('submit', function(e) {
