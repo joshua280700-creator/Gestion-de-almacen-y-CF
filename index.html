@@ -9,7 +9,8 @@
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --info: #17a2b8; --danger: #dc3545; --warning: #ffc107; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .offline-banner { width: 100%; max-width: 650px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: space-between; align-items: center; box-sizing: border-box;}
+        /* AQUI ESTÁ EL CAMBIO DE CSS PARA CENTRAR EL BANNER */
+        .offline-banner { width: 100%; max-width: 650px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
         .nav-header { width: 100%; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -204,7 +205,6 @@
         }
     }
 
-    // Se activan los listeners para que la matemática se ejecute en vivo
     document.getElementById('pesoBruto').addEventListener('input', calcularPesoNetoAutomático);
     document.getElementById('cantidadCajas').addEventListener('input', calcularPesoNetoAutomático);
     document.getElementById('tipoCaja').addEventListener('change', calcularPesoNetoAutomático);
@@ -294,7 +294,6 @@
 
         generarEtiquetaVisual(folioFinal, productoFinal, fechaData);
         
-        // Limpiamos los campos del peso y cajas para el próximo escaneo
         document.getElementById('pesoBruto').value = ""; 
         document.getElementById('cantidadCajas').value = ""; 
         document.getElementById('pesoNeto').value = "";
