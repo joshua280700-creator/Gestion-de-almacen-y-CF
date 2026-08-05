@@ -7,13 +7,13 @@
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545; --rack-green: #548235; --warning: #ffc107; --verified: #d4edda;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .nav-header { width: 100%; max-width: 1000px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
-        .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 900px; }
+        .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1000px; }
         h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px;}
         
-        .layout-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; margin-top: 20px; }
+        .layout-grid { display: grid; grid-template-columns: 1fr 1.8fr; gap: 20px; margin-top: 20px; }
         @media (max-width: 768px) { .layout-grid { grid-template-columns: 1fr; } }
         
         /* Sección Izquierda: Buscador */
@@ -31,27 +31,26 @@
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; color: white; margin-top: 5px;}
         .bg-recibido { background-color: var(--info); } .bg-almacenado { background-color: var(--success); } .bg-pt { background-color: var(--danger); }
 
-        /* Panel de Acción / Auditoría (NUEVO) */
-        .action-panel { background-color: #fff3cd; border: 2px dashed var(--warning); border-radius: 8px; padding: 15px; margin-top: 20px; display: none; text-align: center;}
-        .btn-verify { background-color: var(--success); color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; margin-top: 10px; transition: 0.2s;}
-        .btn-verify:hover { background-color: #218838; }
-
         /* Sección Derecha: Mapa de Racks Dinámicos */
-        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-y: auto; max-height: 700px; padding-right:10px;}
+        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-y: auto; max-height: 750px; padding-right:10px;}
         .form-group { margin-bottom: 10px; } 
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: var(--primary);}
         .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         
-        .rack-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 5px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);}
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; margin-top: 5px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);}
         .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 6px 4px; } 
-        .rack-table th { background-color: #f9f9f9; }
+        .rack-table th { background-color: #f9f9f9; text-align: center;}
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
+        
         .rack-row { height: 35px; } 
         .rack-row.empty { background-color: #fff; }
         .rack-row.filled { background-color: #f9f9f9; color: #333; font-weight:500; cursor: pointer;}
         .rack-row.filled:hover { background-color: #e2e6ea; }
         .rack-row.highlighted td { background-color: #fff3cd !important; border-top: 2px solid var(--warning); border-bottom: 2px solid var(--warning); font-weight:bold; color:#000;}
         .rack-row.verified { background-color: var(--verified); border-left: 4px solid var(--success); }
+
+        /* Checkbox de auditoría */
+        input[type="checkbox"].audit-check { transform: scale(1.6); cursor: pointer; }
 
         .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
@@ -105,6 +104,10 @@
                 <div class="result-grid">
                     <div class="data-group"><label>Producto</label><span id="resProducto"></span></div>
                     <div class="data-group"><label>Peso Neto</label><span id="resPeso"></span> kg</div>
+                    <!-- Recuperamos el empaque y tarima -->
+                    <div class="data-group"><label>Empaque</label><span id="resEmpaque"></span></div>
+                    <div class="data-group"><label>Tarima</label><span id="resTarima"></span></div>
+                    
                     <div class="data-group"><label>Cuarto Frío</label><span id="resCuarto"></span></div>
                     <div class="data-group"><label>Ubicación</label><span id="resUbi"></span></div>
                 </div>
@@ -115,15 +118,6 @@
                     <div class="data-group" style="border-left-color:#ffc107;"><label>Ajustó</label><span id="resAjusto" style="font-size:12px;">-</span></div>
                     <div class="data-group" style="border-left-color:#dc3545;"><label>Despachó</label><span id="resDespacho" style="font-size:12px;">-</span></div>
                 </div>
-            </div>
-
-            <!-- NUEVO: Panel de Auditoría -->
-            <div id="actionPanel" class="action-panel">
-                <h4 style="margin-top:0;">Auditoría Física</h4>
-                <p>Folio Seleccionado: <strong id="lblAuditoriaFolio" style="font-size:16px;"></strong></p>
-                <p id="lblSelloAuditoria" style="color:var(--success); font-weight:bold;"></p>
-                <button id="btnVerify" class="btn-verify" onclick="marcarComoVerificado()">✅ Marcar como Verificado</button>
-                <div id="statusMsg" style="margin-top:10px; font-weight:bold;"></div>
             </div>
         </div>
 
@@ -150,7 +144,6 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let inventarioGlobal = [];
-    let folioSeleccionadoAuditoria = "";
 
     // CONFIGURACIÓN EXACTA DE CARRILES POR CUARTO
     const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
@@ -173,7 +166,6 @@
     }
 
     document.getElementById('cuartoFrio').addEventListener('change', () => {
-        document.getElementById('actionPanel').style.display = 'none';
         actualizarTablaMapa(null);
     });
 
@@ -189,18 +181,21 @@
 
         for(let cNum = 1; cNum <= maxCarriles; cNum++) {
             let carrilName = "Carril " + cNum;
+            // Se agregaron las columnas de Empaque y Tarima, y la de Auditoría al final
             let htmlTable = `<h3 style="color:var(--primary); margin-top:15px; margin-bottom:5px; border-bottom:1px solid #ccc;">📍 ${carrilName}</h3>
                              <table class="rack-table">
-                                <thead><tr><th>Folio</th><th>Producto</th><th>P. Neto</th><th>Estado</th></tr></thead>
+                                <thead>
+                                    <tr><th>Folio</th><th>Producto</th><th>P. Neto</th><th>Empaque</th><th>Tarima</th><th>Auditoría</th></tr>
+                                </thead>
                                 <tbody>`;
             
             for(let lvl = 3; lvl >= 1; lvl--) {
                 let lvlLabel = lvl === 3 ? "Alto" : lvl === 2 ? "Medio" : "Piso";
-                htmlTable += `<tr class="level-separator"><td colspan="4">Nivel ${lvl} (${lvlLabel})</td></tr>`;
+                htmlTable += `<tr class="level-separator"><td colspan="6">Nivel ${lvl} (${lvlLabel})</td></tr>`;
                 
                 for(let pos = 4; pos >= 1; pos--) {
                     htmlTable += `<tr class="rack-row empty" data-carril="${cNum}" data-level="${lvl}" data-depth="${pos}">
-                                    <td colspan="4" style="text-align:center; color:#ccc;">Vacío (Pos ${pos})</td>
+                                    <td colspan="6" style="text-align:center; color:#ccc;">Vacío (Pos ${pos})</td>
                                   </tr>`;
                 }
             }
@@ -220,19 +215,26 @@
                     if(row) {
                         let esVerificado = item.verificado && item.verificado.includes("✅");
                         row.className = esVerificado ? 'rack-row filled verified' : 'rack-row filled'; 
-                        row.setAttribute('data-folio', item.folio);
                         
                         if (folioResaltar && String(item.folio).toUpperCase() === folioResaltar) {
                             row.classList.add('highlighted');
                             row.id = "filaBuscada"; 
                         }
                         
-                        let iconoStatus = esVerificado ? "✅" : "⏳";
+                        let empaqueData = `${item.cantidadCajas || '-'} ${item.tipoCaja || ''}`;
+                        
+                        // Si ya está verificado muestra la palomita, si no, el checkbox interactivo
+                        let celdaAuditoria = esVerificado 
+                            ? `<span style="color:green; font-weight:bold; font-size:16px;" title="${item.verificado}">✅</span>` 
+                            : `<input type="checkbox" class="audit-check" data-folio="${item.folio}" onclick="verificarFisico(this, event)">`;
+
                         row.innerHTML = `
-                            <td style="font-weight:bold;">${item.folio}</td>
+                            <td style="font-weight:bold; text-align:center;">${item.folio}</td>
                             <td>${item.producto}</td>
-                            <td>${item.pesoNeto}</td>
-                            <td style="text-align:center;">${iconoStatus}</td>
+                            <td style="text-align:center;">${item.pesoNeto}</td>
+                            <td style="text-align:center;">${empaqueData}</td>
+                            <td style="text-align:center;">${item.tarima || '-'}</td>
+                            <td style="text-align:center;">${celdaAuditoria}</td>
                         `;
                     }
                 }
@@ -247,61 +249,30 @@
         }
     }
 
-    // === LÓGICA DE AUDITORÍA ===
-    document.getElementById('allRacksContainer').addEventListener('click', function(e) {
-        const row = e.target.closest('.rack-row.filled');
-        if (!row) return;
-
-        folioSeleccionadoAuditoria = row.getAttribute('data-folio');
-        const item = inventarioGlobal.find(i => String(i.folio) === String(folioSeleccionadoAuditoria));
+    // Función para el click del checkbox (Directo en la tabla)
+    function verificarFisico(checkbox, event) {
+        event.stopPropagation(); // Evita que se seleccione toda la fila si solo quieres dar click a la caja
         
-        if (item) {
-            // Llenar datos en panel izquierdo
-            mostrarResultados(item);
-            
-            const panelAud = document.getElementById('actionPanel');
-            const btnAud = document.getElementById('btnVerify');
-            const lblAud = document.getElementById('lblSelloAuditoria');
-            
-            panelAud.style.display = 'block';
-            document.getElementById('lblAuditoriaFolio').innerText = item.folio;
-            document.getElementById('statusMsg').innerHTML = "";
-
-            if (item.verificado && item.verificado.includes("✅")) {
-                btnAud.style.display = 'none';
-                lblAud.innerText = "Ya auditado:\n" + item.verificado;
-            } else {
-                btnAud.style.display = 'block';
-                lblAud.innerText = "";
-            }
-            
-            // Hacer scroll hacia arriba en móviles para ver la tarjeta
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    });
-
-    function marcarComoVerificado() {
-        if(!folioSeleccionadoAuditoria) return;
-        document.getElementById('btnVerify').disabled = true;
-        document.getElementById('btnVerify').innerText = "⏳ Procesando...";
+        const folioAuditar = checkbox.getAttribute('data-folio');
+        checkbox.disabled = true; // Congelamos la casilla para evitar dobles clicks
 
         const datos = {
             action: 'verificar_fisico',
-            folio: folioSeleccionadoAuditoria,
+            folio: folioAuditar,
             operador: sesion.nombre
         };
 
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
         .then(() => {
-            document.getElementById('statusMsg').innerHTML = `<span style="color:green;">¡Verificado!</span>`;
-            document.getElementById('btnVerify').innerText = "✅ Marcar como Verificado";
-            document.getElementById('actionPanel').style.display = 'none';
-            cargarInventario(); // Recargar para actualizar los colores
+            // Actualizamos la base local de inmediato para que pinte de verde
+            let item = inventarioGlobal.find(i => String(i.folio) === String(folioAuditar));
+            if(item) { item.verificado = "✅ " + sesion.nombre + " (" + new Date().toLocaleDateString() + ")"; }
+            actualizarTablaMapa(null); 
         })
         .catch(() => {
-            document.getElementById('statusMsg').innerHTML = `<span style="color:red;">Error. Intenta de nuevo.</span>`;
-            document.getElementById('btnVerify').disabled = false;
-            document.getElementById('btnVerify').innerText = "✅ Marcar como Verificado";
+            alert("Hubo un error de conexión al intentar validar el folio: " + folioAuditar);
+            checkbox.disabled = false;
+            checkbox.checked = false;
         });
     }
 
@@ -315,7 +286,6 @@
         if(!query) return;
 
         document.getElementById('resultCard').style.display = 'none';
-        document.getElementById('actionPanel').style.display = 'none';
         document.getElementById('errorMsg').style.display = 'none';
 
         const tarima = inventarioGlobal.find(item => String(item.folio).toUpperCase() === query);
@@ -342,6 +312,12 @@
         document.getElementById('resFolio').innerText = item.folio;
         document.getElementById('resProducto').innerText = item.producto;
         document.getElementById('resPeso').innerText = item.pesoNeto;
+        
+        // Recuperamos el empaque y la tarima en la tarjeta de resultados
+        let empaqueData = `${item.cantidadCajas || '-'} ${item.tipoCaja || ''}`;
+        document.getElementById('resEmpaque').innerText = empaqueData;
+        document.getElementById('resTarima').innerText = item.tarima || "Sin tarima";
+
         document.getElementById('resCuarto').innerText = item.cuarto || "Sin asignar";
         document.getElementById('resUbi').innerText = item.ubicacion || "En zona de recepción";
         
@@ -359,6 +335,25 @@
 
         document.getElementById('resultCard').style.display = 'block';
     }
+
+    // Iluminar la tarjeta al darle clic a una fila del mapa
+    document.getElementById('allRacksContainer').addEventListener('click', function(e) {
+        // Solo si no fue un clic en el checkbox
+        if(e.target.type === 'checkbox') return;
+
+        const row = e.target.closest('.rack-row.filled');
+        if (!row) return;
+
+        const folioTarget = row.getAttribute('data-folio');
+        const item = inventarioGlobal.find(i => String(i.folio) === String(folioTarget));
+        
+        if (item) {
+            document.querySelectorAll('.rack-row').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            mostrarResultados(item);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
 </script>
 </body>
 </html>
