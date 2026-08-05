@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS Vegxspress - Rastreador</title>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545; --rack-green: #548235; --warning: #ffc107;}
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545; --rack-green: #548235; --warning: #ffc107; --verified: #d4edda;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
@@ -31,6 +31,11 @@
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; color: white; margin-top: 5px;}
         .bg-recibido { background-color: var(--info); } .bg-almacenado { background-color: var(--success); } .bg-pt { background-color: var(--danger); }
 
+        /* Panel de Acción / Auditoría (NUEVO) */
+        .action-panel { background-color: #fff3cd; border: 2px dashed var(--warning); border-radius: 8px; padding: 15px; margin-top: 20px; display: none; text-align: center;}
+        .btn-verify { background-color: var(--success); color: white; border: none; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; margin-top: 10px; transition: 0.2s;}
+        .btn-verify:hover { background-color: #218838; }
+
         /* Sección Derecha: Mapa de Racks Dinámicos */
         .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-y: auto; max-height: 700px; padding-right:10px;}
         .form-group { margin-bottom: 10px; } 
@@ -43,8 +48,10 @@
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
         .rack-row { height: 35px; } 
         .rack-row.empty { background-color: #fff; }
-        .rack-row.filled { background-color: #f9f9f9; color: #333; font-weight:500;}
+        .rack-row.filled { background-color: #f9f9f9; color: #333; font-weight:500; cursor: pointer;}
+        .rack-row.filled:hover { background-color: #e2e6ea; }
         .rack-row.highlighted td { background-color: #fff3cd !important; border-top: 2px solid var(--warning); border-bottom: 2px solid var(--warning); font-weight:bold; color:#000;}
+        .rack-row.verified { background-color: var(--verified); border-left: 4px solid var(--success); }
 
         .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
@@ -77,7 +84,7 @@
 </div>
 
 <div class="container">
-    <h2>🔍 Trazabilidad de Inventario</h2>
+    <h2>🔍 Trazabilidad y Auditoría de Inventario</h2>
     <div id="loadingMsg" style="text-align:center; font-weight:bold; color:var(--info); margin-bottom:15px;">Sincronizando base de datos...</div>
     
     <div class="layout-grid">
@@ -89,6 +96,7 @@
                 <button onclick="buscarFolio()">Buscar Tarima</button>
             </div>
             <div id="errorMsg" style="display:none; text-align:center; font-weight:bold; color:var(--danger); margin-bottom:10px;">Folio no encontrado.</div>
+            
             <div class="result-card" id="resultCard">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #ddd; padding-bottom:5px;">
                     <h3 style="margin:0; color:var(--primary);">Folio: <span id="resFolio"></span></h3>
@@ -108,13 +116,21 @@
                     <div class="data-group" style="border-left-color:#dc3545;"><label>Despachó</label><span id="resDespacho" style="font-size:12px;">-</span></div>
                 </div>
             </div>
+
+            <!-- NUEVO: Panel de Auditoría -->
+            <div id="actionPanel" class="action-panel">
+                <h4 style="margin-top:0;">Auditoría Física</h4>
+                <p>Folio Seleccionado: <strong id="lblAuditoriaFolio" style="font-size:16px;"></strong></p>
+                <p id="lblSelloAuditoria" style="color:var(--success); font-weight:bold;"></p>
+                <button id="btnVerify" class="btn-verify" onclick="marcarComoVerificado()">✅ Marcar como Verificado</button>
+                <div id="statusMsg" style="margin-top:10px; font-weight:bold;"></div>
+            </div>
         </div>
 
         <!-- COLUMNA DERECHA: Mapa Dinámico -->
         <div class="rack-map-section">
             <div class="form-group">
                 <label>Filtro: Cuarto Frío Actual</label>
-                <!-- Quité el 'disabled' falso y la opción vacía para que no se vea el hueco en blanco -->
                 <select id="cuartoFrio">
                     <option value="Cuarto 1">Cuarto 1 (Terminado) - 6 Carriles</option>
                     <option value="Cuarto 2">Cuarto 2 (General) - 6 Carriles</option>
@@ -134,18 +150,19 @@
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let inventarioGlobal = [];
+    let folioSeleccionadoAuditoria = "";
 
     // CONFIGURACIÓN EXACTA DE CARRILES POR CUARTO
     const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', cargarInventario);
+
+    function cargarInventario() {
         fetch(urlGoogleScript + "?t=" + new Date().getTime())
             .then(res => res.json())
             .then(data => {
                 inventarioGlobal = data;
                 document.getElementById('loadingMsg').style.display = 'none';
-                
-                // === NUEVO: CARGAR EL MAPA AUTOMÁTICAMENTE ===
                 document.getElementById('cuartoFrio').value = "Cuarto 1";
                 actualizarTablaMapa(null);
             })
@@ -153,12 +170,14 @@
                 document.getElementById('loadingMsg').innerText = "Error al conectar con la base de datos.";
                 document.getElementById('loadingMsg').style.color = "red";
             });
+    }
+
+    document.getElementById('cuartoFrio').addEventListener('change', () => {
+        document.getElementById('actionPanel').style.display = 'none';
+        actualizarTablaMapa(null);
     });
 
-    // Escuchador manual para cuando elijas otro cuarto desde la lista desplegable
-    document.getElementById('cuartoFrio').addEventListener('change', () => actualizarTablaMapa(null));
-
-    // Generador Dinámico de Carriles con REGEX
+    // Generador Dinámico de Carriles
     function actualizarTablaMapa(folioResaltar = null) {
         const c = document.getElementById('cuartoFrio').value; 
         const container = document.getElementById('allRacksContainer');
@@ -168,21 +187,20 @@
 
         const maxCarriles = configCarriles[c];
 
-        // 1. Armamos las tablas HTML vacías
         for(let cNum = 1; cNum <= maxCarriles; cNum++) {
             let carrilName = "Carril " + cNum;
             let htmlTable = `<h3 style="color:var(--primary); margin-top:15px; margin-bottom:5px; border-bottom:1px solid #ccc;">📍 ${carrilName}</h3>
                              <table class="rack-table">
-                                <thead><tr><th>Folio</th><th>Producto</th><th>P. Neto</th><th>Caja</th><th>Tarima</th></tr></thead>
+                                <thead><tr><th>Folio</th><th>Producto</th><th>P. Neto</th><th>Estado</th></tr></thead>
                                 <tbody>`;
             
             for(let lvl = 3; lvl >= 1; lvl--) {
                 let lvlLabel = lvl === 3 ? "Alto" : lvl === 2 ? "Medio" : "Piso";
-                htmlTable += `<tr class="level-separator"><td colspan="5">Nivel ${lvl} (${lvlLabel})</td></tr>`;
+                htmlTable += `<tr class="level-separator"><td colspan="4">Nivel ${lvl} (${lvlLabel})</td></tr>`;
                 
                 for(let pos = 4; pos >= 1; pos--) {
                     htmlTable += `<tr class="rack-row empty" data-carril="${cNum}" data-level="${lvl}" data-depth="${pos}">
-                                    <td></td><td></td><td></td><td></td><td></td>
+                                    <td colspan="4" style="text-align:center; color:#ccc;">Vacío (Pos ${pos})</td>
                                   </tr>`;
                 }
             }
@@ -190,38 +208,37 @@
             container.innerHTML += htmlTable;
         }
 
-        // 2. Leemos la base de datos y ubicamos las tarimas
         inventarioGlobal.forEach(item => {
             if (item.estatus === "Almacenado" && item.cuarto && item.cuarto.trim() === c.trim() && item.ubicacion) {
-                
                 const matchCarril = item.ubicacion.match(/Carril\s*(\d+)/i);
                 const matchPos = item.ubicacion.match(/Nivel\s*(\d+),\s*Pos\s*(\d+)/i);
                 
                 if(matchCarril && matchPos) {
-                    const cNum = matchCarril[1];
-                    const lvl = matchPos[1];
-                    const pos = matchPos[2];
-                    
+                    const cNum = matchCarril[1], lvl = matchPos[1], pos = matchPos[2];
                     const row = container.querySelector(`.rack-row[data-carril="${cNum}"][data-level="${lvl}"][data-depth="${pos}"]`);
                     
                     if(row) {
-                        row.className = 'rack-row filled'; 
+                        let esVerificado = item.verificado && item.verificado.includes("✅");
+                        row.className = esVerificado ? 'rack-row filled verified' : 'rack-row filled'; 
+                        row.setAttribute('data-folio', item.folio);
+                        
                         if (folioResaltar && String(item.folio).toUpperCase() === folioResaltar) {
                             row.classList.add('highlighted');
                             row.id = "filaBuscada"; 
                         }
-                        const tds = row.querySelectorAll('td');
-                        tds[0].innerText = item.folio; 
-                        tds[1].innerText = item.producto; 
-                        tds[2].innerText = item.pesoNeto; 
-                        tds[3].innerText = item.tipoCaja; 
-                        tds[4].innerText = item.tarima;
+                        
+                        let iconoStatus = esVerificado ? "✅" : "⏳";
+                        row.innerHTML = `
+                            <td style="font-weight:bold;">${item.folio}</td>
+                            <td>${item.producto}</td>
+                            <td>${item.pesoNeto}</td>
+                            <td style="text-align:center;">${iconoStatus}</td>
+                        `;
                     }
                 }
             }
         });
 
-        // 3. Scroll automático
         if(folioResaltar) {
             setTimeout(() => {
                 const filaEncontrada = document.getElementById('filaBuscada');
@@ -230,6 +247,65 @@
         }
     }
 
+    // === LÓGICA DE AUDITORÍA ===
+    document.getElementById('allRacksContainer').addEventListener('click', function(e) {
+        const row = e.target.closest('.rack-row.filled');
+        if (!row) return;
+
+        folioSeleccionadoAuditoria = row.getAttribute('data-folio');
+        const item = inventarioGlobal.find(i => String(i.folio) === String(folioSeleccionadoAuditoria));
+        
+        if (item) {
+            // Llenar datos en panel izquierdo
+            mostrarResultados(item);
+            
+            const panelAud = document.getElementById('actionPanel');
+            const btnAud = document.getElementById('btnVerify');
+            const lblAud = document.getElementById('lblSelloAuditoria');
+            
+            panelAud.style.display = 'block';
+            document.getElementById('lblAuditoriaFolio').innerText = item.folio;
+            document.getElementById('statusMsg').innerHTML = "";
+
+            if (item.verificado && item.verificado.includes("✅")) {
+                btnAud.style.display = 'none';
+                lblAud.innerText = "Ya auditado:\n" + item.verificado;
+            } else {
+                btnAud.style.display = 'block';
+                lblAud.innerText = "";
+            }
+            
+            // Hacer scroll hacia arriba en móviles para ver la tarjeta
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+
+    function marcarComoVerificado() {
+        if(!folioSeleccionadoAuditoria) return;
+        document.getElementById('btnVerify').disabled = true;
+        document.getElementById('btnVerify').innerText = "⏳ Procesando...";
+
+        const datos = {
+            action: 'verificar_fisico',
+            folio: folioSeleccionadoAuditoria,
+            operador: sesion.nombre
+        };
+
+        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
+        .then(() => {
+            document.getElementById('statusMsg').innerHTML = `<span style="color:green;">¡Verificado!</span>`;
+            document.getElementById('btnVerify').innerText = "✅ Marcar como Verificado";
+            document.getElementById('actionPanel').style.display = 'none';
+            cargarInventario(); // Recargar para actualizar los colores
+        })
+        .catch(() => {
+            document.getElementById('statusMsg').innerHTML = `<span style="color:red;">Error. Intenta de nuevo.</span>`;
+            document.getElementById('btnVerify').disabled = false;
+            document.getElementById('btnVerify').innerText = "✅ Marcar como Verificado";
+        });
+    }
+
+    // === LÓGICA ORIGINAL DE BÚSQUEDA ===
     document.getElementById('searchInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') buscarFolio();
     });
@@ -239,6 +315,7 @@
         if(!query) return;
 
         document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('actionPanel').style.display = 'none';
         document.getElementById('errorMsg').style.display = 'none';
 
         const tarima = inventarioGlobal.find(item => String(item.folio).toUpperCase() === query);
