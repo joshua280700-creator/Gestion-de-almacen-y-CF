@@ -281,11 +281,10 @@
         return numero.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
-    // NUEVA FUNCIÓN: Descarga nativa .xlsx usando SheetJS
+    // NUEVA FUNCIÓN: Descarga nativa .xlsx usando SheetJS (Con columnas ajustadas)
     function descargarExcelReal() {
         if(resumenConsolidado.length === 0) return alert("No hay datos para exportar.");
         
-        // 1. Armamos un arreglo con los datos limpios y nombres de columnas perfectos
         let datosParaExcel = resumenConsolidado.map(row => ({
             "FOLIO": row.folio,
             "PRODUCTO": row.producto,
@@ -298,13 +297,11 @@
             "ENTERO": Math.round(row.total)
         }));
 
-        // 2. Calculamos los totales finales para la última fila
         let sum1=0, sum2=0, sum3=0, sum4=0, sum5=0, sumTot=0;
         resumenConsolidado.forEach(r => {
             sum1 += r.cf1; sum2 += r.cf2; sum3 += r.cf3; sum4 += r.cf4; sum5 += r.cf5; sumTot += r.total;
         });
 
-        // 3. Agregamos la fila de TOTALES al final del arreglo
         datosParaExcel.push({
             "FOLIO": "TOTALES",
             "PRODUCTO": "",
@@ -317,14 +314,23 @@
             "ENTERO": Math.round(sumTot)
         });
 
-        // 4. Convertimos la información en una hoja de trabajo
         const hojaExcel = XLSX.utils.json_to_sheet(datosParaExcel);
         
-        // 5. Creamos un nuevo libro de Excel y le pegamos la hoja
+        // Configurar ancho de columnas
+        hojaExcel['!cols'] = [
+            { wch: 12 }, // A: FOLIO
+            { wch: 22 }, // B: PRODUCTO
+            { wch: 16 }, // C: CUARTO FRIO 1
+            { wch: 16 }, // D: CUARTO FRIO 2
+            { wch: 16 }, // E: CUARTO FRIO 3
+            { wch: 16 }, // F: CUARTO FRIO 4
+            { wch: 16 }, // G: CUARTO FRIO 5
+            { wch: 12 }, // H: TOTAL
+            { wch: 10 }  // I: ENTERO
+        ];
+
         const libroExcel = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(libroExcel, hojaExcel, "Inventario CF");
-
-        // 6. Descargamos el archivo físico con extensión .xlsx
         let fechaHoy = new Date().toISOString().split('T')[0];
         XLSX.writeFile(libroExcel, `Inventario_WMS_${fechaHoy}.xlsx`);
     }
