@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS Vegxspress - Dashboard</title>
+    <!-- Librería mágica para crear archivos reales de Excel (.xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545; --purple: #6f42c1; --table-header: #bdd7ee; --table-green: #00b050;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -126,7 +129,7 @@
         <div class="list-section">
             <div class="action-bar">
                 <h3 style="margin:0; color:var(--primary);">Reporte Consolidado Cuartos Fríos</h3>
-                <button id="btnDescargar" class="download-btn" onclick="descargarExcelConsolidado()">⬇️ Descargar Reporte (Excel)</button>
+                <button id="btnDescargar" class="download-btn" onclick="descargarExcelReal()">⬇️ Descargar Reporte (.xlsx)</button>
             </div>
             
             <div class="table-responsive">
@@ -182,7 +185,6 @@
                         let peso = parseFloat(item.pesoNeto) || 0;
                         totalKgAlmacenado += peso;
 
-                        // Agrupamos por Folio Master
                         let folioMaster = String(item.folio).includes('-') ? String(item.folio).split('-')[0] : String(item.folio);
 
                         if(!foliosAgrupados[folioMaster]) {
@@ -194,7 +196,6 @@
                             };
                         }
 
-                        // Repartimos los kilos según el cuarto
                         foliosAgrupados[folioMaster].total += peso;
                         if (item.cuarto === "Cuarto 1") foliosAgrupados[folioMaster].cf1 += peso;
                         else if (item.cuarto === "Cuarto 2") foliosAgrupados[folioMaster].cf2 += peso;
@@ -204,13 +205,11 @@
                     }
                 });
 
-                // 1. Actualizar KPIs
                 document.getElementById('kpiRecibidos').innerText = countRecibido;
                 document.getElementById('kpiAlmacenados').innerText = countAlmacenado;
                 document.getElementById('kpiPT').innerText = countPT;
                 document.getElementById('kpiKilos').innerText = totalKgAlmacenado.toLocaleString('es-MX', {minimumFractionDigits: 0, maximumFractionDigits: 2});
                 
-                // 2. Llenar Tabla Consolidada
                 resumenConsolidado = Object.values(foliosAgrupados);
                 let htmlTablaFolios = "";
                 let sum1=0, sum2=0, sum3=0, sum4=0, sum5=0, sumTot=0;
@@ -252,7 +251,6 @@
                     `;
                 }
 
-                // 3. Animación Barra de Ocupación
                 let porcentaje = Math.round((countAlmacenado / MAX_CAPACITY) * 100);
                 if (porcentaje > 100) porcentaje = 100; 
 
@@ -283,33 +281,52 @@
         return numero.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
-    // DESCARGA AUTOMÁTICA EXCEL
-    function descargarExcelConsolidado() {
+    // NUEVA FUNCIÓN: Descarga nativa .xlsx usando SheetJS
+    function descargarExcelReal() {
         if(resumenConsolidado.length === 0) return alert("No hay datos para exportar.");
         
-        let csvContent = "\uFEFF"; // BOM para acentos
-        csvContent += "FOLIO,PRODUCTO,CUARTO FRIO 1,CUARTO FRIO 2,CUARTO FRIO 3,CUARTO FRIO 4,CUARTO FRIO 5,TOTAL,ENTERO\n";
+        // 1. Armamos un arreglo con los datos limpios y nombres de columnas perfectos
+        let datosParaExcel = resumenConsolidado.map(row => ({
+            "FOLIO": row.folio,
+            "PRODUCTO": row.producto,
+            "CUARTO FRIO 1": parseFloat(row.cf1.toFixed(2)),
+            "CUARTO FRIO 2": parseFloat(row.cf2.toFixed(2)),
+            "CUARTO FRIO 3": parseFloat(row.cf3.toFixed(2)),
+            "CUARTO FRIO 4": parseFloat(row.cf4.toFixed(2)),
+            "CUARTO FRIO 5": parseFloat(row.cf5.toFixed(2)),
+            "TOTAL": parseFloat(row.total.toFixed(2)),
+            "ENTERO": Math.round(row.total)
+        }));
 
+        // 2. Calculamos los totales finales para la última fila
         let sum1=0, sum2=0, sum3=0, sum4=0, sum5=0, sumTot=0;
-
-        resumenConsolidado.forEach(row => {
-            sum1 += row.cf1; sum2 += row.cf2; sum3 += row.cf3; sum4 += row.cf4; sum5 += row.cf5; sumTot += row.total;
-            let linea = [`"${row.folio}"`, `"${row.producto}"`, row.cf1.toFixed(2), row.cf2.toFixed(2), row.cf3.toFixed(2), row.cf4.toFixed(2), row.cf5.toFixed(2), row.total.toFixed(2), Math.round(row.total)];
-            csvContent += linea.join(",") + "\n";
+        resumenConsolidado.forEach(r => {
+            sum1 += r.cf1; sum2 += r.cf2; sum3 += r.cf3; sum4 += r.cf4; sum5 += r.cf5; sumTot += r.total;
         });
 
-        let lineaTotales = ['"TOTALES"', '""', sum1.toFixed(2), sum2.toFixed(2), sum3.toFixed(2), sum4.toFixed(2), sum5.toFixed(2), sumTot.toFixed(2), Math.round(sumTot)];
-        csvContent += lineaTotales.join(",") + "\n";
+        // 3. Agregamos la fila de TOTALES al final del arreglo
+        datosParaExcel.push({
+            "FOLIO": "TOTALES",
+            "PRODUCTO": "",
+            "CUARTO FRIO 1": parseFloat(sum1.toFixed(2)),
+            "CUARTO FRIO 2": parseFloat(sum2.toFixed(2)),
+            "CUARTO FRIO 3": parseFloat(sum3.toFixed(2)),
+            "CUARTO FRIO 4": parseFloat(sum4.toFixed(2)),
+            "CUARTO FRIO 5": parseFloat(sum5.toFixed(2)),
+            "TOTAL": parseFloat(sumTot.toFixed(2)),
+            "ENTERO": Math.round(sumTot)
+        });
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
+        // 4. Convertimos la información en una hoja de trabajo
+        const hojaExcel = XLSX.utils.json_to_sheet(datosParaExcel);
+        
+        // 5. Creamos un nuevo libro de Excel y le pegamos la hoja
+        const libroExcel = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(libroExcel, hojaExcel, "Inventario CF");
+
+        // 6. Descargamos el archivo físico con extensión .xlsx
         let fechaHoy = new Date().toISOString().split('T')[0];
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Consolidado_CF_${fechaHoy}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        XLSX.writeFile(libroExcel, `Inventario_WMS_${fechaHoy}.xlsx`);
     }
 </script>
 </body>
