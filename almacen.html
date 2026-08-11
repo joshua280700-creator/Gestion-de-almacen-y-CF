@@ -34,9 +34,9 @@
         .info-box p { margin: 5px 0; font-size: 14px; }
         .info-box span { font-weight: bold; color: var(--primary); }
         
-        /* Mapa Visual */
-        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; }
-        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        /* Mapa Visual (Con múltiples carriles) */
+        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-y: auto; max-height: 750px; padding-right:10px; }
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; margin-bottom: 20px;}
         .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px 5px; } 
         .rack-table th { background-color: #f9f9f9; }
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
@@ -83,6 +83,7 @@
 </div>
 
 <div class="container">
+    <!-- Formulario simplificado -->
     <div class="form-section">
         <h2 style="margin-top:0;">Asignación a Rack</h2>
         <div id="reader-container"><div id="reader"></div></div>
@@ -107,43 +108,28 @@
                 <option value="Cuarto 5">Cuarto 5 (Tomatillo) - 4 Carriles</option>
             </select>
             
-            <label>Carril</label>
-            <select id="espacio" required disabled>
-                <option value="" disabled selected>Selecciona primero un cuarto...</option>
-            </select>
-            
-            <!-- Guardamos aquí oculto lo que el usuario seleccionó visualmente -->
+            <!-- Guardamos aquí oculto lo que el usuario seleccionó visualmente en el mapa -->
+            <input type="hidden" id="carrilSelected" required>
             <input type="hidden" id="nivelSelected" required>
             <input type="hidden" id="posicionSelected" required>
             
+            <p id="seleccionInfo" style="font-size:13px; color:var(--primary); font-weight:bold; text-align:center; display:none;">
+                Destino: <span id="lblDestino">Ninguno</span>
+            </p>
+
             <button type="submit" id="btnGuardar" class="submit-btn" disabled>💾 Confirmar Ubicación</button>
         </form>
         <div id="status-area"></div>
     </div>
 
-    <!-- Mapa Visual -->
+    <!-- Mapa Visual Completo -->
     <div class="rack-map-section">
-        <h3 id="rackTitle" style="margin-top:0;">Vista Previa de Rack</h3>
-        <p style="font-size:12px; color:#666; margin-top:-10px;">Selecciona el carril a la izquierda y luego da clic en un espacio vacío aquí para asignarlo.</p>
+        <h3 id="rackTitle" style="margin-top:0;">Vista Previa de Cuarto</h3>
+        <p style="font-size:12px; color:#666; margin-top:-10px;">Selecciona el cuarto y da clic en un espacio vacío para asignarlo.</p>
         
-        <table class="rack-table" id="rackTable">
-            <thead><tr><th>Folio</th><th>Producto</th><th>Peso</th><th>Cajas</th></tr></thead>
-            <tbody>
-                <tr class="level-separator"><td colspan="4">Nivel 3 (Alto)</td></tr>
-                <tr class="rack-row empty" data-level="3" data-depth="4"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="3"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="2"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="1"><td></td><td></td><td></td><td></td></tr>
-                
-                <tr class="level-separator"><td colspan="4">Nivel 2 (Medio)</td></tr>
-                <tr class="rack-row empty" data-level="2" data-depth="4"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td></tr>
-                
-                <tr class="level-separator"><td colspan="4">Nivel 1 (Piso)</td></tr>
-                <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td></tr>
-                
-                <!-- NUEVO: Nivel 0 (Frente al Rack) -->
-                <tr class="level-separator front-rack"><td colspan="4">Nivel 0 (Frente al Rack)</td></tr>
-                <tr class="rack-row empty" data-level="0" data-depth="2"><td></td><td></td><td></td><td></td></tr>
-                <tr class="rack-row empty" data-level="0" data-depth="1"><td></td><td></td><td></td><td></td></tr>
-            </tbody>
-        </table>
+        <div id="allRacksContainer">
+            <p style="text-align:center; color:#999; margin-top:40px;">Esperando selección de Cuarto Frío...</p>
+        </div>
     </div>
 </div>
 
@@ -210,73 +196,120 @@
         }
         checkForm();
     }
+    
     document.getElementById('folioEscaneado').addEventListener('change', buscarFolio);
 
-    document.getElementById('cuarto').addEventListener('change', (e) => {
-        const cuartoSeleccionado = e.target.value;
-        const selectorCarril = document.getElementById('espacio');
-        selectorCarril.innerHTML = '<option value="" disabled selected>Selecciona Carril...</option>';
-        
-        if(configCarriles[cuartoSeleccionado]) {
-            selectorCarril.disabled = false;
-            for(let i = 1; i <= configCarriles[cuartoSeleccionado]; i++) {
-                selectorCarril.innerHTML += `<option value="Carril ${i}">Carril ${i}</option>`;
-            }
-        }
+    // Cuando se selecciona el cuarto frío, cargamos TODOS los carriles en el mapa
+    document.getElementById('cuarto').addEventListener('change', () => {
         actualizarTablaMapa(); 
-        checkForm();
     });
 
     function actualizarTablaMapa() {
-        const c = document.getElementById('cuarto').value; const e = document.getElementById('espacio').value;
+        const c = document.getElementById('cuarto').value; 
+        const container = document.getElementById('allRacksContainer');
         const tituloRack = document.getElementById('rackTitle');
         
-        // Resetear selecciones previas al cambiar de carril
+        // Resetear selecciones previas al cambiar de cuarto
+        document.getElementById('carrilSelected').value = "";
         document.getElementById('nivelSelected').value = "";
         document.getElementById('posicionSelected').value = "";
+        document.getElementById('seleccionInfo').style.display = 'none';
         checkForm();
 
-        if(e) tituloRack.innerText = "Vista Previa: " + c + " - " + e; else tituloRack.innerText = "Vista Previa de Rack";
+        container.innerHTML = ""; 
         
-        document.querySelectorAll('.rack-row').forEach(row => { row.className = 'rack-row empty'; const tds = row.querySelectorAll('td'); for(let i=0; i<4; i++) tds[i].innerText = ""; tds[0].innerText = "Vacio"; });
-        
-        if (!c || !e) return;
-        
+        if (!c || !configCarriles[c]) {
+            tituloRack.innerText = "Vista Previa de Cuarto";
+            container.innerHTML = '<p style="text-align:center; color:#999; margin-top:40px;">Esperando selección de Cuarto Frío...</p>';
+            return;
+        }
+
+        tituloRack.innerText = "Vista Previa: " + c;
+        const maxCarriles = configCarriles[c];
+
+        for(let cNum = 1; cNum <= maxCarriles; cNum++) {
+            let carrilName = "Carril " + cNum;
+            let htmlTable = `<h3 style="color:var(--primary); margin-top:15px; margin-bottom:5px; border-bottom:1px solid #ccc;">📍 ${carrilName}</h3>
+                             <table class="rack-table">
+                                <thead><tr><th>Folio</th><th>Producto</th><th>Peso</th><th>Cajas</th></tr></thead>
+                                <tbody>`;
+            
+            // Nivel 3 a 1
+            for(let lvl = 3; lvl >= 1; lvl--) {
+                let lvlLabel = lvl === 3 ? "Alto" : lvl === 2 ? "Medio" : "Piso";
+                htmlTable += `<tr class="level-separator"><td colspan="4">Nivel ${lvl} (${lvlLabel})</td></tr>`;
+                
+                for(let pos = 4; pos >= 1; pos--) {
+                    htmlTable += `<tr class="rack-row empty" data-carril="${carrilName}" data-level="${lvl}" data-depth="${pos}">
+                                    <td>Vacío</td><td></td><td></td><td></td>
+                                  </tr>`;
+                }
+            }
+
+            // Nivel 0 (Frente al Rack)
+            htmlTable += `<tr class="level-separator front-rack"><td colspan="4">Nivel 0 (Frente al Rack)</td></tr>`;
+            for(let pos = 2; pos >= 1; pos--) {
+                htmlTable += `<tr class="rack-row empty" data-carril="${carrilName}" data-level="0" data-depth="${pos}">
+                                <td>Vacío</td><td></td><td></td><td></td>
+                              </tr>`;
+            }
+
+            htmlTable += `</tbody></table>`;
+            container.innerHTML += htmlTable;
+        }
+
+        // Rellenar con los datos guardados en el servidor
         inventarioGlobal.forEach(item => {
-            if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
-                const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
-                if(match) {
-                    const row = document.querySelector(`.rack-row[data-level="${match[1]}"][data-depth="${match[2]}"]`);
-                    if(row) { row.className = 'rack-row filled'; const tds = row.querySelectorAll('td'); tds[0].innerText = item.folio; tds[1].innerText = item.producto; tds[2].innerText = item.pesoNeto; tds[3].innerText = item.cantidadCajas || '-'; }
+            if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion) {
+                const matchCarril = item.ubicacion.match(/(Carril\s*\d+)/i);
+                const matchPos = item.ubicacion.match(/Nivel\s*(\d+),\s*Pos\s*(\d+)/i);
+                
+                if(matchCarril && matchPos) {
+                    const row = container.querySelector(`.rack-row[data-carril="${matchCarril[1]}"][data-level="${matchPos[1]}"][data-depth="${matchPos[2]}"]`);
+                    if(row) { 
+                        row.className = 'rack-row filled'; 
+                        const tds = row.querySelectorAll('td'); 
+                        tds[0].innerText = item.folio; 
+                        tds[1].innerText = item.producto; 
+                        tds[2].innerText = item.pesoNeto; 
+                        tds[3].innerText = item.cantidadCajas || '-'; 
+                    }
                 }
             }
         });
     }
 
-    document.getElementById('espacio').addEventListener('change', () => { actualizarTablaMapa(); });
-    
-    // Lógica visual: Seleccionar un hueco dando clic en la tabla
-    document.getElementById('rackTable').addEventListener('click', function(e) {
+    // Lógica visual: Seleccionar un hueco dando clic en la tabla global
+    document.getElementById('allRacksContainer').addEventListener('click', function(e) {
         const row = e.target.closest('.rack-row'); 
         if (!row || row.classList.contains('filled')) return; // No dejar seleccionar si está ocupado
         
         document.querySelectorAll('.rack-row').forEach(r => r.classList.remove('selected')); 
         row.classList.add('selected');
         
-        document.getElementById('nivelSelected').value = row.getAttribute('data-level'); 
-        document.getElementById('posicionSelected').value = row.getAttribute('data-depth'); 
+        const cSeleccionado = row.getAttribute('data-carril');
+        const nSeleccionado = row.getAttribute('data-level');
+        const pSeleccionado = row.getAttribute('data-depth');
+
+        document.getElementById('carrilSelected').value = cSeleccionado;
+        document.getElementById('nivelSelected').value = nSeleccionado; 
+        document.getElementById('posicionSelected').value = pSeleccionado; 
         
         // Escribir temporalmente en la tabla para que el usuario vea qué seleccionó
-        document.querySelectorAll('.rack-row.empty td:first-child').forEach(td => { if(td.parentElement !== row) td.innerText = "Vacio"; });
+        document.querySelectorAll('.rack-row.empty td:first-child').forEach(td => { if(td.parentElement !== row) td.innerText = "Vacío"; });
         row.querySelector('td:first-child').innerText = "📌 AQUI";
         
+        // Mostrar leyenda al lado del botón
+        document.getElementById('seleccionInfo').style.display = 'block';
+        document.getElementById('lblDestino').innerText = `${cSeleccionado}, Nivel ${nSeleccionado}, Pos ${pSeleccionado}`;
+
         checkForm();
     });
 
     function checkForm() {
         const f = document.getElementById('folioEscaneado').value;
         const c = document.getElementById('cuarto').value;
-        const e = document.getElementById('espacio').value;
+        const e = document.getElementById('carrilSelected').value;
         const n = document.getElementById('nivelSelected').value;
         const p = document.getElementById('posicionSelected').value;
 
@@ -296,7 +329,7 @@
             action: 'update_location', 
             folio: document.getElementById('folioEscaneado').value.trim().toUpperCase(), 
             cuarto: document.getElementById('cuarto').value, 
-            espacio: document.getElementById('espacio').value, 
+            espacio: document.getElementById('carrilSelected').value, 
             level: document.getElementById('nivelSelected').value, 
             depth: document.getElementById('posicionSelected').value,
             operador: sesion.nombre 
