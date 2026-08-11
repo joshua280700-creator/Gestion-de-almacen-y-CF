@@ -7,39 +7,48 @@
     <!-- Librería de Cámara -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --danger: #dc3545;}
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; --rack-green: #548235; --rack-front: #6c757d; --success: #28a745; --danger: #dc3545;}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
-        .offline-banner { width: 100%; max-width: 500px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
+        .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         
-        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; box-sizing: border-box;}
-        
-        .nav-header { width: 100%; max-width: 500px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-        .nav-btn { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s ease; }
+        .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
         
-        h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1.8fr; gap: 20px; }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
         
-        #reader-container { width: 100%; border-radius: 8px; overflow: hidden; background-color: #000; margin-bottom: 15px;} 
+        .form-section { display: flex; flex-direction: column; gap: 10px; }
+        #reader-container { width: 100%; border-radius: 8px; overflow: hidden; background-color: #000; margin-bottom: 10px;} 
         #reader { width: 100%; }
-
-        .form-group { margin-bottom: 15px; } 
-        .form-row { display: flex; gap: 10px; }
-        .form-group.half { flex: 1; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555;}
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box;}
         
-        .submit-btn { background-color: var(--success); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 15px;}
-        .submit-btn:hover:not(:disabled) { background-color: #218838; }
+        label { font-weight: bold; font-size: 13px; margin-bottom: 4px; display: block; color: var(--primary);}
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px;}
+        
+        .submit-btn { background-color: var(--success); color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; margin-top: 10px;}
         .submit-btn:disabled { background-color: #ccc; cursor: not-allowed; }
 
-        .info-box { background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: none; border-left: 5px solid var(--primary); }
+        .info-box { background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 10px; display: none; border-left: 5px solid var(--primary); }
         .info-box p { margin: 5px 0; font-size: 14px; }
         .info-box span { font-weight: bold; color: var(--primary); }
-
-        #status-area { margin-top: 15px; text-align: center; font-weight: bold; font-size: 14px; }
-
+        
+        /* Mapa Visual */
+        .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; }
+        .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px 5px; } 
+        .rack-table th { background-color: #f9f9f9; }
+        .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
+        .level-separator.front-rack td { background-color: var(--rack-front); } 
+        
+        .rack-row.empty { cursor: pointer; height: 35px; } 
+        .rack-row.empty:hover { background-color: #f0f8ff; }
+        .rack-row.selected td { background-color: #d4edda; border-top: 2px solid var(--success); border-bottom: 2px solid var(--success); font-weight:bold; color:#000;}
+        .rack-row.filled { background-color: #f9f9f9; cursor: not-allowed; color:#888;}
+        
+        #status-area { margin-top: 15px; text-align: center; font-weight: bold; }
+        
         .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
     </style>
@@ -49,33 +58,20 @@
 <script>
     const sesion = JSON.parse(localStorage.getItem('wms_session'));
     const rolPermitido = "Almacen";
-    
-    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== rolPermitido)) {
-        window.location.href = "login.html";
-    }
-
+    if (!sesion || (sesion.rol !== "Admin" && sesion.rol !== rolPermitido)) { window.location.href = "login.html"; }
     window.addEventListener('DOMContentLoaded', () => {
         if(sesion.rol !== "Admin") {
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                if(!btn.classList.contains('active')) btn.style.display = 'none';
+                const txt = btn.innerText.trim();
+                if(txt !== "Almacenaje" && txt !== "Salidas" && txt !== "Ajustes / Reubicación") btn.style.display = 'none';
             });
         }
-        
-        const btnSalir = document.createElement('button');
-        btnSalir.className = 'logout-btn';
-        btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
-        btnSalir.onclick = () => {
-            localStorage.removeItem('wms_session');
-            window.location.href = "login.html";
-        };
-        document.body.appendChild(btnSalir);
+        const btnSalir = document.createElement('button'); btnSalir.className = 'logout-btn'; btnSalir.innerHTML = `🚪 Cerrar Sesión (${sesion.nombre})`;
+        btnSalir.onclick = () => { localStorage.removeItem('wms_session'); window.location.href = "login.html"; }; document.body.appendChild(btnSalir);
     });
 </script>
 
-<div id="offlineBanner" class="offline-banner">
-    <span id="offlineText">⚠️ Sin conexión: 0 tarimas pendientes</span>
-    <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
-</div>
+<div id="offlineBanner" class="offline-banner"><span id="offlineText">⚠️ Sin conexión: 0 tarimas pendientes</span><button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button></div>
 
 <div class="nav-header">
     <a href="index.html" class="nav-btn">Recepción</a>
@@ -87,23 +83,20 @@
 </div>
 
 <div class="container">
-    <h2>Asignación a Rack</h2>
-    
-    <div id="reader-container"><div id="reader"></div></div>
-
-    <form id="almacenForm">
-        <div class="form-group">
+    <div class="form-section">
+        <h2 style="margin-top:0;">Asignación a Rack</h2>
+        <div id="reader-container"><div id="reader"></div></div>
+        
+        <form id="almacenForm">
             <label>Folio de Tarima</label>
-            <input type="text" id="folioEscaneado" required placeholder="Escanea o escribe aquí..." autocomplete="off">
-        </div>
+            <input type="text" id="folioEscaneado" placeholder="Escanea o escribe folio..." required autocomplete="off">
+            
+            <div id="infoTarima" class="info-box">
+                <p>Producto: <span id="lblProducto">---</span></p>
+                <p>Peso Neto: <span id="lblPeso">---</span> kg</p>
+                <p style="color:var(--danger); font-size:12px; margin-top:8px;" id="msgError"></p>
+            </div>
 
-        <div id="infoTarima" class="info-box">
-            <p>Producto: <span id="lblProducto">---</span></p>
-            <p>Peso Neto: <span id="lblPeso">---</span> kg</p>
-            <p style="color:var(--danger); font-size:12px; margin-top:8px;" id="msgError"></p>
-        </div>
-
-        <div class="form-group">
             <label>Cuarto Frío</label>
             <select id="cuarto" required disabled>
                 <option value="" disabled selected>Selecciona Cuarto...</option>
@@ -113,237 +106,211 @@
                 <option value="Cuarto 4">Cuarto 4 (General) - 3 Carriles</option>
                 <option value="Cuarto 5">Cuarto 5 (Tomatillo) - 4 Carriles</option>
             </select>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group half">
-                <label>Carril</label>
-                <select id="espacio" required disabled>
-                    <option value="" disabled selected>---</option>
-                </select>
-            </div>
-            <div class="form-group half">
-                <label>Nivel</label>
-                <select id="nivel" required disabled>
-                    <option value="" disabled selected>---</option>
-                    <option value="3">Nivel 3 (Alto)</option>
-                    <option value="2">Nivel 2 (Medio)</option>
-                    <option value="1">Nivel 1 (Piso)</option>
-                    <option value="0">Nivel 0 (Frente Rack)</option>
-                </select>
-            </div>
-            <div class="form-group half">
-                <label>Posición</label>
-                <select id="posicion" required disabled>
-                    <option value="" disabled selected>---</option>
-                </select>
-            </div>
-        </div>
-
-        <button type="submit" class="submit-btn" id="btnGuardar" disabled>💾 Confirmar Ubicación</button>
+            
+            <label>Carril</label>
+            <select id="espacio" required disabled>
+                <option value="" disabled selected>Selecciona primero un cuarto...</option>
+            </select>
+            
+            <!-- Guardamos aquí oculto lo que el usuario seleccionó visualmente -->
+            <input type="hidden" id="nivelSelected" required>
+            <input type="hidden" id="posicionSelected" required>
+            
+            <button type="submit" id="btnGuardar" class="submit-btn" disabled>💾 Confirmar Ubicación</button>
+        </form>
         <div id="status-area"></div>
-    </form>
+    </div>
+
+    <!-- Mapa Visual -->
+    <div class="rack-map-section">
+        <h3 id="rackTitle" style="margin-top:0;">Vista Previa de Rack</h3>
+        <p style="font-size:12px; color:#666; margin-top:-10px;">Selecciona el carril a la izquierda y luego da clic en un espacio vacío aquí para asignarlo.</p>
+        
+        <table class="rack-table" id="rackTable">
+            <thead><tr><th>Folio</th><th>Producto</th><th>Peso</th><th>Cajas</th></tr></thead>
+            <tbody>
+                <tr class="level-separator"><td colspan="4">Nivel 3 (Alto)</td></tr>
+                <tr class="rack-row empty" data-level="3" data-depth="4"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="3"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="2"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="3" data-depth="1"><td></td><td></td><td></td><td></td></tr>
+                
+                <tr class="level-separator"><td colspan="4">Nivel 2 (Medio)</td></tr>
+                <tr class="rack-row empty" data-level="2" data-depth="4"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td></tr>
+                
+                <tr class="level-separator"><td colspan="4">Nivel 1 (Piso)</td></tr>
+                <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td></tr>
+                
+                <!-- NUEVO: Nivel 0 (Frente al Rack) -->
+                <tr class="level-separator front-rack"><td colspan="4">Nivel 0 (Frente al Rack)</td></tr>
+                <tr class="rack-row empty" data-level="0" data-depth="2"><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="0" data-depth="1"><td></td><td></td><td></td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
-    let inventarioActivo = [];
+    let inventarioGlobal = []; 
     let buzonsalida = JSON.parse(localStorage.getItem('wms_almacen_offline')) || [];
-
+    
     const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
 
-    window.addEventListener('load', () => { 
-        iniciarCamara(); 
-        cargarInventario(); 
-        actualizarInterfazOffline(); 
-    });
+    window.addEventListener('load', () => { iniciarCamara(); cargarInventario(); actualizarInterfazOffline(); });
 
     function actualizarInterfazOffline() {
         const banner = document.getElementById('offlineBanner');
-        if (buzonsalida.length > 0) {
-            banner.style.display = 'flex';
-            document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} tarimas pendientes`;
-        } else {
-            banner.style.display = 'none';
-        }
+        if (buzonsalida.length > 0) { banner.style.display = 'flex'; document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} tarimas pendientes`;
+        } else { banner.style.display = 'none'; }
     }
 
     window.addEventListener('online', sincronizarDatos);
     async function sincronizarDatos() {
-        if (buzonsalida.length === 0) return;
-        if (!navigator.onLine) { alert("Aún no tienes conexión a internet estable."); return; }
-        
+        if (buzonsalida.length === 0) return; if (!navigator.onLine) { alert("Aún no tienes conexión a internet estable."); return; }
         document.getElementById('offlineText').innerText = "🔄 Sincronizando datos...";
         let pendientes = [];
-        
         for (let i = 0; i < buzonsalida.length; i++) {
-            try {
-                await fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buzonsalida[i]) });
-            } catch (error) {
-                pendientes.push(buzonsalida[i]);
-            }
+            try { await fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buzonsalida[i]) });
+            } catch (error) { pendientes.push(buzonsalida[i]); }
         }
-        
-        buzonsalida = pendientes;
-        localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida));
-        actualizarInterfazOffline();
-        
-        if (buzonsalida.length === 0) { 
-            cargarInventario(); 
-            alert("¡Todas las ubicaciones pendientes fueron sincronizadas!"); 
-        }
+        buzonsalida = pendientes; localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida));
+        actualizarInterfazOffline(); if (buzonsalida.length === 0) { cargarInventario(); }
     }
 
-    function cargarInventario() {
-        fetch(urlGoogleScript + "?t=" + new Date().getTime())
-            .then(res => res.json())
-            .then(data => { inventarioActivo = data; })
-            .catch(error => { console.log("Trabajando sin conexión"); });
-    }
+    function cargarInventario() { fetch(urlGoogleScript + "?t=" + new Date().getTime()).then(res => res.json()).then(data => { inventarioGlobal = data; }); }
 
     // Inicializar Cámara
     const html5QrCode = new Html5Qrcode("reader");
     function iniciarCamara() {
         Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) {
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 30, qrbox: { width: 250, height: 100 } },
-                    text => {
-                        document.getElementById('folioEscaneado').value = text;
-                        document.getElementById('reader-container').style.display = 'none';
-                        html5QrCode.stop();
-                        validarFolio();
-                    }
-                );
-            }
-        }).catch(err => {
-            document.getElementById('reader-container').style.display = 'none';
-        });
+            if (devices && devices.length) { html5QrCode.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 250, height: 100 } }, text => { document.getElementById('folioEscaneado').value = text; document.getElementById('reader-container').style.display='none'; html5QrCode.stop(); buscarFolio(); }); }
+        }).catch(err => { document.getElementById('reader-container').style.display='none'; });
     }
 
-    function validarFolio() {
-        const folioBuscado = document.getElementById('folioEscaneado').value.trim().toUpperCase();
-        if(!folioBuscado) return;
-
-        const tarimaEncontrada = inventarioActivo.find(item => String(item.folio).toUpperCase() === folioBuscado);
+    function buscarFolio() {
+        const folio = document.getElementById('folioEscaneado').value.trim().toUpperCase();
+        const tarima = inventarioGlobal.find(i => String(i.folio).toUpperCase() === folio);
         const infoBox = document.getElementById('infoTarima');
         const msgError = document.getElementById('msgError');
 
-        if(tarimaEncontrada) {
+        if(tarima) {
             infoBox.style.display = 'block';
-            document.getElementById('lblProducto').innerText = tarimaEncontrada.producto;
-            document.getElementById('lblPeso').innerText = tarimaEncontrada.pesoNeto;
+            document.getElementById('lblProducto').innerText = tarima.producto;
+            document.getElementById('lblPeso').innerText = tarima.pesoNeto;
 
-            if(tarimaEncontrada.estatus !== "Recibido") {
-                msgError.innerText = `Esta tarima no está en Andén. Estado actual: ${tarimaEncontrada.estatus}`;
+            if(tarima.estatus !== "Recibido") {
+                msgError.innerText = `Esta tarima no está en Andén. Estado actual: ${tarima.estatus}`;
                 document.getElementById('cuarto').disabled = true;
-                document.getElementById('btnGuardar').disabled = true;
             } else {
                 msgError.innerText = "";
                 document.getElementById('cuarto').disabled = false;
             }
         } else {
-            infoBox.style.display = 'block';
-            document.getElementById('lblProducto').innerText = "---";
-            document.getElementById('lblPeso').innerText = "---";
+            infoBox.style.display = 'block'; document.getElementById('lblProducto').innerText = "---"; document.getElementById('lblPeso').innerText = "---";
             msgError.innerText = "Folio no encontrado. Verifica que esté registrado.";
             document.getElementById('cuarto').disabled = true;
-            document.getElementById('btnGuardar').disabled = true;
         }
+        checkForm();
     }
+    document.getElementById('folioEscaneado').addEventListener('change', buscarFolio);
+
+    document.getElementById('cuarto').addEventListener('change', (e) => {
+        const cuartoSeleccionado = e.target.value;
+        const selectorCarril = document.getElementById('espacio');
+        selectorCarril.innerHTML = '<option value="" disabled selected>Selecciona Carril...</option>';
+        
+        if(configCarriles[cuartoSeleccionado]) {
+            selectorCarril.disabled = false;
+            for(let i = 1; i <= configCarriles[cuartoSeleccionado]; i++) {
+                selectorCarril.innerHTML += `<option value="Carril ${i}">Carril ${i}</option>`;
+            }
+        }
+        actualizarTablaMapa(); 
+        checkForm();
+    });
+
+    function actualizarTablaMapa() {
+        const c = document.getElementById('cuarto').value; const e = document.getElementById('espacio').value;
+        const tituloRack = document.getElementById('rackTitle');
+        
+        // Resetear selecciones previas al cambiar de carril
+        document.getElementById('nivelSelected').value = "";
+        document.getElementById('posicionSelected').value = "";
+        checkForm();
+
+        if(e) tituloRack.innerText = "Vista Previa: " + c + " - " + e; else tituloRack.innerText = "Vista Previa de Rack";
+        
+        document.querySelectorAll('.rack-row').forEach(row => { row.className = 'rack-row empty'; const tds = row.querySelectorAll('td'); for(let i=0; i<4; i++) tds[i].innerText = ""; tds[0].innerText = "Vacio"; });
+        
+        if (!c || !e) return;
+        
+        inventarioGlobal.forEach(item => {
+            if (item.estatus === "Almacenado" && item.cuarto === c && item.ubicacion && item.ubicacion.startsWith(e)) {
+                const match = item.ubicacion.match(/Nivel (\d+), Pos (\d+)/);
+                if(match) {
+                    const row = document.querySelector(`.rack-row[data-level="${match[1]}"][data-depth="${match[2]}"]`);
+                    if(row) { row.className = 'rack-row filled'; const tds = row.querySelectorAll('td'); tds[0].innerText = item.folio; tds[1].innerText = item.producto; tds[2].innerText = item.pesoNeto; tds[3].innerText = item.cantidadCajas || '-'; }
+                }
+            }
+        });
+    }
+
+    document.getElementById('espacio').addEventListener('change', () => { actualizarTablaMapa(); });
     
-    document.getElementById('folioEscaneado').addEventListener('change', validarFolio);
-
-    // Control lógico de Carriles dependiendo del Cuarto
-    document.getElementById('cuarto').addEventListener('change', function() {
-        const c = this.value;
-        const selectCarril = document.getElementById('espacio');
+    // Lógica visual: Seleccionar un hueco dando clic en la tabla
+    document.getElementById('rackTable').addEventListener('click', function(e) {
+        const row = e.target.closest('.rack-row'); 
+        if (!row || row.classList.contains('filled')) return; // No dejar seleccionar si está ocupado
         
-        selectCarril.innerHTML = '<option value="" disabled selected>---</option>';
-        if(configCarriles[c]) {
-            for(let i = 1; i <= configCarriles[c]; i++) {
-                selectCarril.innerHTML += `<option value="Carril ${i}">Carril ${i}</option>`;
-            }
-            selectCarril.disabled = false;
-        }
-        comprobarFormulario();
-    });
-
-    document.getElementById('espacio').addEventListener('change', function() {
-        document.getElementById('nivel').disabled = false;
-        comprobarFormulario();
-    });
-
-    // Control lógico de Posiciones dependiendo del Nivel
-    document.getElementById('nivel').addEventListener('change', function() {
-        const n = this.value;
-        const selectPosicion = document.getElementById('posicion');
-        selectPosicion.innerHTML = '<option value="" disabled selected>---</option>';
+        document.querySelectorAll('.rack-row').forEach(r => r.classList.remove('selected')); 
+        row.classList.add('selected');
         
-        if (n === "0") {
-            // Frente al rack solo tiene 2 posiciones
-            selectPosicion.innerHTML += `<option value="1">Pos 1</option>`;
-            selectPosicion.innerHTML += `<option value="2">Pos 2</option>`;
-        } else if (n === "1" || n === "2" || n === "3") {
-            // Rack normal tiene 4 posiciones
-            for(let i = 1; i <= 4; i++) {
-                selectPosicion.innerHTML += `<option value="${i}">Pos ${i}</option>`;
-            }
-        }
-        selectPosicion.disabled = false;
-        comprobarFormulario();
+        document.getElementById('nivelSelected').value = row.getAttribute('data-level'); 
+        document.getElementById('posicionSelected').value = row.getAttribute('data-depth'); 
+        
+        // Escribir temporalmente en la tabla para que el usuario vea qué seleccionó
+        document.querySelectorAll('.rack-row.empty td:first-child').forEach(td => { if(td.parentElement !== row) td.innerText = "Vacio"; });
+        row.querySelector('td:first-child').innerText = "📌 AQUI";
+        
+        checkForm();
     });
 
-    document.getElementById('posicion').addEventListener('change', comprobarFormulario);
-
-    function comprobarFormulario() {
+    function checkForm() {
         const f = document.getElementById('folioEscaneado').value;
         const c = document.getElementById('cuarto').value;
         const e = document.getElementById('espacio').value;
-        const n = document.getElementById('nivel').value;
-        const p = document.getElementById('posicion').value;
+        const n = document.getElementById('nivelSelected').value;
+        const p = document.getElementById('posicionSelected').value;
 
-        if (f && c && e && n && p) {
+        if (f && c && e && n && p && document.getElementById('msgError').innerText === "") {
             document.getElementById('btnGuardar').disabled = false;
         } else {
             document.getElementById('btnGuardar').disabled = true;
         }
     }
 
-    document.getElementById('almacenForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        
+    document.getElementById('almacenForm').addEventListener('submit', function(e) {
+        e.preventDefault();
         const btn = document.getElementById('btnGuardar');
-        btn.disabled = true;
-        btn.innerText = "⏳ Guardando...";
+        btn.disabled = true; btn.innerText = "⏳ Guardando...";
 
-        const datosAlmacenaje = {
-            action: "update_location",
-            folio: document.getElementById('folioEscaneado').value.trim().toUpperCase(),
-            cuarto: document.getElementById('cuarto').value,
-            espacio: document.getElementById('espacio').value,
-            level: document.getElementById('nivel').value,
-            depth: document.getElementById('posicion').value,
+        const datos = {
+            action: 'update_location', 
+            folio: document.getElementById('folioEscaneado').value.trim().toUpperCase(), 
+            cuarto: document.getElementById('cuarto').value, 
+            espacio: document.getElementById('espacio').value, 
+            level: document.getElementById('nivelSelected').value, 
+            depth: document.getElementById('posicionSelected').value,
             operador: sesion.nombre 
         };
 
-        fetch(urlGoogleScript, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosAlmacenaje)
-        })
-        .then(() => {
-            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Ubicación guardada con éxito en el servidor!</span>";
+        fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
+        .then(() => { 
+            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Datos y Ubicación Actualizados en Servidor!</span>"; 
             setTimeout(() => window.location.reload(), 1500);
-        })
-        .catch(error => {
-            buzonsalida.push(datosAlmacenaje);
-            localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida));
-            actualizarInterfazOffline();
-            document.getElementById('status-area').innerHTML = "<span style='color:#ffc107'>Guardado localmente. Se enviará al reconectar.</span>";
-            
+        }).catch(() => { 
+            buzonsalida.push(datos); 
+            localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida)); 
+            actualizarInterfazOffline(); 
+            document.getElementById('status-area').innerHTML = "<span style='color:#ffc107'>Ubicación guardada localmente.</span>"; 
             setTimeout(() => window.location.reload(), 1500);
         });
     });
