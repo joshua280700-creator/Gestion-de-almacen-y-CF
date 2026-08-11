@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS Vegxspress - Ajustes y Reubicación</title>
+    <!-- Librería de Cámara -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; --rack-green: #548235; --success: #28a745; --danger: #dc3545;}
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --warning: #ffc107; --rack-green: #548235; --rack-front: #6c757d; --success: #28a745; --danger: #dc3545;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        /* AQUI ESTÁ EL CAMBIO DE CSS PARA CENTRAR EL BANNER */
+        
         .offline-banner { width: 100%; max-width: 900px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
         .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .nav-header { width: 100%; max-width: 900px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -16,16 +17,21 @@
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
         .container { background-color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1.8fr; gap: 20px; }
         @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+        
         .form-section { display: flex; flex-direction: column; gap: 10px; }
         #reader-container { width: 100%; border-radius: 8px; overflow: hidden; background-color: #000; margin-bottom: 10px;} #reader { width: 100%; }
         label { font-weight: bold; font-size: 13px; margin-bottom: 4px; display: block; color: var(--primary);}
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px;}
+        
         .submit-btn { background-color: var(--warning); color: #333; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; width: 100%; cursor: pointer; margin-top: 10px;}
         .submit-btn:disabled { background-color: #ccc; color:#666; cursor: not-allowed; }
+        
         .rack-map-section { border-left: 1px solid #eee; padding-left: 20px; overflow-x: auto; }
         .rack-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
         .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 8px 5px; } .rack-table th { background-color: #f9f9f9; }
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
+        .level-separator.front-rack td { background-color: var(--rack-front); } /* Estilo Nivel 0 */
+        
         .rack-row.empty { cursor: pointer; height: 35px; } .rack-row.empty:hover { background-color: #f0f8ff; }
         .rack-row.selected td { background-color: #fff3cd; border-top: 2px solid var(--warning); border-bottom: 2px solid var(--warning); }
         .rack-row.filled { background-color: #f9f9f9; cursor: not-allowed; color:#888;}
@@ -67,7 +73,10 @@
 <div class="container">
     <div class="form-section">
         <h3 style="margin-top:0; color:var(--primary);">1. Ajuste de Pesos y Empaque</h3>
+        
+        <!-- CAMARA RESTAURADA -->
         <div id="reader-container"><div id="reader"></div></div>
+        
         <form id="ajusteForm">
             <input type="text" id="folioDisplay" placeholder="Escanea o escribe folio..." required>
             
@@ -111,6 +120,7 @@
             <select id="espacioRack" required disabled>
                 <option value="" disabled selected>Selecciona primero un cuarto...</option>
             </select>
+            
             <input type="hidden" id="levelSelected"><input type="hidden" id="depthSelected">
             <button type="submit" id="saveBtn" class="submit-btn" disabled>Actualizar y Guardar en Rack</button>
         </form>
@@ -128,6 +138,11 @@
                 <tr class="rack-row empty" data-level="2" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="2" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
                 <tr class="level-separator"><td colspan="5">Nivel 1 (Piso)</td></tr>
                 <tr class="rack-row empty" data-level="1" data-depth="4"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="3"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr><tr class="rack-row empty" data-level="1" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
+                
+                <!-- NUEVO: Nivel 0 (Frente al Rack) agregado a tu código original -->
+                <tr class="level-separator front-rack"><td colspan="5">Nivel 0 (Frente al Rack)</td></tr>
+                <tr class="rack-row empty" data-level="0" data-depth="2"><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr class="rack-row empty" data-level="0" data-depth="1"><td></td><td></td><td></td><td></td><td></td></tr>
             </tbody>
         </table>
     </div>
