@@ -4,17 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS Vegxspress - Almacenaje</title>
+    <!-- Librería de Cámara -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --success: #28a745; --danger: #dc3545;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         
-        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        .offline-banner { width: 100%; max-width: 500px; background-color: var(--danger); color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; display: none; justify-content: center; gap: 20px; align-items: center; box-sizing: border-box;}
+        .sync-btn { background-color: white; color: var(--danger); border: none; padding: 5px 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        
+        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; box-sizing: border-box;}
         
         .nav-header { width: 100%; max-width: 500px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s ease; }
         .nav-btn:hover, .nav-btn.active { background-color: var(--primary); color: white; }
         
         h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        
+        #reader-container { width: 100%; border-radius: 8px; overflow: hidden; background-color: #000; margin-bottom: 15px;} 
+        #reader { width: 100%; }
+
         .form-group { margin-bottom: 15px; } 
         .form-row { display: flex; gap: 10px; }
         .form-group.half { flex: 1; }
@@ -22,11 +31,14 @@
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; box-sizing: border-box;}
         
         .submit-btn { background-color: var(--success); color: white; border: none; padding: 12px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s ease; margin-top: 15px;}
-        .submit-btn:hover { background-color: #218838; }
+        .submit-btn:hover:not(:disabled) { background-color: #218838; }
+        .submit-btn:disabled { background-color: #ccc; cursor: not-allowed; }
 
         .info-box { background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: none; border-left: 5px solid var(--primary); }
         .info-box p { margin: 5px 0; font-size: 14px; }
         .info-box span { font-weight: bold; color: var(--primary); }
+
+        #status-area { margin-top: 15px; text-align: center; font-weight: bold; font-size: 14px; }
 
         .logout-btn { position: fixed; top: 15px; right: 15px; background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3); transition: 0.2s; z-index: 1000; }
         .logout-btn:hover { background-color: #c82333; transform: scale(1.05); }
@@ -60,6 +72,11 @@
     });
 </script>
 
+<div id="offlineBanner" class="offline-banner">
+    <span id="offlineText">⚠️ Sin conexión: 0 tarimas pendientes</span>
+    <button class="sync-btn" onclick="sincronizarDatos()">Sincronizar</button>
+</div>
+
 <div class="nav-header">
     <a href="index.html" class="nav-btn">Recepción</a>
     <a href="almacen.html" class="nav-btn active">Almacenaje</a>
@@ -71,16 +88,19 @@
 
 <div class="container">
     <h2>Asignación a Rack</h2>
+    
+    <div id="reader-container"><div id="reader"></div></div>
+
     <form id="almacenForm">
         <div class="form-group">
-            <label>Escanea el Folio de Tarima</label>
-            <input type="text" id="folioEscaneado" required placeholder="Clic aquí y escanea..." autocomplete="off">
+            <label>Folio de Tarima</label>
+            <input type="text" id="folioEscaneado" required placeholder="Escanea o escribe aquí..." autocomplete="off">
         </div>
 
         <div id="infoTarima" class="info-box">
             <p>Producto: <span id="lblProducto">---</span></p>
             <p>Peso Neto: <span id="lblPeso">---</span> kg</p>
-            <p style="color:var(--danger); font-size:12px;" id="msgError"></p>
+            <p style="color:var(--danger); font-size:12px; margin-top:8px;" id="msgError"></p>
         </div>
 
         <div class="form-group">
@@ -121,25 +141,89 @@
         </div>
 
         <button type="submit" class="submit-btn" id="btnGuardar" disabled>💾 Confirmar Ubicación</button>
+        <div id="status-area"></div>
     </form>
 </div>
 
 <script>
     const urlGoogleScript = "https://script.google.com/macros/s/AKfycbz3tj3SCSLVqxwQX3ameGZ-HzDX70QTKrqj8tuH_j31QZqnM0WX7GFlvMY83-8U3UHuLQ/exec";
     let inventarioActivo = [];
+    let buzonsalida = JSON.parse(localStorage.getItem('wms_almacen_offline')) || [];
 
-    // Limites de carriles por cuarto
     const configCarriles = { "Cuarto 1": 6, "Cuarto 2": 6, "Cuarto 3": 4, "Cuarto 4": 3, "Cuarto 5": 4 };
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', () => { 
+        iniciarCamara(); 
+        cargarInventario(); 
+        actualizarInterfazOffline(); 
+    });
+
+    function actualizarInterfazOffline() {
+        const banner = document.getElementById('offlineBanner');
+        if (buzonsalida.length > 0) {
+            banner.style.display = 'flex';
+            document.getElementById('offlineText').innerText = `⚠️ Sin conexión: ${buzonsalida.length} tarimas pendientes`;
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    window.addEventListener('online', sincronizarDatos);
+    async function sincronizarDatos() {
+        if (buzonsalida.length === 0) return;
+        if (!navigator.onLine) { alert("Aún no tienes conexión a internet estable."); return; }
+        
+        document.getElementById('offlineText').innerText = "🔄 Sincronizando datos...";
+        let pendientes = [];
+        
+        for (let i = 0; i < buzonsalida.length; i++) {
+            try {
+                await fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(buzonsalida[i]) });
+            } catch (error) {
+                pendientes.push(buzonsalida[i]);
+            }
+        }
+        
+        buzonsalida = pendientes;
+        localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida));
+        actualizarInterfazOffline();
+        
+        if (buzonsalida.length === 0) { 
+            cargarInventario(); 
+            alert("¡Todas las ubicaciones pendientes fueron sincronizadas!"); 
+        }
+    }
+
+    function cargarInventario() {
         fetch(urlGoogleScript + "?t=" + new Date().getTime())
             .then(res => res.json())
             .then(data => { inventarioActivo = data; })
-            .catch(error => { alert("Error al conectar con la base de datos."); });
-    });
+            .catch(error => { console.log("Trabajando sin conexión"); });
+    }
 
-    document.getElementById('folioEscaneado').addEventListener('change', function() {
-        const folioBuscado = this.value.trim().toUpperCase();
+    // Inicializar Cámara
+    const html5QrCode = new Html5Qrcode("reader");
+    function iniciarCamara() {
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 30, qrbox: { width: 250, height: 100 } },
+                    text => {
+                        document.getElementById('folioEscaneado').value = text;
+                        document.getElementById('reader-container').style.display = 'none';
+                        html5QrCode.stop();
+                        validarFolio();
+                    }
+                );
+            }
+        }).catch(err => {
+            document.getElementById('reader-container').style.display = 'none';
+        });
+    }
+
+    function validarFolio() {
+        const folioBuscado = document.getElementById('folioEscaneado').value.trim().toUpperCase();
         if(!folioBuscado) return;
 
         const tarimaEncontrada = inventarioActivo.find(item => String(item.folio).toUpperCase() === folioBuscado);
@@ -158,7 +242,6 @@
             } else {
                 msgError.innerText = "";
                 document.getElementById('cuarto').disabled = false;
-                document.getElementById('btnGuardar').disabled = false;
             }
         } else {
             infoBox.style.display = 'block';
@@ -168,7 +251,9 @@
             document.getElementById('cuarto').disabled = true;
             document.getElementById('btnGuardar').disabled = true;
         }
-    });
+    }
+    
+    document.getElementById('folioEscaneado').addEventListener('change', validarFolio);
 
     // Control lógico de Carriles dependiendo del Cuarto
     document.getElementById('cuarto').addEventListener('change', function() {
@@ -182,11 +267,12 @@
             }
             selectCarril.disabled = false;
         }
+        comprobarFormulario();
     });
 
-    // Habilitar Niveles solo si el Carril está lleno
     document.getElementById('espacio').addEventListener('change', function() {
         document.getElementById('nivel').disabled = false;
+        comprobarFormulario();
     });
 
     // Control lógico de Posiciones dependiendo del Nivel
@@ -206,7 +292,24 @@
             }
         }
         selectPosicion.disabled = false;
+        comprobarFormulario();
     });
+
+    document.getElementById('posicion').addEventListener('change', comprobarFormulario);
+
+    function comprobarFormulario() {
+        const f = document.getElementById('folioEscaneado').value;
+        const c = document.getElementById('cuarto').value;
+        const e = document.getElementById('espacio').value;
+        const n = document.getElementById('nivel').value;
+        const p = document.getElementById('posicion').value;
+
+        if (f && c && e && n && p) {
+            document.getElementById('btnGuardar').disabled = false;
+        } else {
+            document.getElementById('btnGuardar').disabled = true;
+        }
+    }
 
     document.getElementById('almacenForm').addEventListener('submit', function(event) {
         event.preventDefault();
@@ -232,13 +335,16 @@
             body: JSON.stringify(datosAlmacenaje)
         })
         .then(() => {
-            alert("¡Ubicación guardada con éxito!");
-            window.location.reload(); 
+            document.getElementById('status-area').innerHTML = "<span style='color:green'>¡Ubicación guardada con éxito en el servidor!</span>";
+            setTimeout(() => window.location.reload(), 1500);
         })
         .catch(error => {
-            alert("Error al guardar. Intenta de nuevo.");
-            btn.disabled = false;
-            btn.innerText = "💾 Confirmar Ubicación";
+            buzonsalida.push(datosAlmacenaje);
+            localStorage.setItem('wms_almacen_offline', JSON.stringify(buzonsalida));
+            actualizarInterfazOffline();
+            document.getElementById('status-area').innerHTML = "<span style='color:#ffc107'>Guardado localmente. Se enviará al reconectar.</span>";
+            
+            setTimeout(() => window.location.reload(), 1500);
         });
     });
 </script>
