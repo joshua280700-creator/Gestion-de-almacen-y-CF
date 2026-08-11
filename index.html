@@ -320,11 +320,14 @@
 
         generarEtiquetaVisual(folioFinal, productoFinal, fechaData);
         
+        // MODIFICACIÓN DE EFICIENCIA:
+        // Solo limpiamos los pesos. Dejamos intacta la "cantidad de cajas", tipo de empaque y tipo de tarima.
         document.getElementById('pesoBruto').value = ""; 
-        document.getElementById('cantidadCajas').value = ""; 
         document.getElementById('pesoNeto').value = "";
         
         if(numTarima !== "") { document.getElementById('numeroTarima').value = parseInt(numTarima) + 1; }
+        
+        // Regresamos el cursor al peso bruto para la siguiente tarima
         document.getElementById('pesoBruto').focus();
 
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) })
