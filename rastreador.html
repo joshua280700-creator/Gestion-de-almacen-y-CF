@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS Vegxspress - Rastreador</title>
     <style>
-        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545; --rack-green: #548235; --warning: #ffc107; --verified: #d4edda;}
+        :root { --primary: #1F4E78; --background: #f4f7f6; --text: #333; --info: #17a2b8; --success: #28a745; --danger: #dc3545; --rack-green: #548235; --rack-front: #6c757d; --warning: #ffc107; --verified: #d4edda;}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .nav-header { width: 100%; max-width: 1000px; display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .nav-btn { background-color: #fff; color: var(--primary); border: 2px solid var(--primary); padding: 8px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; transition: 0.3s; }
@@ -41,6 +41,7 @@
         .rack-table th, .rack-table td { border: 1px solid #ddd; padding: 6px 4px; } 
         .rack-table th { background-color: #f9f9f9; text-align: center;}
         .level-separator td { background-color: var(--rack-green); color: white; font-weight: bold; text-align: center; }
+        .level-separator.front-rack td { background-color: var(--rack-front); } /* Color distinto para Nivel 0 */
         
         .rack-row { height: 35px; } 
         .rack-row.empty { background-color: #fff; }
@@ -104,10 +105,8 @@
                 <div class="result-grid">
                     <div class="data-group"><label>Producto</label><span id="resProducto"></span></div>
                     <div class="data-group"><label>Peso Neto</label><span id="resPeso"></span> kg</div>
-                    <!-- Recuperamos el empaque y tarima -->
                     <div class="data-group"><label>Empaque</label><span id="resEmpaque"></span></div>
                     <div class="data-group"><label>Tarima</label><span id="resTarima"></span></div>
-                    
                     <div class="data-group"><label>Cuarto Frío</label><span id="resCuarto"></span></div>
                     <div class="data-group"><label>Ubicación</label><span id="resUbi"></span></div>
                 </div>
@@ -169,7 +168,7 @@
         actualizarTablaMapa(null);
     });
 
-    // Generador Dinámico de Carriles
+    // Generador Dinámico de Carriles (Incluyendo Nivel 0)
     function actualizarTablaMapa(folioResaltar = null) {
         const c = document.getElementById('cuartoFrio').value; 
         const container = document.getElementById('allRacksContainer');
@@ -181,7 +180,6 @@
 
         for(let cNum = 1; cNum <= maxCarriles; cNum++) {
             let carrilName = "Carril " + cNum;
-            // Se agregaron las columnas de Empaque y Tarima, y la de Auditoría al final
             let htmlTable = `<h3 style="color:var(--primary); margin-top:15px; margin-bottom:5px; border-bottom:1px solid #ccc;">📍 ${carrilName}</h3>
                              <table class="rack-table">
                                 <thead>
@@ -189,6 +187,7 @@
                                 </thead>
                                 <tbody>`;
             
+            // Niveles de Rack Estándar (3, 2, 1 con 4 posiciones)
             for(let lvl = 3; lvl >= 1; lvl--) {
                 let lvlLabel = lvl === 3 ? "Alto" : lvl === 2 ? "Medio" : "Piso";
                 htmlTable += `<tr class="level-separator"><td colspan="6">Nivel ${lvl} (${lvlLabel})</td></tr>`;
@@ -199,6 +198,15 @@
                                   </tr>`;
                 }
             }
+
+            // NUEVO: Nivel 0 (Frente al Rack con 2 posiciones)
+            htmlTable += `<tr class="level-separator front-rack"><td colspan="6">Nivel 0 (Frente al Rack)</td></tr>`;
+            for(let pos = 2; pos >= 1; pos--) {
+                htmlTable += `<tr class="rack-row empty" data-carril="${cNum}" data-level="0" data-depth="${pos}">
+                                <td colspan="6" style="text-align:center; color:#ccc;">Vacío (Pos ${pos})</td>
+                              </tr>`;
+            }
+
             htmlTable += `</tbody></table>`;
             container.innerHTML += htmlTable;
         }
@@ -222,8 +230,6 @@
                         }
                         
                         let empaqueData = `${item.cantidadCajas || '-'} ${item.tipoCaja || ''}`;
-                        
-                        // Si ya está verificado muestra la palomita, si no, el checkbox interactivo
                         let celdaAuditoria = esVerificado 
                             ? `<span style="color:green; font-weight:bold; font-size:16px;" title="${item.verificado}">✅</span>` 
                             : `<input type="checkbox" class="audit-check" data-folio="${item.folio}" onclick="verificarFisico(this, event)">`;
@@ -249,12 +255,11 @@
         }
     }
 
-    // Función para el click del checkbox (Directo en la tabla)
+    // Función de validación en la tabla
     function verificarFisico(checkbox, event) {
-        event.stopPropagation(); // Evita que se seleccione toda la fila si solo quieres dar click a la caja
-        
+        event.stopPropagation();
         const folioAuditar = checkbox.getAttribute('data-folio');
-        checkbox.disabled = true; // Congelamos la casilla para evitar dobles clicks
+        checkbox.disabled = true; 
 
         const datos = {
             action: 'verificar_fisico',
@@ -264,7 +269,6 @@
 
         fetch(urlGoogleScript, { method: 'POST', mode: 'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
         .then(() => {
-            // Actualizamos la base local de inmediato para que pinte de verde
             let item = inventarioGlobal.find(i => String(i.folio) === String(folioAuditar));
             if(item) { item.verificado = "✅ " + sesion.nombre + " (" + new Date().toLocaleDateString() + ")"; }
             actualizarTablaMapa(null); 
@@ -276,7 +280,7 @@
         });
     }
 
-    // === LÓGICA ORIGINAL DE BÚSQUEDA ===
+    // Buscador
     document.getElementById('searchInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') buscarFolio();
     });
@@ -313,7 +317,6 @@
         document.getElementById('resProducto').innerText = item.producto;
         document.getElementById('resPeso').innerText = item.pesoNeto;
         
-        // Recuperamos el empaque y la tarima en la tarjeta de resultados
         let empaqueData = `${item.cantidadCajas || '-'} ${item.tipoCaja || ''}`;
         document.getElementById('resEmpaque').innerText = empaqueData;
         document.getElementById('resTarima').innerText = item.tarima || "Sin tarima";
@@ -336,9 +339,7 @@
         document.getElementById('resultCard').style.display = 'block';
     }
 
-    // Iluminar la tarjeta al darle clic a una fila del mapa
     document.getElementById('allRacksContainer').addEventListener('click', function(e) {
-        // Solo si no fue un clic en el checkbox
         if(e.target.type === 'checkbox') return;
 
         const row = e.target.closest('.rack-row.filled');
