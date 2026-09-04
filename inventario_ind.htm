@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario IND - Vegxpress</title>
+    <!-- Librería para leer el Excel subido -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #f0f2f5;
@@ -12,7 +14,7 @@
             --danger: #dc3545;
             --border: #dee2e6;
             
-            /* Colores de las Áreas basados en tu Excel */
+            /* Colores de las Áreas */
             --c-alm: #2E7D32; /* Verde */
             --c-prod: #F9A825; /* Amarillo/Naranja */
             --c-cf1: #1565C0; /* Azul fuerte */
@@ -26,31 +28,34 @@
         
         .header { background-color: var(--primary); color: white; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
         .header h1 { margin: 0; font-size: 22px; display: flex; align-items: center; gap: 15px;}
-        .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; } /* Tono verde Vegxpress */
+        .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
 
-        .controls { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); align-items: center;}
+        .controls { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); align-items: center; justify-content: space-between;}
         .control-group { display: flex; align-items: center; gap: 10px; }
         label { font-weight: bold; font-size: 14px; color: #555; }
         select, input[type="date"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none;}
-        select:focus, input[type="date"]:focus { border-color: var(--primary); }
+        
+        /* Botón y estilo para cargar el archivo */
+        .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; cursor: pointer; }
+        .file-upload-btn { background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.3s;}
+        .file-upload-btn:hover { background-color: #5a6268; }
+        .file-upload-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer;}
+        .status-badge { background-color: #ffc107; color: #000; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 10px; display: none;}
+        .status-badge.loaded { background-color: var(--success); color: white;}
 
-        /* Contenedor de la tabla con scroll horizontal y vertical */
         .table-container { background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: auto; max-height: 70vh; position: relative;}
         
-        table { width: 100%; border-collapse: collapse; min-width: 1800px; /* Fuerza el ancho para que entren todas las áreas */ font-size: 13px;}
+        table { width: 100%; border-collapse: collapse; min-width: 1800px; font-size: 13px;}
         
-        /* Sticky Headers */
         thead { position: sticky; top: 0; z-index: 10; }
         th { padding: 10px; text-align: center; border: 1px solid var(--border); font-weight: 700; text-transform: uppercase; }
         td { padding: 6px; border: 1px solid var(--border); text-align: center; background-color: #fff;}
         
-        /* Sticky Columns (Código y Producto fijos a la izquierda) */
         th.sticky-col, td.sticky-col { position: sticky; z-index: 5; background-color: #f8f9fa; font-weight: bold;}
         th.col-codigo, td.col-codigo { left: 0; min-width: 50px; }
         th.col-producto, td.col-producto { left: 63px; min-width: 250px; text-align: left !important; box-shadow: 2px 0 5px rgba(0,0,0,0.05);}
-        thead th.sticky-col { z-index: 11; background-color: #e9ecef; } /* Header esquina superior izquierda */
+        thead th.sticky-col { z-index: 11; background-color: #e9ecef; }
 
-        /* Colores de encabezados por área */
         .h-alm { background-color: var(--c-alm); color: white; }
         .h-prod { background-color: var(--c-prod); color: black; }
         .h-cf1 { background-color: var(--c-cf1); color: white; }
@@ -62,15 +67,15 @@
 
         .sub-header th { background-color: #f1f3f5; color: #333; font-size: 11px; }
 
-        input[type="number"] { width: 60px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background-color: #fff9e6;}
+        input[type="number"] { width: 60px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background-color: #fff9e6; transition: 0.3s;}
         input[type="number"]:focus { background-color: #fff; border-color: var(--primary); outline: none;}
-        input[readonly] { background-color: transparent; border: none; font-weight: normal; color: #555; }
+        input[readonly] { background-color: #f8f9fa; border: 1px solid #ddd; font-weight: bold; color: #495057; width: 50px;}
+        input[readonly].updated { background-color: #e8f5e9; color: var(--success); border-color: var(--success);}
 
         .dif-ok { color: var(--success); font-weight: bold; font-size: 16px; }
         .dif-alert { color: white; background-color: var(--danger); font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block;}
         .total-cell { font-weight: bold; font-size: 14px; background-color: #e8f4f8 !important; color: var(--primary);}
 
-        /* Clase para ocultar áreas con el filtro */
         .hidden-area { display: none !important; }
 
         .btn-guardar { background-color: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; float: right; margin-top: 20px; transition: 0.2s;}
@@ -88,22 +93,32 @@
     </div>
 
     <div class="controls">
-        <div class="control-group">
-            <label>Fecha:</label>
-            <input type="date" id="fecha-inventario">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div class="control-group">
+                <label>Fecha:</label>
+                <input type="date" id="fecha-inventario">
+            </div>
+            <div class="control-group">
+                <label>Filtrar Vista:</label>
+                <select id="area-selector" onchange="filtrarArea()">
+                    <option value="todas">Ver Todas las Áreas</option>
+                    <option value="alm">Almacén IND</option>
+                    <option value="prod">Producción</option>
+                    <option value="cf1">Cuarto Frío 1</option>
+                    <option value="cf24">Cuartos Fríos 2-4</option>
+                    <option value="cf5">Cuarto Frío 5</option>
+                    <option value="desc">Descarga</option>
+                    <option value="huerto">Huerto Basal</option>
+                </select>
+            </div>
         </div>
+        
         <div class="control-group">
-            <label>Filtrar Vista por Área:</label>
-            <select id="area-selector" onchange="filtrarArea()">
-                <option value="todas">Ver Todas las Áreas (Scroll Horizontal)</option>
-                <option value="alm">Almacén IND</option>
-                <option value="prod">Producción</option>
-                <option value="cf1">Cuarto Frío 1</option>
-                <option value="cf24">Cuartos Fríos 2-4</option>
-                <option value="cf5">Cuarto Frío 5</option>
-                <option value="desc">Descarga</option>
-                <option value="huerto">Huerto Basal</option>
-            </select>
+            <div class="file-upload-wrapper">
+                <button class="file-upload-btn">📥 Cargar Excel Oracle</button>
+                <input type="file" id="fileOracle" accept=".xlsx, .xls" onchange="procesarExcelOracle(event)">
+            </div>
+            <span id="oracle-status" class="status-badge">Esperando Archivo...</span>
         </div>
     </div>
 
@@ -140,15 +155,14 @@
                 </tr>
             </thead>
             <tbody id="tabla-body">
-                <!-- Las filas se inyectan con JavaScript -->
+                <!-- Javascript inyecta las filas -->
             </tbody>
         </table>
     </div>
 
-    <button class="btn-guardar" onclick="guardarInventario()">💾 Guardar Inventario en Base de Datos</button>
+    <button class="btn-guardar" onclick="guardarInventario()">💾 Guardar Inventario Físico</button>
 
 <script>
-    // 1. Base de datos local de productos (Tomada de tu imagen de referencia)
     const productos = [
         { cod: "A101", desc: "CAJA PASTICA NAYLEA" },
         { cod: "A202", desc: "CAJA IFCO 6413" },
@@ -177,36 +191,40 @@
         { cod: "A904", desc: "CAJA LIMONERA" }
     ];
 
-    // Claves de las áreas para iterar
     const areasKeys = ['alm', 'prod', 'cf1', 'cf24', 'cf5', 'desc', 'huerto'];
+
+    // Mapeo exacto: ¿Cómo se llama cada área en el Excel de Oracle que me pasaste?
+    const oracleMap = {
+        'alm': 'Monterrey : Mty - Almacen Indirectos',
+        'prod': 'Monterrey : Mty - Producción',
+        'cf1': 'Monterrey : Mty - Cuarto Frio 1 PT',
+        'cf24': 'Monterrey : Mty - Almacén General MP CF2 a CF4',
+        'cf5': 'Monterrey : Mty - Cuarto Frio 5 Tomatillo',
+        'desc': 'Monterrey : Mty - Descargas',
+        'huerto': 'Santa Catarina : SC - Almacen Indirectos' // Asumiendo esto por el contexto de la base extra
+    };
 
     window.onload = function() {
         document.getElementById('fecha-inventario').valueAsDate = new Date();
         renderizarTabla();
     };
 
-    // 2. Función para construir la tabla dinámicamente
     function renderizarTabla() {
         const tbody = document.getElementById('tabla-body');
         let html = '';
 
         productos.forEach((prod, index) => {
-            html += `<tr data-index="${index}">
+            html += `<tr data-index="${index}" id="row-${prod.cod}">
                         <td class="sticky-col col-codigo">${prod.cod}</td>
                         <td class="sticky-col col-producto">${prod.desc}</td>`;
             
-            // Generar las 3 celdas (Fisico, Oracle, Diferencia) por cada área
             areasKeys.forEach(area => {
-                // Aquí podrías inyectar el valor real de Oracle si ya viniera de tu base de datos.
-                // Por ahora lo ponemos en 0.0 por defecto.
-                let valOracle = "0.0"; 
-
                 html += `
                     <td class="area-group area-${area}">
-                        <input type="number" class="in-fisico" data-area="${area}" oninput="calcularFila(this)" placeholder="0">
+                        <input type="number" class="in-fisico" data-area="${area}" oninput="calcularFila('${prod.cod}', '${area}')" placeholder="0">
                     </td>
                     <td class="area-group area-${area}">
-                        <input type="text" class="in-oracle" data-area="${area}" value="${valOracle}" readonly tabindex="-1">
+                        <input type="text" class="in-oracle" data-area="${area}" value="0.0" readonly tabindex="-1">
                     </td>
                     <td class="area-group area-${area}">
                         <span class="dif-result dif-ok" data-area="${area}">0.0</span>
@@ -214,58 +232,49 @@
                 `;
             });
 
-            // Celda del Total
-            html += `<td class="total-cell" id="total-${index}">0</td>
+            html += `<td class="total-cell" id="total-${prod.cod}">0</td>
                      </tr>`;
         });
 
         tbody.innerHTML = html;
     }
 
-    // 3. Lógica matemática al capturar datos
-    function calcularFila(inputElement) {
-        const tr = inputElement.closest('tr');
-        const rowIndex = tr.getAttribute('data-index');
-        const area = inputElement.getAttribute('data-area');
+    function calcularFila(codigo, area) {
+        const tr = document.getElementById(`row-${codigo}`);
         
-        // 3.1 Calcular la diferencia para el área editada
-        const fisicoVal = parseFloat(inputElement.value) || 0;
+        // 1. Calcular Diferencia
+        const fisicoInput = tr.querySelector(`.in-fisico[data-area="${area}"]`);
         const oracleInput = tr.querySelector(`.in-oracle[data-area="${area}"]`);
-        const oracleVal = parseFloat(oracleInput.value) || 0;
         const resultSpan = tr.querySelector(`.dif-result[data-area="${area}"]`);
 
+        const fisicoVal = parseFloat(fisicoInput.value) || 0;
+        const oracleVal = parseFloat(oracleInput.value) || 0;
         let diferencia = fisicoVal - oracleVal;
         
         if (diferencia === 0) {
-            // Si coincide físico con sistema, mostramos palomita
             resultSpan.textContent = fisicoVal === 0 ? "0.0" : "✔";
             resultSpan.className = "dif-result dif-ok";
         } else {
-            // Si hay descuadre, marcamos en rojo
-            // Format to 1 decimal place if needed, or integer
-            resultSpan.textContent = diferencia > 0 ? `+${diferencia}` : diferencia;
+            // Mostrar diferencia con un decimal
+            let dispDif = diferencia.toFixed(1);
+            resultSpan.textContent = diferencia > 0 ? `+${dispDif}` : dispDif;
             resultSpan.className = "dif-result dif-alert";
         }
 
-        // 3.2 Calcular el TOTAL FÍSICO de toda la fila
+        // 2. Calcular Total Físico de la Fila
         let sumaTotal = 0;
         const todosLosFisicos = tr.querySelectorAll('.in-fisico');
         todosLosFisicos.forEach(inp => {
             sumaTotal += parseFloat(inp.value) || 0;
         });
-        
-        document.getElementById(`total-${rowIndex}`).textContent = sumaTotal;
+        document.getElementById(`total-${codigo}`).textContent = sumaTotal;
     }
 
-    // 4. Lógica visual: Filtro de Áreas
     function filtrarArea() {
         const seleccion = document.getElementById('area-selector').value;
         const todasLasAreasDOM = document.querySelectorAll('.area-group');
-        
-        // Primero, mostramos todo quitando la clase hidden
         todasLasAreasDOM.forEach(el => el.classList.remove('hidden-area'));
 
-        // Si seleccionó un área específica, ocultamos las que no coincidan
         if (seleccion !== 'todas') {
             todasLasAreasDOM.forEach(el => {
                 if (!el.classList.contains(`area-${seleccion}`)) {
@@ -275,9 +284,93 @@
         }
     }
 
-    // 5. Botón Guardar (Preparado para conectar con Apps Script)
+    // ==========================================
+    // LÓGICA MÁGICA PARA LEER EL EXCEL DE ORACLE
+    // ==========================================
+    function procesarExcelOracle(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const badge = document.getElementById('oracle-status');
+        badge.style.display = 'inline-block';
+        badge.textContent = "Procesando archivo...";
+        badge.className = "status-badge";
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            
+            // Leemos la primera hoja
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            
+            // El formato de Oracle tiene los encabezados reales en la fila 7 (index 6 en programación)
+            // XLSX json saca un arreglo de arreglos para procesar más fácil la estructura combinada
+            const jsonOracle = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+            
+            // Fila de Nombres de Almacén (Fila 7 en Excel = Index 6)
+            const headersAreas = jsonOracle[6];
+            // Fila de Columnas ("Físico", "Orden", etc) (Fila 8 en Excel = Index 7)
+            const headersTipos = jsonOracle[7];
+            
+            // Buscar en qué índice de columna está cada "Subinventario" que nos interesa
+            let colIndexes = {};
+            areasKeys.forEach(areaKey => {
+                const oracleName = oracleMap[areaKey];
+                // Buscamos en qué columna dice el nombre del almacén
+                const areaColIndex = headersAreas.findIndex(h => typeof h === 'string' && h.includes(oracleName));
+                
+                if(areaColIndex !== -1) {
+                    // Si lo encuentra, buscar la sub-columna que dice "Físico" para ese almacén
+                    // Normalmente es 2 columnas a la derecha del nombre principal en tu reporte
+                    // Buscamos "Físico" a partir de ahí
+                    for(let i = areaColIndex; i < areaColIndex + 10; i++) {
+                        if(headersTipos[i] === "Físico") {
+                            colIndexes[areaKey] = i;
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // Ahora barremos los datos (desde la fila 9 hacia abajo) para extraer los números
+            let actualizados = 0;
+            for(let row = 8; row < jsonOracle.length; row++) {
+                const rowData = jsonOracle[row];
+                const articuloCod = String(rowData[0]).trim(); // Columna A: Artículo
+
+                if(articuloCod && articuloCod !== "") {
+                    // Si este código de artículo existe en nuestra tabla HTML, inyectamos los valores
+                    const tr = document.getElementById(`row-${articuloCod}`);
+                    if(tr) {
+                        areasKeys.forEach(areaKey => {
+                            if(colIndexes[areaKey] !== undefined) {
+                                let valorOracle = parseFloat(rowData[colIndexes[areaKey]]) || 0;
+                                const inOracle = tr.querySelector(`.in-oracle[data-area="${areaKey}"]`);
+                                
+                                // Pintar el valor en la tabla
+                                inOracle.value = valorOracle.toFixed(1);
+                                inOracle.classList.add('updated'); // Pinta de verdecito para avisar que se cargó
+                                
+                                // Disparar el recálculo
+                                calcularFila(articuloCod, areaKey);
+                            }
+                        });
+                        actualizados++;
+                    }
+                }
+            }
+
+            badge.textContent = `¡Cargado! (${actualizados} productos)`;
+            badge.className = "status-badge loaded";
+        };
+        
+        reader.readAsArrayBuffer(file);
+    }
+
     function guardarInventario() {
-        alert("¡Estructura lista! El siguiente paso será conectar esta función para enviar el arreglo JSON a tu Google Sheet, similar a lo que hacemos en el WMS.");
+        alert("Siguiente paso: Enviar los datos capturados y las diferencias a la base de datos de Apps Script.");
     }
 
 </script>
