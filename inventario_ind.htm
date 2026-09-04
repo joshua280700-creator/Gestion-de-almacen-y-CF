@@ -13,7 +13,6 @@
             --danger: #dc3545;
             --border: #dee2e6;
             
-            /* Colores de las Áreas (Más suaves para no saturar) */
             --c-alm: #2E7D32; 
             --c-prod: #F9A825; 
             --c-cf1: #1565C0; 
@@ -34,16 +33,19 @@
         label { font-weight: 600; font-size: 13px; color: #555; }
         select, input[type="date"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none;}
         
+        /* Botón de búsqueda de fechas */
+        .btn-buscar { background-color: #17a2b8; color: white; border: none; padding: 7px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .btn-buscar:hover { background-color: #138496; }
+
         .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; cursor: pointer; }
         .file-upload-btn { background-color: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.3s;}
         .file-upload-btn:hover { background-color: #5a6268; }
         .file-upload-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer;}
+        
         .status-badge { background-color: #ffc107; color: #000; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 10px; display: none;}
         .status-badge.loaded { background-color: var(--success); color: white;}
 
-        /* Contenedor optimizado */
         .table-container { background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; max-height: 75vh; position: relative;}
-        
         table { width: 100%; border-collapse: collapse; min-width: 1500px; font-size: 12px;}
         
         thead { position: sticky; top: 0; z-index: 10; }
@@ -52,7 +54,6 @@
         
         th.sticky-col, td.sticky-col { position: sticky; z-index: 5; background-color: #f8f9fa;}
         th.col-codigo, td.col-codigo { left: 0; min-width: 45px; font-weight: bold; color: #555;}
-        
         th.col-producto, td.col-producto { left: 55px; min-width: 200px; max-width: 250px; text-align: left !important; box-shadow: 2px 0 5px rgba(0,0,0,0.05); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         thead th.sticky-col { z-index: 11; background-color: #e9ecef; }
 
@@ -74,7 +75,7 @@
         input[readonly].updated { color: #333; font-weight: 600; }
 
         .dif-result { font-weight: bold; font-size: 14px; padding: 2px 4px; border-radius: 3px; display: inline-block; min-width: 25px;}
-        .dif-ok { color: var(--success); } /* Regresamos la palomita verde */
+        .dif-ok { color: var(--success); } 
         .dif-alert { color: white; background-color: var(--danger); font-size: 12px;} 
         
         .total-cell { font-weight: bold; font-size: 13px; background-color: #f8f9fa !important; color: #333;}
@@ -100,6 +101,8 @@
             <div class="control-group">
                 <label>Fecha:</label>
                 <input type="date" id="fecha-inventario">
+                <!-- NUEVO BOTÓN PARA BUSCAR FECHA -->
+                <button type="button" class="btn-buscar" onclick="buscarPorFecha()">🔍 Cargar Guardado</button>
             </div>
             <div class="control-group">
                 <label>Filtro:</label>
@@ -158,7 +161,6 @@
                 </tr>
             </thead>
             <tbody id="tabla-body">
-                <!-- Javascript inyecta las filas -->
             </tbody>
         </table>
     </div>
@@ -166,7 +168,7 @@
     <button class="btn-guardar" onclick="guardarInventario()">💾 Guardar Inventario Físico</button>
 
 <script>
-    // URL DE TU NUEVO APPS SCRIPT
+    // ==== ASEGÚRATE DE PEGAR TU NUEVA URL DE APPS SCRIPT AQUÍ ====
     const urlInventarios = "https://script.google.com/macros/s/AKfycbzX4Gjxx87ocYFgkMWsf4rlvX0SnaNjRG_iSyCACwJO8bMcWuV0gii50H-OpbIWJrr0FA/exec";
 
     const productos = [
@@ -209,6 +211,10 @@
         'huerto': 'Santa Catarina : SC - Almacen Indirectos'
     };
 
+    // Mapa inverso para cuando traemos de Google Sheets al HTML
+    const reverseOracleMap = {};
+    for (let key in oracleMap) { reverseOracleMap[oracleMap[key]] = key; }
+
     window.onload = function() {
         document.getElementById('fecha-inventario').valueAsDate = new Date();
         renderizarTabla();
@@ -246,7 +252,6 @@
 
     function calcularFila(codigo, area) {
         const tr = document.getElementById(`row-${codigo}`);
-        
         const fisicoInput = tr.querySelector(`.in-fisico[data-area="${area}"]`);
         const oracleInput = tr.querySelector(`.in-oracle[data-area="${area}"]`);
         const resultSpan = tr.querySelector(`.dif-result[data-area="${area}"]`);
@@ -259,10 +264,8 @@
             resultSpan.className = "dif-result dif-ok";
         } else {
             let diferencia = fisicoVal - oracleVal;
-            
             if (diferencia === 0) {
-                // REGRESAMOS LA PALOMITA VERDE AQUÍ
-                resultSpan.textContent = "✔";
+                resultSpan.textContent = "✔"; // Palomita restaurada
                 resultSpan.className = "dif-result dif-ok";
             } else {
                 let dispDif = diferencia % 1 !== 0 ? diferencia.toFixed(1) : diferencia;
@@ -274,9 +277,7 @@
         let sumaTotal = 0;
         const todosLosFisicos = tr.querySelectorAll('.in-fisico');
         todosLosFisicos.forEach(inp => {
-            if(inp.value.trim() !== "") {
-                sumaTotal += parseFloat(inp.value);
-            }
+            if(inp.value.trim() !== "") { sumaTotal += parseFloat(inp.value); }
         });
         document.getElementById(`total-${codigo}`).textContent = sumaTotal === 0 ? "0" : sumaTotal;
     }
@@ -364,10 +365,78 @@
             badge.textContent = `¡Cargado!`;
             badge.className = "status-badge loaded";
         };
-        
         reader.readAsArrayBuffer(file);
     }
 
+    // ==========================================
+    // NUEVA FUNCIÓN: BUSCAR POR FECHA
+    // ==========================================
+    function buscarPorFecha() {
+        const fechaInv = document.getElementById('fecha-inventario').value;
+        if (!fechaInv) {
+            alert("Por favor, selecciona una fecha primero.");
+            return;
+        }
+
+        const badge = document.getElementById('oracle-status');
+        badge.style.display = 'inline-block';
+        badge.textContent = "Buscando...";
+        badge.className = "status-badge";
+
+        // Limpiamos la tabla antes de cargar
+        document.querySelectorAll('.in-fisico').forEach(inp => inp.value = "");
+        document.querySelectorAll('.in-oracle').forEach(inp => { inp.value = "-"; inp.classList.remove('updated'); });
+        
+        // Disparamos cálculos para resetear los totales y palomitas
+        productos.forEach(prod => {
+            areasKeys.forEach(area => calcularFila(prod.cod, area));
+        });
+
+        // Hacemos el fetch al Google Apps Script (doGet)
+        const fetchUrl = `${urlInventarios}?action=obtener_inventario_ind&fecha=${fechaInv}`;
+        
+        fetch(fetchUrl)
+            .then(response => response.json())
+            .then(data => {
+                if(data.length === 0) {
+                    badge.textContent = "Sin datos en esa fecha";
+                    badge.className = "status-badge";
+                    return;
+                }
+
+                // Si hay datos, los inyectamos en la tabla
+                data.forEach(registro => {
+                    const cod = registro.codigo;
+                    const areaKey = reverseOracleMap[registro.area] || registro.area;
+                    
+                    const tr = document.getElementById(`row-${cod}`);
+                    if (tr) {
+                        const inFisico = tr.querySelector(`.in-fisico[data-area="${areaKey}"]`);
+                        const inOracle = tr.querySelector(`.in-oracle[data-area="${areaKey}"]`);
+                        
+                        if (inFisico) inFisico.value = registro.fisico;
+                        if (inOracle) {
+                            let valOrc = parseFloat(registro.oracle) || 0;
+                            inOracle.value = valOrc % 1 !== 0 ? valOrc.toFixed(1) : valOrc;
+                            inOracle.classList.add('updated');
+                        }
+                        
+                        calcularFila(cod, areaKey);
+                    }
+                });
+
+                badge.textContent = `¡Datos cargados!`;
+                badge.className = "status-badge loaded";
+            })
+            .catch(error => {
+                badge.textContent = "Error de conexión";
+                badge.className = "status-badge";
+            });
+    }
+
+    // ==========================================
+    // GUARDAR A GOOGLE SHEETS
+    // ==========================================
     function guardarInventario() {
         const btn = document.querySelector('.btn-guardar');
         btn.disabled = true;
@@ -392,12 +461,10 @@
                 
                 let fisicoVal = fisicoInput.value.trim();
                 
-                // Si el usuario capturó algo (incluso un 0 cuenta como captura), lo guardamos
                 if (fisicoVal !== "") {
                     let oracleVal = oracleInput.value === "-" ? 0 : parseFloat(oracleInput.value);
                     let fisicoNum = parseFloat(fisicoVal);
                     let diferencia = fisicoNum - oracleVal;
-                    
                     let nombreArea = oracleMap[area] || area;
 
                     registrosGuardar.push({
@@ -432,7 +499,7 @@
             body: JSON.stringify(payload)
         })
         .then(() => {
-            alert(`¡Éxito! Se guardaron ${registrosGuardar.length} registros en la base de datos.`);
+            alert(`¡Éxito! Se guardaron/actualizaron registros en la base de datos.`);
             btn.innerText = "✅ Guardado";
             setTimeout(() => { window.location.reload(); }, 2000);
         })
