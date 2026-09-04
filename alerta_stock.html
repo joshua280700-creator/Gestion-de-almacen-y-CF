@@ -12,12 +12,11 @@
             --danger: #dc3545;
             --warning: #ffc107;
             --border: #dee2e6;
-            --traslados-bg: #c00000; /* Rojo del Excel para Traslados */
+            --traslados-bg: #c00000;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: #333;}
         
-        /* BARRA DE NAVEGACIÓN (Pensando en el Login) */
         .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
         .nav-links { display: flex; gap: 15px; }
         .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 14px; font-weight: bold;}
@@ -36,9 +35,8 @@
         label { font-weight: 600; font-size: 13px; color: #555; }
         select, input[type="date"], input[type="text"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none;}
 
-        /* TABLA */
         .table-container { background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; max-height: 60vh; position: relative;}
-        table { width: 100%; border-collapse: collapse; min-width: 1800px; font-size: 11px;}
+        table { width: 100%; border-collapse: collapse; min-width: 1700px; font-size: 11px;}
         
         thead { position: sticky; top: 0; z-index: 10; }
         th { padding: 6px 4px; text-align: center; border: 1px solid var(--border); font-weight: bold; text-transform: uppercase;}
@@ -56,13 +54,11 @@
 
         input[type="number"] { width: 45px; padding: 4px; text-align: center; border: 1px solid #ccc; border-radius: 3px; font-size: 11px;}
         input[type="number"]:focus { border-color: var(--primary); outline: none;}
-        input[readonly] { background-color: transparent; border: none; font-weight: bold; width: 60px;}
 
         .icon-ok { color: var(--success); font-size: 14px; font-weight: bold;}
         .icon-alert { color: var(--danger); font-size: 14px; font-weight: bold;}
-        .row-critical td:not(.sticky-col) { background-color: #fff3cd; } /* Resalta fila crítica */
+        .row-critical td:not(.sticky-col) { background-color: #fff3cd; } 
 
-        /* PANEL CRÍTICO INFERIOR */
         .critical-panel { margin-top: 20px; background: white; border: 1px solid var(--danger); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);}
         .critical-header { background-color: #ff3333; color: white; padding: 8px 15px; font-weight: bold; font-size: 14px;}
         .critical-list { padding: 15px; list-style: none; margin: 0; font-size: 13px; font-weight: 600; color: #555;}
@@ -79,7 +75,6 @@
 </head>
 <body>
 
-    <!-- NAVBAR PARA ECOSISTEMA -->
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
@@ -118,7 +113,6 @@
                         <th colspan="6" class="bg-blue">INVENTARIO DIARIO</th>
                         <th rowspan="2" class="bg-blue">TOTAL</th>
                         <th rowspan="2" class="bg-blue">CRITICO</th>
-                        <th rowspan="2" class="bg-blue">CODIGO</th>
                         <th rowspan="2" class="bg-blue">EST.</th>
                         <th rowspan="2" class="bg-blue">CONSUMO</th>
                         <th rowspan="2" class="bg-blue">VALOR<br>CONS.</th>
@@ -150,29 +144,29 @@
     </div>
 
 <script>
-    // Base de datos de productos con sus precios y niveles críticos según tu Excel
+    // Se eliminó el campo 'cod' ya que era columna auxiliar de Excel
     const catalogo = [
-        { desc: "CAJA PASTICA NAYLEA", cod: "6740479", critico: 800, precio: 15.50 },
-        { desc: "CAJA IFCO 6413", cod: "9359529", critico: 1000, precio: 1.18 },
-        { desc: "CAJA IFCO 6423", cod: "9359529", critico: 1000, precio: 1.48 },
-        { desc: "CAJA CARTON GENERICA 40 LBS", cod: "8696052", critico: 1500, precio: 25.62 },
-        { desc: "CAJA CARTON 1/2 BUSHEL", cod: "9359529", critico: 500, precio: 20.03 },
-        { desc: "CAJA CARTON 1/4 BUSHEL", cod: "9359529", critico: 300, precio: 12.89 },
-        { desc: "ESQUINEROS DE CARTON CAL 1.20", cod: "9359529", critico: 700, precio: 7.28 },
-        { desc: "ESQUINEROS DE CARTON CAL 1.70", cod: "9359529", critico: 700, precio: 10.13 },
-        { desc: "LAMINA DE CARTON KRAFT (P/TARIMA)", cod: "6740479", critico: 400, precio: 7.79 },
-        { desc: "TARIMA NACIONAL DE BARROTE RECICLADA", cod: "6740479", critico: 30, precio: 195.00 },
-        { desc: "TARIMA DE EXPORTACION CUBO DE PRIMERA", cod: "9359529", critico: 70, precio: 321.00 },
-        { desc: "TARIMA CUBO RECICLADA", cod: "8696052", critico: 20, precio: 180.00 },
-        { desc: "RAFIA BLANCA BOBINA GDE. (4KG)", cod: "9359529", critico: 2, precio: 171.45 },
-        { desc: "FLEJE PLASTICO VERDE LISO", cod: "8696052", critico: 5, precio: 767.26 },
-        { desc: "PELICULA PLASTICA STRETCH /EMPLAYE", cod: "9359529", critico: 100, precio: 47.00 },
-        { desc: "FLEJE PLASTICO 1/2 NEGRO", cod: "8696052", critico: 2, precio: 36.48 },
-        { desc: "RIBBON DE TINTA GRANDE ZEBRA", cod: "9359529", critico: 7, precio: 152.00 },
-        { desc: "RIBBON DE TINTA CHICO ZEBRA", cod: "9359529", critico: 3, precio: 56.00 },
-        { desc: "ETIQUETAS COLORES 8x4", cod: "9359529", critico: 2, precio: 245.00 },
-        { desc: "ETIQUETAS BLANCAS 4x2 (3000)", cod: "9359529", critico: 5, precio: 310.00 },
-        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", cod: "6740479", critico: 2, precio: 130.74 }
+        { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
+        { desc: "CAJA IFCO 6413", critico: 1000, precio: 1.18 },
+        { desc: "CAJA IFCO 6423", critico: 1000, precio: 1.48 },
+        { desc: "CAJA CARTON GENERICA 40 LBS", critico: 1500, precio: 25.62 },
+        { desc: "CAJA CARTON 1/2 BUSHEL", critico: 500, precio: 20.03 },
+        { desc: "CAJA CARTON 1/4 BUSHEL", critico: 300, precio: 12.89 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.20", critico: 700, precio: 7.28 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.70", critico: 700, precio: 10.13 },
+        { desc: "LAMINA DE CARTON KRAFT (P/TARIMA)", critico: 400, precio: 7.79 },
+        { desc: "TARIMA NACIONAL DE BARROTE RECICLADA", critico: 30, precio: 195.00 },
+        { desc: "TARIMA DE EXPORTACION CUBO DE PRIMERA", critico: 70, precio: 321.00 },
+        { desc: "TARIMA CUBO RECICLADA", critico: 20, precio: 180.00 },
+        { desc: "RAFIA BLANCA BOBINA GDE. (4KG)", critico: 2, precio: 171.45 },
+        { desc: "FLEJE PLASTICO VERDE LISO", critico: 5, precio: 767.26 },
+        { desc: "PELICULA PLASTICA STRETCH /EMPLAYE", critico: 100, precio: 47.00 },
+        { desc: "FLEJE PLASTICO 1/2 NEGRO", critico: 2, precio: 36.48 },
+        { desc: "RIBBON DE TINTA GRANDE ZEBRA", critico: 7, precio: 152.00 },
+        { desc: "RIBBON DE TINTA CHICO ZEBRA", critico: 3, precio: 56.00 },
+        { desc: "ETIQUETAS COLORES 8x4", critico: 2, precio: 245.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (3000)", critico: 5, precio: 310.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 }
     ];
 
     window.onload = function() {
@@ -199,11 +193,10 @@
                 <!-- INDICADORES -->
                 <td class="bg-yellow" id="tot-inv-${idx}">0</td>
                 <td class="bg-gray" style="color:red; font-weight:bold;">${p.critico}</td>
-                <td>${p.cod}</td>
                 <td id="estatus-${idx}">-</td>
                 
-                <!-- FINANZAS -->
-                <td><input type="number" id="cons-${idx}" oninput="calcularFila(${idx})"></td>
+                <!-- FINANZAS (Consumo Automatizado) -->
+                <td class="bg-yellow" id="tot-cons-${idx}">0</td>
                 <td class="bg-green" id="val-cons-${idx}">$0.00</td>
                 <td><strong>$${p.precio.toFixed(2)}</strong></td>
                 <td class="text-red" id="val-neto-${idx}">$0.00</td>
@@ -233,7 +226,7 @@
         
         inputsInv.forEach(inp => {
             if (inp.value !== "") {
-                totalInv = parseFloat(inp.value); // Se queda con el último valor ingresado de L a S
+                totalInv = parseFloat(inp.value);
                 invCapturado = true;
             }
         });
@@ -259,19 +252,18 @@
         const valorNeto = totalInv * p.precio;
         document.getElementById(`val-neto-${idx}`).textContent = `$${valorNeto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-        // 4. Finanzas (Consumo)
-        const valConsumoInput = document.getElementById(`cons-${idx}`).value;
-        const consumoNum = valConsumoInput ? parseFloat(valConsumoInput) : 0;
-        const valorConsumo = consumoNum * p.precio;
-        document.getElementById(`val-cons-${idx}`).textContent = `$${valorConsumo.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
-        // 5. Total Traslados (Suma de la semana)
+        // 4. Calcular TOTAL TRASLADOS
         const inputsTras = row.querySelectorAll('.tras-dia');
         let totalTraslados = 0;
         inputsTras.forEach(inp => {
             if (inp.value !== "") totalTraslados += parseFloat(inp.value);
         });
         document.getElementById(`tot-tras-${idx}`).textContent = totalTraslados;
+
+        // 5. Automatizar CONSUMO y VALOR CONSUMO en base a Traslados
+        document.getElementById(`tot-cons-${idx}`).textContent = totalTraslados;
+        const valorConsumo = totalTraslados * p.precio;
+        document.getElementById(`val-cons-${idx}`).textContent = `$${valorConsumo.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
         actualizarPanelCritico();
     }
@@ -289,7 +281,7 @@
                 
                 lista.innerHTML += `
                     <li>
-                        <span>${p.desc} - ${p.cod}</span>
+                        <span>${p.desc}</span>
                         <span>Stock: <span class="val">${totInv}</span> / Mínimo: ${p.critico}</span>
                     </li>
                 `;
