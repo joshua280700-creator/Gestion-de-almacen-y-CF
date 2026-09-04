@@ -435,8 +435,8 @@
             });
     }
 
-    // ==========================================
-    // GUARDAR A GOOGLE SHEETS (BLINDADO)
+ // ==========================================
+    // GUARDAR A GOOGLE SHEETS (ACTUALIZADO PARA GUARDAR "MOLDES")
     // ==========================================
     function guardarInventario() {
         const btn = document.querySelector('.btn-guardar');
@@ -462,10 +462,20 @@
                 
                 let fisicoVal = fisicoInput.value.trim();
                 
-                if (fisicoVal !== "") {
+                // Revisamos si la celda de Oracle se iluminó (es decir, trae datos del Excel)
+                let tieneDatosOracle = oracleInput.classList.contains('updated');
+                
+                // LA MAGIA: Guardamos si teclearon un físico O SI Oracle tiene datos
+                if (fisicoVal !== "" || tieneDatosOracle) {
+                    
                     let oracleVal = oracleInput.value === "-" ? 0 : parseFloat(oracleInput.value);
-                    let fisicoNum = parseFloat(fisicoVal);
-                    let diferencia = fisicoNum - oracleVal;
+                    
+                    // Si teclearon Físico, lo mandamos como número. Si está vacío, lo mandamos vacío ("")
+                    let fisicoNum = fisicoVal !== "" ? parseFloat(fisicoVal) : "";
+                    
+                    // Si el físico está vacío, no hay diferencia calculable todavía, la mandamos vacía
+                    let diferencia = fisicoVal !== "" ? (fisicoNum - oracleVal) : "";
+                    
                     let nombreArea = oracleMap[area] || area;
 
                     registrosGuardar.push({
@@ -482,7 +492,7 @@
         });
 
         if (registrosGuardar.length === 0) {
-            alert("No has capturado ningún valor físico para guardar.");
+            alert("No has cargado el Excel ni capturado valores físicos para guardar.");
             btn.disabled = false;
             btn.innerText = "💾 Guardar Inventario Físico";
             return;
@@ -493,7 +503,6 @@
             registros: registrosGuardar
         };
 
-        // Fetch modificado para recibir la respuesta real de Google
         fetch(urlInventarios, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
@@ -512,7 +521,7 @@
             }
         })
         .catch(err => {
-            alert("Error de red: La URL de Apps Script podría ser incorrecta o Google bloqueó la conexión.");
+            alert("Error de red o conexión bloqueada.");
             btn.disabled = false;
             btn.innerText = "💾 Guardar Inventario Físico";
         });
