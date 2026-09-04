@@ -9,6 +9,7 @@
         :root {
             --bg-color: #f0f2f5;
             --primary: #1F4E78;
+            --success: #28a745;
             --danger: #dc3545;
             --border: #dee2e6;
             
@@ -38,7 +39,7 @@
         .file-upload-btn:hover { background-color: #5a6268; }
         .file-upload-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer;}
         .status-badge { background-color: #ffc107; color: #000; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 10px; display: none;}
-        .status-badge.loaded { background-color: #28a745; color: white;}
+        .status-badge.loaded { background-color: var(--success); color: white;}
 
         /* Contenedor optimizado */
         .table-container { background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; max-height: 75vh; position: relative;}
@@ -52,7 +53,6 @@
         th.sticky-col, td.sticky-col { position: sticky; z-index: 5; background-color: #f8f9fa;}
         th.col-codigo, td.col-codigo { left: 0; min-width: 45px; font-weight: bold; color: #555;}
         
-        /* Ajuste de producto: más compacto */
         th.col-producto, td.col-producto { left: 55px; min-width: 200px; max-width: 250px; text-align: left !important; box-shadow: 2px 0 5px rgba(0,0,0,0.05); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         thead th.sticky-col { z-index: 11; background-color: #e9ecef; }
 
@@ -67,22 +67,18 @@
 
         .sub-header th { background-color: #f1f3f5; color: #555; font-size: 10px; }
 
-        /* Inputs limpios y sin saturar */
         input[type="number"] { width: 50px; padding: 4px; text-align: center; border: 1px solid #ccc; border-radius: 3px; font-weight: bold; background-color: #fff;}
         input[type="number"]:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 3px rgba(31, 78, 120, 0.3);}
         
-        /* Input de Oracle neutral */
         input[readonly] { background-color: transparent; border: none; font-weight: normal; color: #777; width: 45px; text-align: center;}
         input[readonly].updated { color: #333; font-weight: 600; }
 
-        /* LÓGICA DE COLOR (Menos es Más) */
-        .dif-result { font-weight: bold; font-size: 12px; padding: 2px 4px; border-radius: 3px; display: inline-block; min-width: 25px;}
-        .dif-ok { color: #aaa; font-weight: normal; } /* Gris sutil si cuadra */
-        .dif-alert { color: white; background-color: var(--danger); } /* Solo resalta el error */
+        .dif-result { font-weight: bold; font-size: 14px; padding: 2px 4px; border-radius: 3px; display: inline-block; min-width: 25px;}
+        .dif-ok { color: var(--success); } /* Regresamos la palomita verde */
+        .dif-alert { color: white; background-color: var(--danger); font-size: 12px;} 
         
         .total-cell { font-weight: bold; font-size: 13px; background-color: #f8f9fa !important; color: #333;}
 
-        /* Clase para ocultar áreas con el filtro y colapsar el ancho */
         .hidden-area { display: none !important; }
         .compact-view table { min-width: auto; width: 100%; }
 
@@ -170,6 +166,9 @@
     <button class="btn-guardar" onclick="guardarInventario()">💾 Guardar Inventario Físico</button>
 
 <script>
+    // URL DE TU NUEVO APPS SCRIPT
+    const urlInventarios = "https://script.google.com/macros/s/AKfycbzX4Gjxx87ocYFgkMWsf4rlvX0SnaNjRG_iSyCACwJO8bMcWuV0gii50H-OpbIWJrr0FA/exec";
+
     const productos = [
         { cod: "A101", desc: "CAJA PASTICA NAYLEA" },
         { cod: "A202", desc: "CAJA IFCO 6413" },
@@ -255,7 +254,6 @@
         let fisicoVal = fisicoInput.value.trim() === "" ? null : parseFloat(fisicoInput.value);
         let oracleVal = oracleInput.value === "-" ? 0 : parseFloat(oracleInput.value);
         
-        // Si no han escrito Físico, y Oracle está en 0 o "-", la diferencia no existe
         if (fisicoVal === null) {
             resultSpan.textContent = "-";
             resultSpan.className = "dif-result dif-ok";
@@ -263,18 +261,16 @@
             let diferencia = fisicoVal - oracleVal;
             
             if (diferencia === 0) {
-                // Gris sutil (Menos es Más)
-                resultSpan.textContent = "OK";
+                // REGRESAMOS LA PALOMITA VERDE AQUÍ
+                resultSpan.textContent = "✔";
                 resultSpan.className = "dif-result dif-ok";
             } else {
-                // Alerta Roja
                 let dispDif = diferencia % 1 !== 0 ? diferencia.toFixed(1) : diferencia;
                 resultSpan.textContent = diferencia > 0 ? `+${dispDif}` : dispDif;
                 resultSpan.className = "dif-result dif-alert";
             }
         }
 
-        // Total Físico (suma solo los inputs que tengan datos)
         let sumaTotal = 0;
         const todosLosFisicos = tr.querySelectorAll('.in-fisico');
         todosLosFisicos.forEach(inp => {
@@ -293,7 +289,6 @@
         todasLasAreasDOM.forEach(el => el.classList.remove('hidden-area'));
 
         if (seleccion !== 'todas') {
-            // Activar modo compacto
             container.classList.add('compact-view');
             todasLasAreasDOM.forEach(el => {
                 if (!el.classList.contains(`area-${seleccion}`)) {
@@ -301,7 +296,6 @@
                 }
             });
         } else {
-            // Desactivar modo compacto (Vuelve el scroll horizontal para ver todo)
             container.classList.remove('compact-view');
         }
     }
@@ -355,7 +349,6 @@
                                 let valorOracle = parseFloat(rowData[colIndexes[areaKey]]) || 0;
                                 const inOracle = tr.querySelector(`.in-oracle[data-area="${areaKey}"]`);
                                 
-                                // Mostrar sin decimales si es entero
                                 let displayVal = valorOracle % 1 !== 0 ? valorOracle.toFixed(1) : valorOracle;
                                 inOracle.value = displayVal;
                                 inOracle.classList.add('updated'); 
@@ -376,7 +369,78 @@
     }
 
     function guardarInventario() {
-        alert("Siguiente paso: Enviar los datos capturados y las diferencias a la base de datos.");
+        const btn = document.querySelector('.btn-guardar');
+        btn.disabled = true;
+        btn.innerText = "⏳ Guardando...";
+
+        const fechaInv = document.getElementById('fecha-inventario').value;
+        if (!fechaInv) {
+            alert("Por favor selecciona la fecha del inventario.");
+            btn.disabled = false;
+            btn.innerText = "💾 Guardar Inventario Físico";
+            return;
+        }
+
+        let registrosGuardar = [];
+
+        productos.forEach(prod => {
+            const tr = document.getElementById(`row-${prod.cod}`);
+            
+            areasKeys.forEach(area => {
+                const fisicoInput = tr.querySelector(`.in-fisico[data-area="${area}"]`);
+                const oracleInput = tr.querySelector(`.in-oracle[data-area="${area}"]`);
+                
+                let fisicoVal = fisicoInput.value.trim();
+                
+                // Si el usuario capturó algo (incluso un 0 cuenta como captura), lo guardamos
+                if (fisicoVal !== "") {
+                    let oracleVal = oracleInput.value === "-" ? 0 : parseFloat(oracleInput.value);
+                    let fisicoNum = parseFloat(fisicoVal);
+                    let diferencia = fisicoNum - oracleVal;
+                    
+                    let nombreArea = oracleMap[area] || area;
+
+                    registrosGuardar.push({
+                        fecha: fechaInv,
+                        area: nombreArea,
+                        codigo: prod.cod,
+                        producto: prod.desc,
+                        fisico: fisicoNum,
+                        oracle: oracleVal,
+                        diferencia: diferencia
+                    });
+                }
+            });
+        });
+
+        if (registrosGuardar.length === 0) {
+            alert("No has capturado ningún valor físico para guardar.");
+            btn.disabled = false;
+            btn.innerText = "💾 Guardar Inventario Físico";
+            return;
+        }
+
+        const payload = {
+            action: "guardar_inventario_ind",
+            registros: registrosGuardar
+        };
+
+        fetch(urlInventarios, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            alert(`¡Éxito! Se guardaron ${registrosGuardar.length} registros en la base de datos.`);
+            btn.innerText = "✅ Guardado";
+            setTimeout(() => { window.location.reload(); }, 2000);
+        })
+        .catch(err => {
+            alert("Hubo un error de conexión.");
+            btn.disabled = false;
+            btn.innerText = "💾 Guardar Inventario Físico";
+        });
     }
 </script>
 </body>
