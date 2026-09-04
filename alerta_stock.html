@@ -30,10 +30,17 @@
         .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
         .header-info { text-align: right; font-size: 11px; }
 
-        .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); align-items: center;}
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); align-items: center; justify-content: space-between;}
         .control-group { display: flex; align-items: center; gap: 8px; }
         label { font-weight: 600; font-size: 13px; color: #555; }
-        select, input[type="date"], input[type="text"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none;}
+        input[type="date"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; font-weight: bold;}
+        
+        .semana-label { font-size: 15px; font-weight: bold; color: var(--primary); background: #e8f4f8; padding: 6px 15px; border-radius: 4px; border: 1px solid #b6d4fe;}
+
+        .btn-accion { background-color: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .btn-accion:hover { background-color: #138496; }
+        .btn-guardar { background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; float: right; margin-top: 15px;}
+        .btn-guardar:hover { background-color: #153a5c; }
 
         .table-container { background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; max-height: 60vh; position: relative;}
         table { width: 100%; border-collapse: collapse; min-width: 1700px; font-size: 11px;}
@@ -51,7 +58,6 @@
         .bg-gray { background-color: #e7e6e6; }
         .text-red { color: red; font-weight: bold; }
 
-        /* CLASES DEL SEMÁFORO */
         .status-green { background-color: #c3e6cb !important; color: #155724; font-weight: bold; }
         .status-yellow { background-color: #ffeeba !important; color: #856404; font-weight: bold; }
         .status-red { background-color: #f5c6cb !important; color: #721c24; font-weight: bold; }
@@ -63,8 +69,6 @@
         .icon-ok { color: var(--success); font-size: 14px; font-weight: bold;}
         .icon-warn { color: var(--warning); font-size: 14px; font-weight: bold;}
         .icon-alert { color: var(--danger); font-size: 14px; font-weight: bold;}
-        
-        /* Fila en rojo tenue si es crítico */
         .row-critical td:not(.sticky-col) { background-color: #fff3cd; } 
 
         .critical-panel { margin-top: 20px; background: white; border: 1px solid var(--danger); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);}
@@ -72,8 +76,6 @@
         .critical-list { padding: 15px; list-style: none; margin: 0; font-size: 13px; font-weight: 600; color: #555;}
         .critical-list li { margin-bottom: 5px; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 5px;}
         .critical-list li span.val { color: var(--danger); }
-
-        .btn-guardar { background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; float: right; margin-top: 15px;}
         
         @media (max-width: 768px) {
             .controls { flex-direction: column; align-items: flex-start; }
@@ -95,7 +97,7 @@
 
     <div class="main-content">
         <div class="header">
-            <h1>INFORME DE STOCK INDIRECTO | SEMANAL</h1>
+            <h1>INFORME Y TRASLADOS DE STOCK INDIRECTO</h1>
             <div class="header-info">
                 <div>Depto: <strong>Capturista de Producción</strong></div>
                 <div>Subsidiaria: <strong>VEGXPRESS MTY</strong></div>
@@ -103,16 +105,16 @@
         </div>
 
         <div class="controls">
-            <div class="control-group">
-                <label>Semana:</label>
-                <input type="text" value="SEMANA 01 - 05 AGO" style="width: 200px;">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div class="control-group">
+                    <label>Selecciona un día de la semana:</label>
+                    <input type="date" id="fecha-semana" onchange="calcularFechasSemana()">
+                </div>
+                <div class="semana-label" id="label-semana">SEMANA: --</div>
             </div>
-            <div class="control-group">
-                <label>Fecha de Corte:</label>
-                <input type="date" id="fecha-corte">
+            <div>
+                <button class="btn-accion" onclick="sincronizarDatos()">📥 Sincronizar Semana</button>
             </div>
-            <!-- Botón simulado para cargar de la BD -->
-            <button class="btn-guardar" style="margin-top: 0;" onclick="cargarDeBaseDeDatos()">📥 Sincronizar con Inventario IND</button>
         </div>
 
         <div class="table-container">
@@ -120,7 +122,7 @@
                 <thead>
                     <tr>
                         <th rowspan="2" class="sticky-col">PRODUCTO</th>
-                        <th colspan="6" class="bg-blue">INVENTARIO DIARIO</th>
+                        <th colspan="6" class="bg-blue">INVENTARIO DIARIO (Se llena automático)</th>
                         <th rowspan="2" class="bg-blue">TOTAL</th>
                         <th rowspan="2" class="bg-blue">CRITICO</th>
                         <th rowspan="2" class="bg-blue">EST.</th>
@@ -128,11 +130,17 @@
                         <th rowspan="2" class="bg-blue">VALOR<br>CONS.</th>
                         <th rowspan="2" class="bg-blue">PRECIO</th>
                         <th rowspan="2" class="bg-blue">VALOR<br>NETO ACT.</th>
-                        <th colspan="7" class="bg-red">TRASLADOS A PRODUCCION</th>
+                        <th colspan="7" class="bg-red">TRASLADOS A PRODUCCION (Captura Manual)</th>
                     </tr>
-                    <tr>
-                        <th class="bg-gray">LU</th><th class="bg-gray">MA</th><th class="bg-gray">MI</th><th class="bg-gray">JU</th><th class="bg-gray">VI</th><th class="bg-gray">SA</th>
-                        <th class="bg-gray">LU</th><th class="bg-gray">MA</th><th class="bg-gray">MI</th><th class="bg-gray">JU</th><th class="bg-gray">VI</th><th class="bg-gray">SA</th>
+                    <tr id="fila-dias">
+                        <!-- INVENTARIO -->
+                        <th class="bg-gray" id="h-inv-0">LU</th><th class="bg-gray" id="h-inv-1">MA</th>
+                        <th class="bg-gray" id="h-inv-2">MI</th><th class="bg-gray" id="h-inv-3">JU</th>
+                        <th class="bg-gray" id="h-inv-4">VI</th><th class="bg-gray" id="h-inv-5">SA</th>
+                        <!-- TRASLADOS -->
+                        <th class="bg-gray" id="h-tra-0">LU</th><th class="bg-gray" id="h-tra-1">MA</th>
+                        <th class="bg-gray" id="h-tra-2">MI</th><th class="bg-gray" id="h-tra-3">JU</th>
+                        <th class="bg-gray" id="h-tra-4">VI</th><th class="bg-gray" id="h-tra-5">SA</th>
                         <th class="bg-red">TOTAL</th>
                     </tr>
                 </thead>
@@ -145,12 +153,16 @@
         <div class="critical-panel">
             <div class="critical-header">CRÍTICO (ALERTA DE STOCK MÍNIMO)</div>
             <ul class="critical-list" id="lista-criticos">
-                <li style="color: #888; font-weight: normal;">Todos los niveles de stock son óptimos.</li>
+                <li style="color: #888; font-weight: normal;">Selecciona una semana para ver las alertas.</li>
             </ul>
         </div>
+        
+        <button class="btn-guardar" onclick="guardarTraslados()">💾 Guardar Traslados de la Semana</button>
     </div>
 
 <script>
+    const urlAppsScript = "TU_NUEVA_URL_DE_APPS_SCRIPT_AQUI"; // La actualizaremos en el siguiente paso
+
     const catalogo = [
         { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
         { desc: "CAJA IFCO 6413", critico: 1000, precio: 1.18 },
@@ -175,10 +187,51 @@
         { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 }
     ];
 
+    let fechasSemana = []; // Guardará las fechas exactas de Lunes a Sábado YYYY-MM-DD
+
     window.onload = function() {
-        document.getElementById('fecha-corte').valueAsDate = new Date();
+        document.getElementById('fecha-semana').valueAsDate = new Date();
+        calcularFechasSemana();
         renderizarTabla();
     };
+
+    // MAGIA DE FECHAS: Calcula de Lunes a Sábado de la semana seleccionada
+    function calcularFechasSemana() {
+        const inputFecha = document.getElementById('fecha-semana').value;
+        if(!inputFecha) return;
+
+        let [year, month, day] = inputFecha.split('-');
+        let fechaSeleccionada = new Date(year, month - 1, day);
+        
+        let diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 1 es Lunes...
+        // Ajustamos para que Lunes sea el inicio (si es domingo, restamos 6 días)
+        let diferenciaLunes = fechaSeleccionada.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+        let lunes = new Date(fechaSeleccionada.setDate(diferenciaLunes));
+
+        fechasSemana = [];
+        const nombresDias = ['LU', 'MA', 'MI', 'JU', 'VI', 'SA'];
+
+        for(let i = 0; i < 6; i++) {
+            let dia = new Date(lunes);
+            dia.setDate(lunes.getDate() + i);
+            
+            // Guardamos el formato YYYY-MM-DD para la Base de Datos
+            let yyyy = dia.getFullYear();
+            let mm = String(dia.getMonth() + 1).padStart(2, '0');
+            let dd = String(dia.getDate()).padStart(2, '0');
+            fechasSemana.push(`${yyyy}-${mm}-${dd}`);
+
+            // Formato para mostrar en los encabezados (Ej: LU 04/09)
+            let textoHeader = `${nombresDias[i]} ${dd}/${mm}`;
+            document.getElementById(`h-inv-${i}`).textContent = textoHeader;
+            document.getElementById(`h-tra-${i}`).textContent = textoHeader;
+        }
+
+        // Actualizar etiqueta visual
+        let inicio = fechasSemana[0].split('-').reverse().join('/');
+        let fin = fechasSemana[5].split('-').reverse().join('/');
+        document.getElementById('label-semana').textContent = `SEMANA: ${inicio} al ${fin}`;
+    }
 
     function renderizarTabla() {
         const tbody = document.getElementById('tabla-body');
@@ -188,36 +241,33 @@
             html += `<tr id="row-${idx}">
                 <td class="sticky-col">${p.desc}</td>
                 
-                <!-- INVENTARIO DIARIO -->
-                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <!-- INVENTARIO DIARIO (Se llenarán por sistema, por eso readonly) -->
+                <td><input type="number" class="inv-dia" data-dia="0" value="" readonly style="background:#f4f4f4;"></td>
+                <td><input type="number" class="inv-dia" data-dia="1" value="" readonly style="background:#f4f4f4;"></td>
+                <td><input type="number" class="inv-dia" data-dia="2" value="" readonly style="background:#f4f4f4;"></td>
+                <td><input type="number" class="inv-dia" data-dia="3" value="" readonly style="background:#f4f4f4;"></td>
+                <td><input type="number" class="inv-dia" data-dia="4" value="" readonly style="background:#f4f4f4;"></td>
+                <td><input type="number" class="inv-dia" data-dia="5" value="" readonly style="background:#f4f4f4;"></td>
                 
-                <!-- INDICADORES CON SEMÁFORO -->
                 <td class="status-empty" id="tot-inv-${idx}">0</td>
                 <td class="bg-gray" style="color:red; font-weight:bold;">${p.critico}</td>
                 <td id="estatus-${idx}">-</td>
                 
-                <!-- FINANZAS -->
                 <td class="status-empty" id="tot-cons-${idx}">0</td>
                 <td class="bg-green-cons" id="val-cons-${idx}">$0.00</td>
                 <td><strong>$${p.precio.toFixed(2)}</strong></td>
                 <td class="text-red" id="val-neto-${idx}">$0.00</td>
                 
-                <!-- TRASLADOS -->
-                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <!-- TRASLADOS (El usuario los captura manualmente) -->
+                <td><input type="number" class="tras-dia" data-dia="0" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-dia="1" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-dia="2" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-dia="3" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-dia="4" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-dia="5" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
                 <td class="status-empty" id="tot-tras-${idx}">0</td>
             </tr>`;
         });
-
         tbody.innerHTML = html;
     }
 
@@ -225,11 +275,10 @@
         const row = document.getElementById(`row-${idx}`);
         const p = catalogo[idx];
 
-        // 1. Calcular TOTAL INVENTARIO
+        // 1. INVENTARIO
         const inputsInv = row.querySelectorAll('.inv-dia');
         let totalInv = 0;
         let invCapturado = false;
-        
         inputsInv.forEach(inp => {
             if (inp.value !== "") {
                 totalInv = parseFloat(inp.value);
@@ -242,23 +291,17 @@
 
         // 2. SEMÁFORO Y ESTATUS
         const tdEstatus = document.getElementById(`estatus-${idx}`);
-        
         if (invCapturado) {
-            // El margen de alerta amarilla es un 30% por encima del crítico
             const limiteAmarillo = p.critico * 1.30; 
-
             if (totalInv <= p.critico) {
-                // ROJO: Crítico
                 tdEstatus.innerHTML = '<span class="icon-alert">✘</span>';
                 row.classList.add('row-critical');
                 cellTotalInv.className = "status-red";
             } else if (totalInv <= limiteAmarillo) {
-                // AMARILLO: Cerca del límite (Alerta de compra)
                 tdEstatus.innerHTML = '<span class="icon-warn">⚠</span>';
                 row.classList.remove('row-critical');
                 cellTotalInv.className = "status-yellow";
             } else {
-                // VERDE: Stock sano
                 tdEstatus.innerHTML = '<span class="icon-ok">✔</span>';
                 row.classList.remove('row-critical');
                 cellTotalInv.className = "status-green";
@@ -269,11 +312,10 @@
             cellTotalInv.className = "status-empty";
         }
 
-        // 3. Finanzas (Valor Neto)
         const valorNeto = totalInv * p.precio;
         document.getElementById(`val-neto-${idx}`).textContent = `$${valorNeto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-        // 4. Calcular TOTAL TRASLADOS
+        // 3. TRASLADOS Y CONSUMO
         const inputsTras = row.querySelectorAll('.tras-dia');
         let totalTraslados = 0;
         let trasCapturado = false;
@@ -283,6 +325,7 @@
                 trasCapturado = true;
             }
         });
+        
         document.getElementById(`tot-tras-${idx}`).textContent = totalTraslados;
         if(trasCapturado) {
             document.getElementById(`tot-tras-${idx}`).className = "status-yellow";
@@ -292,7 +335,6 @@
             document.getElementById(`tot-cons-${idx}`).className = "status-empty";
         }
 
-        // 5. Automatizar CONSUMO y VALOR CONSUMO
         document.getElementById(`tot-cons-${idx}`).textContent = totalTraslados;
         const valorConsumo = totalTraslados * p.precio;
         document.getElementById(`val-cons-${idx}`).textContent = `$${valorConsumo.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -304,29 +346,30 @@
         const lista = document.getElementById('lista-criticos');
         lista.innerHTML = '';
         let hayCriticos = false;
-
         catalogo.forEach((p, idx) => {
             const row = document.getElementById(`row-${idx}`);
             if (row.classList.contains('row-critical')) {
                 hayCriticos = true;
                 const totInv = document.getElementById(`tot-inv-${idx}`).textContent;
-                
                 lista.innerHTML += `
                     <li>
                         <span>${p.desc}</span>
                         <span>Stock: <span class="val">${totInv}</span> / Mínimo: ${p.critico}</span>
-                    </li>
-                `;
+                    </li>`;
             }
         });
-
         if (!hayCriticos) {
             lista.innerHTML = '<li style="color: #888; font-weight: normal;">Todos los niveles de stock son óptimos o no hay datos capturados.</li>';
         }
     }
 
-    function cargarDeBaseDeDatos() {
-        alert("En el siguiente paso conectaremos este botón a tu Apps Script para que jale los totales de 'Inventario_IND' y llene toda la semana de LU a SA automáticamente.");
+    function sincronizarDatos() {
+        alert("En el siguiente paso conectaremos este botón para buscar en tu Google Sheets el Inventario Físico de las fechas:\n" + fechasSemana.join('\n'));
+    }
+
+    function guardarTraslados() {
+        // Esta función recopilará los datos de la cuadrícula de "TRASLADOS" y los enviará a Google Sheets
+        alert("Lista la lógica. En el siguiente paso te daré el código de Google Sheets para crear la pestaña 'Traslados_IND' y guardar la información.");
     }
 </script>
 </body>
