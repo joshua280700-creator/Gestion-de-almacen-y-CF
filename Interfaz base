@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario IND - Vegxpress</title>
+    <style>
+        :root {
+            --primary-blue: #1c5b8e;
+            --success-green: #378b2e;
+            --warning-yellow: #f1c40f;
+            --danger-red: #e74c3c;
+            --light-gray: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .header {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 24px; }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        select, input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            max-height: 70vh;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 1;
+        }
+        th {
+            background-color: #e9ecef;
+            color: #333;
+            font-weight: 600;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        .col-group-prod { background-color: #f8c471; } /* Amarillo Producción */
+        .col-group-alm { background-color: #82e0aa; } /* Verde Almacén */
+        
+        td {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .text-left { text-align: left; font-weight: 500; }
+        
+        input[type="number"] {
+            width: 70px;
+            padding: 5px;
+            text-align: right;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .diferencia-ok { color: var(--success-green); font-weight: bold; }
+        .diferencia-alerta { color: var(--danger-red); font-weight: bold; }
+        
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>INFORME DE INVENTARIO DE MATERIAL DE INDIRECTOS</h1>
+        <div>
+            <span>Departamento: Capturista de Producción</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div>
+            <label>Fecha: </label>
+            <input type="date" id="fecha-inventario">
+        </div>
+        <div>
+            <label>Filtrar por Área: </label>
+            <select id="area-selector">
+                <option value="todas">Vista General (Todas)</option>
+                <option value="produccion">Producción</option>
+                <option value="almacen">Almacén IND</option>
+                <option value="descarga">Descarga</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">CÓDIGO</th>
+                    <th rowspan="2" style="min-width: 250px;">PRODUCTO</th>
+                    <th colspan="3" class="col-group-alm">ALMACÉN IND</th>
+                    <th colspan="3" class="col-group-prod">PRODUCCIÓN</th>
+                </tr>
+                <tr>
+                    <th>FÍSICO</th>
+                    <th>ORACLE</th>
+                    <th>DIFER.</th>
+                    <th>FÍSICO</th>
+                    <th>ORACLE</th>
+                    <th>DIFER.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>A101</td>
+                    <td class="text-left">CAJA PASTICA NAYLEA</td>
+                    <td><input type="number" value="0"></td>
+                    <td>0.0</td>
+                    <td class="diferencia-ok">0.0</td>
+                    <td><input type="number" value="478"></td>
+                    <td>478.0</td>
+                    <td class="diferencia-ok">✔</td>
+                </tr>
+                <tr>
+                    <td>A202</td>
+                    <td class="text-left">CAJA IFCO 6413</td>
+                    <td><input type="number" value="0"></td>
+                    <td>0.0</td>
+                    <td class="diferencia-ok">0.0</td>
+                    <td><input type="number" value="579"></td>
+                    <td>580.0</td>
+                    <td class="diferencia-alerta">-1.0</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
