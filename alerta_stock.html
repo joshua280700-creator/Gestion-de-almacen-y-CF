@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta Stock Mínimo - Vegxpress</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --primary: #1F4E78;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --border: #dee2e6;
+            --traslados-bg: #c00000; /* Rojo del Excel para Traslados */
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: #333;}
+        
+        /* BARRA DE NAVEGACIÓN (Pensando en el Login) */
+        .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 14px; font-weight: bold;}
+        .nav-links a:hover, .nav-links a.active { background-color: var(--primary); }
+        .btn-logout { background-color: var(--danger); color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+
+        .main-content { padding: 15px; }
+
+        .header { background-color: var(--primary); color: white; padding: 12px 20px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .header h1 { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;}
+        .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
+        .header-info { text-align: right; font-size: 11px; }
+
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); align-items: center;}
+        .control-group { display: flex; align-items: center; gap: 8px; }
+        label { font-weight: 600; font-size: 13px; color: #555; }
+        select, input[type="date"], input[type="text"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none;}
+
+        /* TABLA */
+        .table-container { background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; max-height: 60vh; position: relative;}
+        table { width: 100%; border-collapse: collapse; min-width: 1800px; font-size: 11px;}
+        
+        thead { position: sticky; top: 0; z-index: 10; }
+        th { padding: 6px 4px; text-align: center; border: 1px solid var(--border); font-weight: bold; text-transform: uppercase;}
+        td { padding: 4px; border: 1px solid var(--border); text-align: center; background-color: #fff; vertical-align: middle;}
+        
+        th.sticky-col, td.sticky-col { position: sticky; z-index: 5; left: 0; background-color: #f8f9fa; font-weight: 600; text-align: left; min-width: 220px; max-width: 250px; box-shadow: 2px 0 5px rgba(0,0,0,0.05);}
+        thead th.sticky-col { z-index: 11; background-color: var(--primary); color: white;}
+
+        .bg-blue { background-color: var(--primary); color: white; }
+        .bg-red { background-color: var(--traslados-bg); color: white; }
+        .bg-yellow { background-color: #ffe699; font-weight: bold;}
+        .bg-green { background-color: #a9d08e; font-weight: bold;}
+        .bg-gray { background-color: #e7e6e6; }
+        .text-red { color: red; font-weight: bold; }
+
+        input[type="number"] { width: 45px; padding: 4px; text-align: center; border: 1px solid #ccc; border-radius: 3px; font-size: 11px;}
+        input[type="number"]:focus { border-color: var(--primary); outline: none;}
+        input[readonly] { background-color: transparent; border: none; font-weight: bold; width: 60px;}
+
+        .icon-ok { color: var(--success); font-size: 14px; font-weight: bold;}
+        .icon-alert { color: var(--danger); font-size: 14px; font-weight: bold;}
+        .row-critical td:not(.sticky-col) { background-color: #fff3cd; } /* Resalta fila crítica */
+
+        /* PANEL CRÍTICO INFERIOR */
+        .critical-panel { margin-top: 20px; background: white; border: 1px solid var(--danger); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);}
+        .critical-header { background-color: #ff3333; color: white; padding: 8px 15px; font-weight: bold; font-size: 14px;}
+        .critical-list { padding: 15px; list-style: none; margin: 0; font-size: 13px; font-weight: 600; color: #555;}
+        .critical-list li { margin-bottom: 5px; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        .critical-list li span.val { color: var(--danger); }
+
+        .btn-guardar { background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; float: right; margin-top: 15px;}
+        
+        @media (max-width: 768px) {
+            .controls { flex-direction: column; align-items: flex-start; }
+            th.sticky-col, td.sticky-col { min-width: 140px; font-size: 10px; white-space: normal;}
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR PARA ECOSISTEMA -->
+    <div class="navbar">
+        <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
+        <div class="nav-links">
+            <a href="#">Recepción</a>
+            <a href="inventario_ind.html">Inv. IND</a>
+            <a href="#" class="active">Alertas Stock</a>
+        </div>
+        <button class="btn-logout">Cerrar Sesión</button>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>INFORME DE STOCK INDIRECTO | SEMANAL</h1>
+            <div class="header-info">
+                <div>Depto: <strong>Capturista de Producción</strong></div>
+                <div>Subsidiaria: <strong>VEGXPRESS MTY</strong></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Semana:</label>
+                <input type="text" value="SEMANA 01 - 05 AGO" style="width: 200px;">
+            </div>
+            <div class="control-group">
+                <label>Fecha de Corte:</label>
+                <input type="date" id="fecha-corte">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="tabla-stock">
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="sticky-col">PRODUCTO</th>
+                        <th colspan="6" class="bg-blue">INVENTARIO DIARIO</th>
+                        <th rowspan="2" class="bg-blue">TOTAL</th>
+                        <th rowspan="2" class="bg-blue">CRITICO</th>
+                        <th rowspan="2" class="bg-blue">CODIGO</th>
+                        <th rowspan="2" class="bg-blue">EST.</th>
+                        <th rowspan="2" class="bg-blue">CONSUMO</th>
+                        <th rowspan="2" class="bg-blue">VALOR<br>CONS.</th>
+                        <th rowspan="2" class="bg-blue">PRECIO</th>
+                        <th rowspan="2" class="bg-blue">VALOR<br>NETO ACT.</th>
+                        <th colspan="7" class="bg-red">TRASLADOS A PRODUCCION</th>
+                    </tr>
+                    <tr>
+                        <th class="bg-gray">LU</th><th class="bg-gray">MA</th><th class="bg-gray">MI</th><th class="bg-gray">JU</th><th class="bg-gray">VI</th><th class="bg-gray">SA</th>
+                        <!-- TRASLADOS -->
+                        <th class="bg-gray">LU</th><th class="bg-gray">MA</th><th class="bg-gray">MI</th><th class="bg-gray">JU</th><th class="bg-gray">VI</th><th class="bg-gray">SA</th>
+                        <th class="bg-red">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body">
+                    <!-- Filas inyectadas por JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="critical-panel">
+            <div class="critical-header">CRÍTICO (ALERTA DE STOCK MÍNIMO)</div>
+            <ul class="critical-list" id="lista-criticos">
+                <li style="color: #888; font-weight: normal;">Todos los niveles de stock son óptimos.</li>
+            </ul>
+        </div>
+
+        <button class="btn-guardar" onclick="guardarReporte()">💾 Guardar Informe Semanal</button>
+    </div>
+
+<script>
+    // Base de datos de productos con sus precios y niveles críticos según tu Excel
+    const catalogo = [
+        { desc: "CAJA PASTICA NAYLEA", cod: "6740479", critico: 800, precio: 15.50 },
+        { desc: "CAJA IFCO 6413", cod: "9359529", critico: 1000, precio: 1.18 },
+        { desc: "CAJA IFCO 6423", cod: "9359529", critico: 1000, precio: 1.48 },
+        { desc: "CAJA CARTON GENERICA 40 LBS", cod: "8696052", critico: 1500, precio: 25.62 },
+        { desc: "CAJA CARTON 1/2 BUSHEL", cod: "9359529", critico: 500, precio: 20.03 },
+        { desc: "CAJA CARTON 1/4 BUSHEL", cod: "9359529", critico: 300, precio: 12.89 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.20", cod: "9359529", critico: 700, precio: 7.28 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.70", cod: "9359529", critico: 700, precio: 10.13 },
+        { desc: "LAMINA DE CARTON KRAFT (P/TARIMA)", cod: "6740479", critico: 400, precio: 7.79 },
+        { desc: "TARIMA NACIONAL DE BARROTE RECICLADA", cod: "6740479", critico: 30, precio: 195.00 },
+        { desc: "TARIMA DE EXPORTACION CUBO DE PRIMERA", cod: "9359529", critico: 70, precio: 321.00 },
+        { desc: "TARIMA CUBO RECICLADA", cod: "8696052", critico: 20, precio: 180.00 },
+        { desc: "RAFIA BLANCA BOBINA GDE. (4KG)", cod: "9359529", critico: 2, precio: 171.45 },
+        { desc: "FLEJE PLASTICO VERDE LISO", cod: "8696052", critico: 5, precio: 767.26 },
+        { desc: "PELICULA PLASTICA STRETCH /EMPLAYE", cod: "9359529", critico: 100, precio: 47.00 },
+        { desc: "FLEJE PLASTICO 1/2 NEGRO", cod: "8696052", critico: 2, precio: 36.48 },
+        { desc: "RIBBON DE TINTA GRANDE ZEBRA", cod: "9359529", critico: 7, precio: 152.00 },
+        { desc: "RIBBON DE TINTA CHICO ZEBRA", cod: "9359529", critico: 3, precio: 56.00 },
+        { desc: "ETIQUETAS COLORES 8x4", cod: "9359529", critico: 2, precio: 245.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (3000)", cod: "9359529", critico: 5, precio: 310.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", cod: "6740479", critico: 2, precio: 130.74 }
+    ];
+
+    window.onload = function() {
+        document.getElementById('fecha-corte').valueAsDate = new Date();
+        renderizarTabla();
+    };
+
+    function renderizarTabla() {
+        const tbody = document.getElementById('tabla-body');
+        let html = '';
+
+        catalogo.forEach((p, idx) => {
+            html += `<tr id="row-${idx}">
+                <td class="sticky-col">${p.desc}</td>
+                
+                <!-- INVENTARIO DIARIO -->
+                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                
+                <!-- INDICADORES -->
+                <td class="bg-yellow" id="tot-inv-${idx}">0</td>
+                <td class="bg-gray" style="color:red; font-weight:bold;">${p.critico}</td>
+                <td>${p.cod}</td>
+                <td id="estatus-${idx}">-</td>
+                
+                <!-- FINANZAS -->
+                <td><input type="number" id="cons-${idx}" oninput="calcularFila(${idx})"></td>
+                <td class="bg-green" id="val-cons-${idx}">$0.00</td>
+                <td><strong>$${p.precio.toFixed(2)}</strong></td>
+                <td class="text-red" id="val-neto-${idx}">$0.00</td>
+                
+                <!-- TRASLADOS -->
+                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
+                <td class="bg-yellow" id="tot-tras-${idx}">0</td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function calcularFila(idx) {
+        const row = document.getElementById(`row-${idx}`);
+        const p = catalogo[idx];
+
+        // 1. Calcular TOTAL INVENTARIO (Busca el último día llenado)
+        const inputsInv = row.querySelectorAll('.inv-dia');
+        let totalInv = 0;
+        let invCapturado = false;
+        
+        inputsInv.forEach(inp => {
+            if (inp.value !== "") {
+                totalInv = parseFloat(inp.value); // Se queda con el último valor ingresado de L a S
+                invCapturado = true;
+            }
+        });
+        
+        document.getElementById(`tot-inv-${idx}`).textContent = invCapturado ? totalInv : "0";
+
+        // 2. Calcular ESTATUS Y ALERTAS
+        const tdEstatus = document.getElementById(`estatus-${idx}`);
+        if (invCapturado) {
+            if (totalInv < p.critico) {
+                tdEstatus.innerHTML = '<span class="icon-alert">✘</span>';
+                row.classList.add('row-critical');
+            } else {
+                tdEstatus.innerHTML = '<span class="icon-ok">✔</span>';
+                row.classList.remove('row-critical');
+            }
+        } else {
+            tdEstatus.innerHTML = '-';
+            row.classList.remove('row-critical');
+        }
+
+        // 3. Finanzas (Valor Neto)
+        const valorNeto = totalInv * p.precio;
+        document.getElementById(`val-neto-${idx}`).textContent = `$${valorNeto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // 4. Finanzas (Consumo)
+        const valConsumoInput = document.getElementById(`cons-${idx}`).value;
+        const consumoNum = valConsumoInput ? parseFloat(valConsumoInput) : 0;
+        const valorConsumo = consumoNum * p.precio;
+        document.getElementById(`val-cons-${idx}`).textContent = `$${valorConsumo.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // 5. Total Traslados (Suma de la semana)
+        const inputsTras = row.querySelectorAll('.tras-dia');
+        let totalTraslados = 0;
+        inputsTras.forEach(inp => {
+            if (inp.value !== "") totalTraslados += parseFloat(inp.value);
+        });
+        document.getElementById(`tot-tras-${idx}`).textContent = totalTraslados;
+
+        actualizarPanelCritico();
+    }
+
+    function actualizarPanelCritico() {
+        const lista = document.getElementById('lista-criticos');
+        lista.innerHTML = '';
+        let hayCriticos = false;
+
+        catalogo.forEach((p, idx) => {
+            const row = document.getElementById(`row-${idx}`);
+            if (row.classList.contains('row-critical')) {
+                hayCriticos = true;
+                const totInv = document.getElementById(`tot-inv-${idx}`).textContent;
+                
+                lista.innerHTML += `
+                    <li>
+                        <span>${p.desc} - ${p.cod}</span>
+                        <span>Stock: <span class="val">${totInv}</span> / Mínimo: ${p.critico}</span>
+                    </li>
+                `;
+            }
+        });
+
+        if (!hayCriticos) {
+            lista.innerHTML = '<li style="color: #888; font-weight: normal;">Todos los niveles de stock son óptimos o no hay datos capturados.</li>';
+        }
+    }
+
+    function guardarReporte() {
+        alert("¡Reporte listo! Como esto está en desarrollo, la función de enviar a Google Sheets se activará cuando confirmemos que el diseño te gusta.");
+    }
+</script>
+</body>
+</html>
