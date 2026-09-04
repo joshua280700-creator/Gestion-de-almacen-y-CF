@@ -13,6 +13,7 @@
             --danger: #dc3545;
             --border: #dee2e6;
             
+            /* Colores de las Áreas (Más suaves para no saturar) */
             --c-alm: #2E7D32; 
             --c-prod: #F9A825; 
             --c-cf1: #1565C0; 
@@ -168,8 +169,8 @@
     <button class="btn-guardar" onclick="guardarInventario()">💾 Guardar Inventario Físico</button>
 
 <script>
-    // ==== ASEGÚRATE DE PEGAR TU NUEVA URL DE APPS SCRIPT AQUÍ ====
-    const urlInventarios = "https://script.google.com/macros/s/AKfycbwtBt1LrKV9USBPI395CgVR6hKmXiwfeMq8Y68CKehXlfLQtjYcvOG2tkkfmsNo75SzFA/exec";
+    // ==== URL CORRECTA DE APPS SCRIPT ====
+    const urlInventarios = "https://script.google.com/macros/s/AKfycbzX4Gjxx87ocYFgkMWsf4rlvX0SnaNjRG_iSyCACwJO8bMcWuV0gii50H-OpbIWJrr0FA/exec";
 
     const productos = [
         { cod: "A101", desc: "CAJA PASTICA NAYLEA" },
@@ -435,7 +436,7 @@
     }
 
     // ==========================================
-    // GUARDAR A GOOGLE SHEETS
+    // GUARDAR A GOOGLE SHEETS (BLINDADO)
     // ==========================================
     function guardarInventario() {
         const btn = document.querySelector('.btn-guardar');
@@ -492,19 +493,26 @@
             registros: registrosGuardar
         };
 
+        // Fetch modificado para recibir la respuesta real de Google
         fetch(urlInventarios, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(payload)
         })
-        .then(() => {
-            alert(`¡Éxito! Se guardaron/actualizaron registros en la base de datos.`);
-            btn.innerText = "✅ Guardado";
-            setTimeout(() => { window.location.reload(); }, 2000);
+        .then(response => response.json())
+        .then(res => {
+            if(res.status === "success") {
+                alert(`¡Éxito! Se guardaron ${registrosGuardar.length} registros en la base de datos.`);
+                btn.innerText = "✅ Guardado";
+                setTimeout(() => { window.location.reload(); }, 2000);
+            } else {
+                alert("Error de Google Sheets: Verifica que la pestaña se llame 'Inventario_IND'");
+                btn.disabled = false;
+                btn.innerText = "💾 Guardar Inventario Físico";
+            }
         })
         .catch(err => {
-            alert("Hubo un error de conexión.");
+            alert("Error de red: La URL de Apps Script podría ser incorrecta o Google bloqueó la conexión.");
             btn.disabled = false;
             btn.innerText = "💾 Guardar Inventario Físico";
         });
