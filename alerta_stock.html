@@ -47,16 +47,24 @@
 
         .bg-blue { background-color: var(--primary); color: white; }
         .bg-red { background-color: var(--traslados-bg); color: white; }
-        .bg-yellow { background-color: #ffe699; font-weight: bold;}
-        .bg-green { background-color: #a9d08e; font-weight: bold;}
+        .bg-green-cons { background-color: #a9d08e; font-weight: bold;}
         .bg-gray { background-color: #e7e6e6; }
         .text-red { color: red; font-weight: bold; }
+
+        /* CLASES DEL SEMÁFORO */
+        .status-green { background-color: #c3e6cb !important; color: #155724; font-weight: bold; }
+        .status-yellow { background-color: #ffeeba !important; color: #856404; font-weight: bold; }
+        .status-red { background-color: #f5c6cb !important; color: #721c24; font-weight: bold; }
+        .status-empty { background-color: #e7e6e6 !important; color: #333; font-weight: bold; }
 
         input[type="number"] { width: 45px; padding: 4px; text-align: center; border: 1px solid #ccc; border-radius: 3px; font-size: 11px;}
         input[type="number"]:focus { border-color: var(--primary); outline: none;}
 
         .icon-ok { color: var(--success); font-size: 14px; font-weight: bold;}
+        .icon-warn { color: var(--warning); font-size: 14px; font-weight: bold;}
         .icon-alert { color: var(--danger); font-size: 14px; font-weight: bold;}
+        
+        /* Fila en rojo tenue si es crítico */
         .row-critical td:not(.sticky-col) { background-color: #fff3cd; } 
 
         .critical-panel { margin-top: 20px; background: white; border: 1px solid var(--danger); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);}
@@ -103,6 +111,8 @@
                 <label>Fecha de Corte:</label>
                 <input type="date" id="fecha-corte">
             </div>
+            <!-- Botón simulado para cargar de la BD -->
+            <button class="btn-guardar" style="margin-top: 0;" onclick="cargarDeBaseDeDatos()">📥 Sincronizar con Inventario IND</button>
         </div>
 
         <div class="table-container">
@@ -122,7 +132,6 @@
                     </tr>
                     <tr>
                         <th class="bg-gray">LU</th><th class="bg-gray">MA</th><th class="bg-gray">MI</th><th class="bg-gray">JU</th><th class="bg-gray">VI</th><th class="bg-gray">SA</th>
-                        <!-- TRASLADOS -->
                         <th class="bg-gray">LU</th><th class="bg-gray">MA</th><th class="bg-gray">MI</th><th class="bg-gray">JU</th><th class="bg-gray">VI</th><th class="bg-gray">SA</th>
                         <th class="bg-red">TOTAL</th>
                     </tr>
@@ -139,12 +148,9 @@
                 <li style="color: #888; font-weight: normal;">Todos los niveles de stock son óptimos.</li>
             </ul>
         </div>
-
-        <button class="btn-guardar" onclick="guardarReporte()">💾 Guardar Informe Semanal</button>
     </div>
 
 <script>
-    // Se eliminó el campo 'cod' ya que era columna auxiliar de Excel
     const catalogo = [
         { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
         { desc: "CAJA IFCO 6413", critico: 1000, precio: 1.18 },
@@ -190,14 +196,14 @@
                 <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
                 <td><input type="number" class="inv-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
                 
-                <!-- INDICADORES -->
-                <td class="bg-yellow" id="tot-inv-${idx}">0</td>
+                <!-- INDICADORES CON SEMÁFORO -->
+                <td class="status-empty" id="tot-inv-${idx}">0</td>
                 <td class="bg-gray" style="color:red; font-weight:bold;">${p.critico}</td>
                 <td id="estatus-${idx}">-</td>
                 
-                <!-- FINANZAS (Consumo Automatizado) -->
-                <td class="bg-yellow" id="tot-cons-${idx}">0</td>
-                <td class="bg-green" id="val-cons-${idx}">$0.00</td>
+                <!-- FINANZAS -->
+                <td class="status-empty" id="tot-cons-${idx}">0</td>
+                <td class="bg-green-cons" id="val-cons-${idx}">$0.00</td>
                 <td><strong>$${p.precio.toFixed(2)}</strong></td>
                 <td class="text-red" id="val-neto-${idx}">$0.00</td>
                 
@@ -208,7 +214,7 @@
                 <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
                 <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
                 <td><input type="number" class="tras-dia" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
-                <td class="bg-yellow" id="tot-tras-${idx}">0</td>
+                <td class="status-empty" id="tot-tras-${idx}">0</td>
             </tr>`;
         });
 
@@ -219,7 +225,7 @@
         const row = document.getElementById(`row-${idx}`);
         const p = catalogo[idx];
 
-        // 1. Calcular TOTAL INVENTARIO (Busca el último día llenado)
+        // 1. Calcular TOTAL INVENTARIO
         const inputsInv = row.querySelectorAll('.inv-dia');
         let totalInv = 0;
         let invCapturado = false;
@@ -231,21 +237,36 @@
             }
         });
         
-        document.getElementById(`tot-inv-${idx}`).textContent = invCapturado ? totalInv : "0";
+        const cellTotalInv = document.getElementById(`tot-inv-${idx}`);
+        cellTotalInv.textContent = invCapturado ? totalInv : "0";
 
-        // 2. Calcular ESTATUS Y ALERTAS
+        // 2. SEMÁFORO Y ESTATUS
         const tdEstatus = document.getElementById(`estatus-${idx}`);
+        
         if (invCapturado) {
-            if (totalInv < p.critico) {
+            // El margen de alerta amarilla es un 30% por encima del crítico
+            const limiteAmarillo = p.critico * 1.30; 
+
+            if (totalInv <= p.critico) {
+                // ROJO: Crítico
                 tdEstatus.innerHTML = '<span class="icon-alert">✘</span>';
                 row.classList.add('row-critical');
+                cellTotalInv.className = "status-red";
+            } else if (totalInv <= limiteAmarillo) {
+                // AMARILLO: Cerca del límite (Alerta de compra)
+                tdEstatus.innerHTML = '<span class="icon-warn">⚠</span>';
+                row.classList.remove('row-critical');
+                cellTotalInv.className = "status-yellow";
             } else {
+                // VERDE: Stock sano
                 tdEstatus.innerHTML = '<span class="icon-ok">✔</span>';
                 row.classList.remove('row-critical');
+                cellTotalInv.className = "status-green";
             }
         } else {
             tdEstatus.innerHTML = '-';
             row.classList.remove('row-critical');
+            cellTotalInv.className = "status-empty";
         }
 
         // 3. Finanzas (Valor Neto)
@@ -255,12 +276,23 @@
         // 4. Calcular TOTAL TRASLADOS
         const inputsTras = row.querySelectorAll('.tras-dia');
         let totalTraslados = 0;
+        let trasCapturado = false;
         inputsTras.forEach(inp => {
-            if (inp.value !== "") totalTraslados += parseFloat(inp.value);
+            if (inp.value !== "") {
+                totalTraslados += parseFloat(inp.value);
+                trasCapturado = true;
+            }
         });
         document.getElementById(`tot-tras-${idx}`).textContent = totalTraslados;
+        if(trasCapturado) {
+            document.getElementById(`tot-tras-${idx}`).className = "status-yellow";
+            document.getElementById(`tot-cons-${idx}`).className = "status-yellow";
+        } else {
+            document.getElementById(`tot-tras-${idx}`).className = "status-empty";
+            document.getElementById(`tot-cons-${idx}`).className = "status-empty";
+        }
 
-        // 5. Automatizar CONSUMO y VALOR CONSUMO en base a Traslados
+        // 5. Automatizar CONSUMO y VALOR CONSUMO
         document.getElementById(`tot-cons-${idx}`).textContent = totalTraslados;
         const valorConsumo = totalTraslados * p.precio;
         document.getElementById(`val-cons-${idx}`).textContent = `$${valorConsumo.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -293,8 +325,8 @@
         }
     }
 
-    function guardarReporte() {
-        alert("¡Reporte listo! Como esto está en desarrollo, la función de enviar a Google Sheets se activará cuando confirmemos que el diseño te gusta.");
+    function cargarDeBaseDeDatos() {
+        alert("En el siguiente paso conectaremos este botón a tu Apps Script para que jale los totales de 'Inventario_IND' y llene toda la semana de LU a SA automáticamente.");
     }
 </script>
 </body>
