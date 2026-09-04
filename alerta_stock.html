@@ -17,6 +17,7 @@
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: #333;}
         
+        /* BARRA DE NAVEGACIÓN COMPARTIDA */
         .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
         .nav-links { display: flex; gap: 15px; }
         .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 14px; font-weight: bold;}
@@ -85,12 +86,13 @@
 </head>
 <body>
 
+    <!-- NAVBAR PARA ECOSISTEMA -->
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
             <a href="#">Recepción</a>
             <a href="inventario_ind.html">Inv. IND</a>
-            <a href="#" class="active">Alertas Stock</a>
+            <a href="alerta_stock.html" class="active">Alertas Stock</a>
         </div>
         <button class="btn-logout">Cerrar Sesión</button>
     </div>
@@ -133,11 +135,9 @@
                         <th colspan="7" class="bg-red">TRASLADOS A PRODUCCION (Captura Manual)</th>
                     </tr>
                     <tr id="fila-dias">
-                        <!-- INVENTARIO -->
                         <th class="bg-gray" id="h-inv-0">LU</th><th class="bg-gray" id="h-inv-1">MA</th>
                         <th class="bg-gray" id="h-inv-2">MI</th><th class="bg-gray" id="h-inv-3">JU</th>
                         <th class="bg-gray" id="h-inv-4">VI</th><th class="bg-gray" id="h-inv-5">SA</th>
-                        <!-- TRASLADOS -->
                         <th class="bg-gray" id="h-tra-0">LU</th><th class="bg-gray" id="h-tra-1">MA</th>
                         <th class="bg-gray" id="h-tra-2">MI</th><th class="bg-gray" id="h-tra-3">JU</th>
                         <th class="bg-gray" id="h-tra-4">VI</th><th class="bg-gray" id="h-tra-5">SA</th>
@@ -161,7 +161,7 @@
     </div>
 
 <script>
-    const urlAppsScript = "https://script.google.com/macros/s/AKfycbyPCH2VYKzizMjUKSTjeelm5-_EcrjahDg7oxbvSbhWygnV9KR9vIVf566MnWUHgxKuSA/exec"; // La actualizaremos en el siguiente paso
+    const urlAppsScript = "https://script.google.com/macros/s/AKfycbyPCH2VYKzizMjUKSTjeelm5-_EcrjahDg7oxbvSbhWygnV9KR9vIVf566MnWUHgxKuSA/exec";
 
     const catalogo = [
         { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
@@ -187,7 +187,7 @@
         { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 }
     ];
 
-    let fechasSemana = []; // Guardará las fechas exactas de Lunes a Sábado YYYY-MM-DD
+    let fechasSemana = [];
 
     window.onload = function() {
         document.getElementById('fecha-semana').valueAsDate = new Date();
@@ -195,7 +195,6 @@
         renderizarTabla();
     };
 
-    // MAGIA DE FECHAS: Calcula de Lunes a Sábado de la semana seleccionada
     function calcularFechasSemana() {
         const inputFecha = document.getElementById('fecha-semana').value;
         if(!inputFecha) return;
@@ -203,8 +202,7 @@
         let [year, month, day] = inputFecha.split('-');
         let fechaSeleccionada = new Date(year, month - 1, day);
         
-        let diaSemana = fechaSeleccionada.getDay(); // 0 es Domingo, 1 es Lunes...
-        // Ajustamos para que Lunes sea el inicio (si es domingo, restamos 6 días)
+        let diaSemana = fechaSeleccionada.getDay(); 
         let diferenciaLunes = fechaSeleccionada.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
         let lunes = new Date(fechaSeleccionada.setDate(diferenciaLunes));
 
@@ -215,19 +213,16 @@
             let dia = new Date(lunes);
             dia.setDate(lunes.getDate() + i);
             
-            // Guardamos el formato YYYY-MM-DD para la Base de Datos
             let yyyy = dia.getFullYear();
             let mm = String(dia.getMonth() + 1).padStart(2, '0');
             let dd = String(dia.getDate()).padStart(2, '0');
             fechasSemana.push(`${yyyy}-${mm}-${dd}`);
 
-            // Formato para mostrar en los encabezados (Ej: LU 04/09)
             let textoHeader = `${nombresDias[i]} ${dd}/${mm}`;
             document.getElementById(`h-inv-${i}`).textContent = textoHeader;
             document.getElementById(`h-tra-${i}`).textContent = textoHeader;
         }
 
-        // Actualizar etiqueta visual
         let inicio = fechasSemana[0].split('-').reverse().join('/');
         let fin = fechasSemana[5].split('-').reverse().join('/');
         document.getElementById('label-semana').textContent = `SEMANA: ${inicio} al ${fin}`;
@@ -241,7 +236,6 @@
             html += `<tr id="row-${idx}">
                 <td class="sticky-col">${p.desc}</td>
                 
-                <!-- INVENTARIO DIARIO (Se llenarán por sistema, por eso readonly) -->
                 <td><input type="number" class="inv-dia" data-dia="0" value="" readonly style="background:#f4f4f4;"></td>
                 <td><input type="number" class="inv-dia" data-dia="1" value="" readonly style="background:#f4f4f4;"></td>
                 <td><input type="number" class="inv-dia" data-dia="2" value="" readonly style="background:#f4f4f4;"></td>
@@ -258,7 +252,6 @@
                 <td><strong>$${p.precio.toFixed(2)}</strong></td>
                 <td class="text-red" id="val-neto-${idx}">$0.00</td>
                 
-                <!-- TRASLADOS (El usuario los captura manualmente) -->
                 <td><input type="number" class="tras-dia" data-dia="0" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
                 <td><input type="number" class="tras-dia" data-dia="1" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
                 <td><input type="number" class="tras-dia" data-dia="2" data-idx="${idx}" oninput="calcularFila(${idx})"></td>
@@ -275,7 +268,6 @@
         const row = document.getElementById(`row-${idx}`);
         const p = catalogo[idx];
 
-        // 1. INVENTARIO
         const inputsInv = row.querySelectorAll('.inv-dia');
         let totalInv = 0;
         let invCapturado = false;
@@ -289,7 +281,6 @@
         const cellTotalInv = document.getElementById(`tot-inv-${idx}`);
         cellTotalInv.textContent = invCapturado ? totalInv : "0";
 
-        // 2. SEMÁFORO Y ESTATUS
         const tdEstatus = document.getElementById(`estatus-${idx}`);
         if (invCapturado) {
             const limiteAmarillo = p.critico * 1.30; 
@@ -315,7 +306,6 @@
         const valorNeto = totalInv * p.precio;
         document.getElementById(`val-neto-${idx}`).textContent = `$${valorNeto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-        // 3. TRASLADOS Y CONSUMO
         const inputsTras = row.querySelectorAll('.tras-dia');
         let totalTraslados = 0;
         let trasCapturado = false;
@@ -364,12 +354,108 @@
     }
 
     function sincronizarDatos() {
-        alert("En el siguiente paso conectaremos este botón para buscar en tu Google Sheets el Inventario Físico de las fechas:\n" + fechasSemana.join('\n'));
+        const btn = document.querySelector('.btn-accion');
+        btn.innerText = "⏳ Sincronizando...";
+        btn.disabled = true;
+
+        const fetchUrl = `${urlAppsScript}?action=obtener_semana_ind&fechas=${fechasSemana.join(',')}`;
+
+        fetch(fetchUrl)
+            .then(res => res.json())
+            .then(data => {
+                document.querySelectorAll('.inv-dia').forEach(inp => inp.value = "");
+                
+                let sumas = {};
+                data.forEach(reg => {
+                    if(reg.fisico !== "") {
+                        if(!sumas[reg.producto]) sumas[reg.producto] = {};
+                        if(!sumas[reg.producto][reg.fecha]) sumas[reg.producto][reg.fecha] = 0;
+                        sumas[reg.producto][reg.fecha] += parseFloat(reg.fisico);
+                    }
+                });
+
+                catalogo.forEach((p, idx) => {
+                    const row = document.getElementById(`row-${idx}`);
+                    if(sumas[p.desc]) {
+                        for(let i=0; i<6; i++) {
+                            let fechaDia = fechasSemana[i];
+                            if(sumas[p.desc][fechaDia] !== undefined) {
+                                const inpInv = row.querySelector(`.inv-dia[data-dia="${i}"]`);
+                                inpInv.value = sumas[p.desc][fechaDia];
+                            }
+                        }
+                    }
+                    calcularFila(idx); 
+                });
+
+                btn.innerText = "✅ Semana Sincronizada";
+                setTimeout(() => { btn.innerText = "📥 Sincronizar Semana"; btn.disabled = false; }, 3000);
+            })
+            .catch(err => {
+                alert("Error al conectar con la base de datos.");
+                btn.innerText = "📥 Sincronizar Semana";
+                btn.disabled = false;
+            });
     }
 
     function guardarTraslados() {
-        // Esta función recopilará los datos de la cuadrícula de "TRASLADOS" y los enviará a Google Sheets
-        alert("Lista la lógica. En el siguiente paso te daré el código de Google Sheets para crear la pestaña 'Traslados_IND' y guardar la información.");
+        const btn = document.querySelector('.btn-guardar');
+        btn.innerText = "⏳ Guardando...";
+        btn.disabled = true;
+
+        let registros = [];
+        
+        catalogo.forEach((p, idx) => {
+            const row = document.getElementById(`row-${idx}`);
+            const inputsTras = row.querySelectorAll('.tras-dia');
+            
+            inputsTras.forEach((inp, diaIndex) => {
+                let val = inp.value.trim();
+                if(val !== "") {
+                    registros.push({
+                        fecha: fechasSemana[diaIndex],
+                        codigo: "-", 
+                        producto: p.desc,
+                        cantidad: parseFloat(val)
+                    });
+                }
+            });
+        });
+
+        if(registros.length === 0) {
+            alert("No hay traslados capturados para guardar.");
+            btn.innerText = "💾 Guardar Traslados de la Semana";
+            btn.disabled = false;
+            return;
+        }
+
+        const payload = {
+            action: "guardar_traslados_ind",
+            registros: registros
+        };
+
+        fetch(urlAppsScript, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if(res.status === "success") {
+                alert(`¡Éxito! Se guardaron ${registros.length} movimientos en la base de datos.`);
+                btn.innerText = "✅ Guardado";
+                setTimeout(() => { btn.innerText = "💾 Guardar Traslados de la Semana"; btn.disabled = false; }, 3000);
+            } else {
+                alert("Error de Google Sheets: Verifica que la pestaña se llame 'Traslados_IND'");
+                btn.disabled = false;
+                btn.innerText = "💾 Guardar Traslados de la Semana";
+            }
+        })
+        .catch(err => {
+            alert("Error de red.");
+            btn.disabled = false;
+            btn.innerText = "💾 Guardar Traslados de la Semana";
+        });
     }
 </script>
 </body>
