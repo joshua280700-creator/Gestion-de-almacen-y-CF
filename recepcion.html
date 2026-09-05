@@ -17,7 +17,6 @@
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: #333;}
         
-        /* NAVBAR COMPARTIDA */
         .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;}
         .nav-links { display: flex; gap: 15px; }
         .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 14px; font-weight: bold;}
@@ -30,24 +29,8 @@
         .header h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px;}
         .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
         
-        /* DASHBOARD CARDS */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            border-top: 4px solid var(--primary);
-        }
-
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; border-top: 4px solid var(--primary); position: relative;}
         .card.card-danger { border-top-color: var(--danger); }
         .card.card-success { border-top-color: var(--success); }
         .card.card-warning { border-top-color: var(--warning); }
@@ -55,35 +38,18 @@
         .card-title { font-size: 14px; color: #666; font-weight: 600; margin-bottom: 10px; text-transform: uppercase;}
         .card-value { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 5px;}
         .card-subtitle { font-size: 12px; color: #888;}
+        
+        .loading-spinner { position: absolute; top: 20px; right: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* SECCIÓN OPERATIVA */
-        .panel {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-
-        .panel-header {
-            font-size: 16px;
-            font-weight: bold;
-            color: var(--primary);
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--bg-color);
-            padding-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-
+        .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;}
+        .panel-header { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
         .btn-action { background-color: var(--info); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-action:hover { background-color: #117a8b; }
 
-        /* TABLA SENCILLA DE LLEGADAS */
         table { width: 100%; border-collapse: collapse; font-size: 13px;}
         th { background-color: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid var(--border); color: #555;}
         td { padding: 10px; border-bottom: 1px solid var(--border); }
-        
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;}
         .badge-descargando { background-color: #ffeeba; color: #856404; }
         .badge-completado { background-color: #c3e6cb; color: #155724; }
@@ -91,7 +57,6 @@
 </head>
 <body>
 
-    <!-- NAVBAR PARA ECOSISTEMA -->
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
@@ -111,15 +76,16 @@
             </div>
         </div>
 
-        <!-- TARJETAS DE INDICADORES (KPIs) -->
         <div class="dashboard-grid">
             <div class="card card-success">
-                <div class="card-title">Inversión del Mes (Insumos)</div>
+                <div class="loading-spinner" id="spinner-1"></div>
+                <div class="card-title">Valor del Stock Actual</div>
                 <div class="card-value" id="kpi-gasto">$0.00</div>
-                <div class="card-subtitle">Valor total de mercancía ingresada en Septiembre</div>
+                <div class="card-subtitle" id="fecha-gasto">Calculando...</div>
             </div>
             
             <div class="card card-danger">
+                <div class="loading-spinner" id="spinner-2"></div>
                 <div class="card-title">Alertas de Stock Crítico</div>
                 <div class="card-value" id="kpi-criticos">0</div>
                 <div class="card-subtitle">Artículos por debajo del mínimo permitido</div>
@@ -127,12 +93,11 @@
 
             <div class="card card-warning">
                 <div class="card-title">Proveedores en Andén</div>
-                <div class="card-value" id="kpi-proveedores">0</div>
+                <div class="card-value" id="kpi-proveedores">1</div>
                 <div class="card-subtitle">En proceso de descarga o auditoría</div>
             </div>
         </div>
 
-        <!-- PANEL DE OPERACIÓN: LLEGADA DE MERCANCÍA -->
         <div class="panel">
             <div class="panel-header">
                 <span>🚛 Registro de Arribos y Recepción de Material</span>
@@ -154,7 +119,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Datos de ejemplo visual -->
                     <tr>
                         <td>10:15 AM</td>
                         <td>Empaques NAYLEA</td>
@@ -163,21 +127,13 @@
                         <td><span class="badge badge-descargando">Descargando</span></td>
                         <td><button class="btn-action" style="font-size: 11px; padding: 4px 8px;">Auditar Carga</button></td>
                     </tr>
-                    <tr>
-                        <td>08:30 AM</td>
-                        <td>Cartones Monterrey</td>
-                        <td>Esquineros y Cajas 40 LBS</td>
-                        <td>REM-1092</td>
-                        <td><span class="badge badge-completado">Completado</span></td>
-                        <td><button class="btn-action" style="font-size: 11px; padding: 4px 8px; background-color: #6c757d;">Ver Detalle</button></td>
-                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
 <script>
-    // === PROTECCIÓN DE SESIÓN Y LOGOUT ===
+    // === PROTECCIÓN DE SESIÓN ===
     window.addEventListener('DOMContentLoaded', (event) => {
         const sesion = localStorage.getItem("wms_session");
         if (!sesion) { window.location.href = "login.html"; }
@@ -191,14 +147,101 @@
         }
     });
 
-    // Reloj en tiempo real
+    // Reloj
     setInterval(() => {
         const ahora = new Date();
         document.getElementById('reloj-actual').textContent = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }, 1000);
 
-    // Aquí en el futuro agregaremos la función para conectar con Apps Script
-    // y traer los gastos reales y las alertas de stock para llenar las tarjetas.
+    // === LÓGICA DEL DASHBOARD ===
+    // PEGA AQUÍ TU NUEVA URL DE APPS SCRIPT
+    const urlAppsScript = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec"; 
+    
+    const catalogo = [
+        { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
+        { desc: "CAJA IFCO 6413", critico: 1000, precio: 1.18 },
+        { desc: "CAJA IFCO 6423", critico: 1000, precio: 1.48 },
+        { desc: "CAJA CARTON GENERICA 40 LBS", critico: 1500, precio: 25.62 },
+        { desc: "CAJA CARTON 1/2 BUSHEL", critico: 500, precio: 20.03 },
+        { desc: "CAJA CARTON 1/4 BUSHEL", critico: 300, precio: 12.89 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.20", critico: 700, precio: 7.28 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.70", critico: 700, precio: 10.13 },
+        { desc: "LAMINA DE CARTON KRAFT (P/TARIMA)", critico: 400, precio: 7.79 },
+        { desc: "TARIMA NACIONAL DE BARROTE RECICLADA", critico: 30, precio: 195.00 },
+        { desc: "TARIMA DE EXPORTACION CUBO DE PRIMERA", critico: 70, precio: 321.00 },
+        { desc: "TARIMA CUBO RECICLADA", critico: 20, precio: 180.00 },
+        { desc: "RAFIA BLANCA BOBINA GDE. (4KG)", critico: 2, precio: 171.45 },
+        { desc: "FLEJE PLASTICO VERDE LISO", critico: 5, precio: 767.26 },
+        { desc: "PELICULA PLASTICA STRETCH /EMPLAYE", critico: 100, precio: 47.00 },
+        { desc: "FLEJE PLASTICO 1/2 NEGRO", critico: 2, precio: 36.48 },
+        { desc: "RIBBON DE TINTA GRANDE ZEBRA", critico: 7, precio: 152.00 },
+        { desc: "RIBBON DE TINTA CHICO ZEBRA", critico: 3, precio: 56.00 },
+        { desc: "ETIQUETAS COLORES 8x4", critico: 2, precio: 245.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (3000)", critico: 5, precio: 310.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 }
+    ];
+
+    window.onload = function() {
+        obtenerDatosDashboard();
+    };
+
+    function obtenerDatosDashboard() {
+        const fetchUrl = `${urlAppsScript}?action=obtener_resumen_dashboard`;
+
+        fetch(fetchUrl)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('spinner-1').style.display = 'none';
+                document.getElementById('spinner-2').style.display = 'none';
+
+                if(!data || !data.datos || data.datos.length === 0) {
+                    document.getElementById('fecha-gasto').textContent = "No hay datos de inventario.";
+                    return;
+                }
+
+                // 1. Agrupar las sumas (juntar Almacén, Producción, etc. del mismo producto)
+                let sumasInventario = {};
+                data.datos.forEach(reg => {
+                    if(reg.fisico !== "") {
+                        if(!sumasInventario[reg.producto]) sumasInventario[reg.producto] = 0;
+                        sumasInventario[reg.producto] += parseFloat(reg.fisico);
+                    }
+                });
+
+                let valorTotalNeto = 0;
+                let contadorCriticos = 0;
+
+                // 2. Cruzar con el catálogo para calcular finanzas y críticos
+                catalogo.forEach(cat => {
+                    let cantidadActual = sumasInventario[cat.desc] || 0;
+                    
+                    // Sumar al valor total
+                    valorTotalNeto += (cantidadActual * cat.precio);
+
+                    // Revisar si es crítico
+                    if(cantidadActual > 0 && cantidadActual <= cat.critico) {
+                        contadorCriticos++;
+                    }
+                });
+
+                // 3. Imprimir en las tarjetas
+                const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+                
+                document.getElementById('kpi-gasto').textContent = formatter.format(valorTotalNeto);
+                
+                // Formatear la fecha para que se vea bonita
+                let [year, month, day] = data.fecha.split('-');
+                document.getElementById('fecha-gasto').textContent = `Corte al: ${day}/${month}/${year}`;
+                
+                document.getElementById('kpi-criticos').textContent = contadorCriticos;
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('spinner-1').style.display = 'none';
+                document.getElementById('spinner-2').style.display = 'none';
+                document.getElementById('fecha-gasto').textContent = "Error de conexión";
+            });
+    }
 </script>
 </body>
 </html>
