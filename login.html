@@ -41,6 +41,7 @@
                 <option value="Recepcion">Recepción</option>
                 <option value="Almacen">Almacén</option>
                 <option value="Directivos">Directivos</option>
+                <option value="CapturaIND">Captura Almacén Indirecto</option> 
             </select>
         </div>
 
@@ -60,13 +61,20 @@
         "Admin": "NzM5MQ==",      // Oculta el PIN: 7391
         "Recepcion": "NDAyOA==",  // Oculta el PIN: 4028
         "Almacen": "ODE1Ng==",    // Oculta el PIN: 8156
-        "Directivos": "Mjk0MA=="  // Oculta el PIN: 2940
+        "Directivos": "Mjk0MA==", // Oculta el PIN: 2940
+        "CapturaIND": "MTAyMA=="  // Oculta el PIN: 1020 <-- NUEVO PIN
     };
 
     window.onload = function() {
-        const sesionActual = JSON.parse(localStorage.getItem('wms_session'));
-        if(sesionActual) {
-            redirigirSegunRol(sesionActual.rol);
+        // Al cargar la página, verificamos si ya hay sesión activa
+        const sesionStr = localStorage.getItem('wms_session');
+        if(sesionStr) {
+            try {
+                const sesionActual = JSON.parse(sesionStr);
+                redirigirSegunRol(sesionActual.rol);
+            } catch(e) {
+                localStorage.removeItem('wms_session');
+            }
         }
     };
 
@@ -81,6 +89,7 @@
         const pinOfuscado = btoa(pinIngresado);
 
         if (PINES_OCULTOS[rol] === pinOfuscado) {
+            // Guardamos nombre y rol en un objeto JSON
             const datosSesion = { nombre: nombre, rol: rol };
             localStorage.setItem('wms_session', JSON.stringify(datosSesion));
             
@@ -100,6 +109,8 @@
             window.location.href = "almacen.html"; 
         } else if (rol === "Directivos") {
             window.location.href = "dashboard.html"; 
+        } else if (rol === "CapturaIND") { // LA NUEVA REDIRECCIÓN
+            window.location.href = "inventario_ind.html";
         }
     }
 </script>
