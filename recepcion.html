@@ -59,7 +59,7 @@
         .badge-descargando { background-color: #ffeeba; color: #856404; }
         .badge-completado { background-color: #c3e6cb; color: #155724; }
 
-        /* ESTILOS PARA LAS VENTANAS EMERGENTES (MODALES) */
+        /* MODALES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;}
         .modal-box { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;}
         .modal-box.large { max-width: 800px; }
@@ -71,7 +71,6 @@
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #555;}
         .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;}
         
-        /* Tabla de Auditoría interna */
         .audit-table th { background-color: var(--primary); color: white; }
         .audit-table input[type="number"] { width: 80px; padding: 5px; text-align: center; font-weight: bold;}
         .dif-span { font-weight: bold; font-size: 14px; }
@@ -154,12 +153,11 @@
         </div>
     </div>
 
-    <!-- MODAL 1: REGISTRAR NUEVO INGRESO -->
+    <!-- MODAL 1: NUEVO INGRESO -->
     <div class="modal-overlay" id="modal-ingreso">
         <div class="modal-box">
             <div class="modal-close" onclick="cerrarModal('modal-ingreso')">&times;</div>
             <div class="modal-title">Registrar Proveedor en Andén</div>
-            
             <div class="form-group">
                 <label>Proveedor / Transportista</label>
                 <input type="text" id="nuevo-prov" placeholder="Ej. Cartones Monterrey">
@@ -177,23 +175,20 @@
                 <label>No. de Factura o Remisión</label>
                 <input type="text" id="nueva-fac" placeholder="Ej. REM-1092">
             </div>
-            
             <button class="btn-action btn-primary" style="width: 100%; margin-top: 10px;" onclick="guardarIngreso()">Registrar Llegada</button>
         </div>
     </div>
 
-    <!-- MODAL 2: AUDITORÍA DE CARGA -->
+    <!-- MODAL 2: AUDITORÍA -->
     <div class="modal-overlay" id="modal-auditoria">
         <div class="modal-box large">
             <div class="modal-close" onclick="cerrarModal('modal-auditoria')">&times;</div>
             <div class="modal-title">Auditoría de Carga (Ciega)</div>
-            
             <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; background: #f8f9fa; padding: 10px; border-radius: 6px;">
                 <div><strong>Proveedor:</strong> <span id="audit-prov">---</span></div>
                 <div><strong>Factura:</strong> <span id="audit-fac">---</span></div>
                 <input type="hidden" id="audit-id-fila">
             </div>
-
             <table class="audit-table">
                 <thead>
                     <tr>
@@ -205,7 +200,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Datos simulados para la auditoría -->
                     <tr>
                         <td>A101</td>
                         <td>CAJA PASTICA NAYLEA</td>
@@ -215,7 +209,6 @@
                     </tr>
                 </tbody>
             </table>
-            
             <div style="text-align: right; margin-top: 20px;">
                 <button class="btn-action btn-success" onclick="aprobarAuditoria()">✔ Aprobar Ingreso al Inventario</button>
             </div>
@@ -223,11 +216,10 @@
     </div>
 
 <script>
-    // === PROTECCIÓN DE SESIÓN Y LOGOUT ===
+    // === 1. PROTECCIÓN DE SESIÓN ===
     window.addEventListener('DOMContentLoaded', (event) => {
         const sesion = localStorage.getItem("wms_session");
         if (!sesion) { window.location.href = "login.html"; }
-
         const btnLogout = document.querySelector('.btn-logout');
         if (btnLogout) {
             btnLogout.addEventListener('click', () => {
@@ -237,17 +229,16 @@
         }
     });
 
-    // === RELOJ ===
+    // === 2. RELOJ ===
     setInterval(() => {
         const ahora = new Date();
         document.getElementById('reloj-actual').textContent = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }, 1000);
 
-    // === LÓGICA DE MODALES ===
+    // === 3. MODALES Y OPERACIÓN ===
     function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
     function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // === AGREGAR NUEVO PROVEEDOR AL ANDÉN ===
     let contadorFilas = 1;
 
     function guardarIngreso() {
@@ -255,15 +246,11 @@
         const tipo = document.getElementById('nuevo-tipo').value;
         const fac = document.getElementById('nueva-fac').value.trim();
 
-        if(!prov || !fac) {
-            alert("Por favor llena el Proveedor y la Factura.");
-            return;
-        }
+        if(!prov || !fac) { alert("Llena el Proveedor y la Factura."); return; }
 
         contadorFilas++;
         const ahora = new Date();
         const hora = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-
         const tbody = document.getElementById('tabla-arribos');
         const nuevaFila = document.createElement('tr');
         nuevaFila.id = `fila-${contadorFilas}`;
@@ -278,28 +265,19 @@
         `;
         
         tbody.appendChild(nuevaFila);
-        
-        // Actualizar contador de tarjetas
-        const numProv = document.querySelectorAll('.badge-descargando').length;
-        document.getElementById('kpi-proveedores').textContent = numProv;
-
-        // Limpiar y cerrar
+        document.getElementById('kpi-proveedores').textContent = document.querySelectorAll('.badge-descargando').length;
         document.getElementById('nuevo-prov').value = "";
         document.getElementById('nueva-fac').value = "";
         cerrarModal('modal-ingreso');
     }
 
-    // === LÓGICA DE AUDITORÍA ===
     function abrirAuditoria(idFila, proveedor, factura) {
         document.getElementById('audit-prov').textContent = proveedor;
         document.getElementById('audit-fac').textContent = factura;
         document.getElementById('audit-id-fila').value = idFila;
-        
-        // Resetear la tabla de auditoría para la demo
         document.getElementById('audit-fisico-1').value = "";
         document.getElementById('audit-dif-1').textContent = "-";
         document.getElementById('audit-dif-1').style.color = "#333";
-
         abrirModal('modal-auditoria');
     }
 
@@ -307,36 +285,22 @@
         const fisicoVal = document.getElementById(`audit-fisico-${idInput}`).value;
         const spanDif = document.getElementById(`audit-dif-${idInput}`);
         
-        if (fisicoVal === "") {
-            spanDif.textContent = "-";
-            spanDif.style.color = "#333";
-            return;
-        }
-
+        if (fisicoVal === "") { spanDif.textContent = "-"; spanDif.style.color = "#333"; return; }
         const diferencia = parseFloat(fisicoVal) - esperado;
         
         if (diferencia === 0) {
-            spanDif.textContent = "✔ OK";
-            spanDif.style.color = "var(--success)";
+            spanDif.textContent = "✔ OK"; spanDif.style.color = "var(--success)";
         } else if (diferencia > 0) {
-            spanDif.textContent = `+${diferencia}`;
-            spanDif.style.color = "var(--warning)";
+            spanDif.textContent = `+${diferencia}`; spanDif.style.color = "var(--warning)";
         } else {
-            spanDif.textContent = diferencia;
-            spanDif.style.color = "var(--danger)";
+            spanDif.textContent = diferencia; spanDif.style.color = "var(--danger)";
         }
     }
 
     function aprobarAuditoria() {
         const idFila = document.getElementById('audit-id-fila').value;
-        const inputFisico = document.getElementById('audit-fisico-1').value;
+        if(document.getElementById('audit-fisico-1').value === "") { alert("Ingresa el conteo físico."); return; }
 
-        if(inputFisico === "") {
-            alert("Por favor, ingresa el conteo físico antes de aprobar.");
-            return;
-        }
-
-        // Cambiar el estado visual en la tabla principal
         const badge = document.getElementById(`estado-${idFila}`);
         badge.className = "badge badge-completado";
         badge.textContent = "Completado";
@@ -344,22 +308,91 @@
         const btn = document.getElementById(`btn-audit-${idFila}`);
         btn.textContent = "Ver Detalle";
         btn.style.backgroundColor = "#6c757d";
-        btn.onclick = null; // Desactiva el botón para que ya no vuelva a auditar
+        btn.onclick = null;
 
-        // Actualizar contador de tarjetas
-        const numProv = document.querySelectorAll('.badge-descargando').length;
-        document.getElementById('kpi-proveedores').textContent = numProv;
-
+        document.getElementById('kpi-proveedores').textContent = document.querySelectorAll('.badge-descargando').length;
         cerrarModal('modal-auditoria');
-        alert("¡Auditoría Aprobada! Estos productos se sumarán al inventario de Google Sheets (Próximamente).");
     }
 
-    // === CONEXIÓN A GOOGLE SHEETS PARA EL DASHBOARD ===
-    // (Asegúrate de poner tu URL aquí para que las tarjetas roja y verde funcionen)
+    // === 4. LÓGICA DEL DASHBOARD (FINANZAS Y CRÍTICOS) ===
     const urlAppsScript = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec"; 
     
-    // (Aquí sigue tu código original de obtenerDatosDashboard() para el catalogo y gráficas)
-    // Lo dejé preparado para que no estorbe con las nuevas funciones.
+    const catalogo = [
+        { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
+        { desc: "CAJA IFCO 6413", critico: 1000, precio: 1.18 },
+        { desc: "CAJA IFCO 6423", critico: 1000, precio: 1.48 },
+        { desc: "CAJA CARTON GENERICA 40 LBS", critico: 1500, precio: 25.62 },
+        { desc: "CAJA CARTON 1/2 BUSHEL", critico: 500, precio: 20.03 },
+        { desc: "CAJA CARTON 1/4 BUSHEL", critico: 300, precio: 12.89 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.20", critico: 700, precio: 7.28 },
+        { desc: "ESQUINEROS DE CARTON CAL 1.70", critico: 700, precio: 10.13 },
+        { desc: "LAMINA DE CARTON KRAFT (P/TARIMA)", critico: 400, precio: 7.79 },
+        { desc: "TARIMA NACIONAL DE BARROTE RECICLADA", critico: 30, precio: 195.00 },
+        { desc: "TARIMA DE EXPORTACION CUBO DE PRIMERA", critico: 70, precio: 321.00 },
+        { desc: "TARIMA CUBO RECICLADA", critico: 20, precio: 180.00 },
+        { desc: "RAFIA BLANCA BOBINA GDE. (4KG)", critico: 2, precio: 171.45 },
+        { desc: "FLEJE PLASTICO VERDE LISO", critico: 5, precio: 767.26 },
+        { desc: "PELICULA PLASTICA STRETCH /EMPLAYE", critico: 100, precio: 47.00 },
+        { desc: "FLEJE PLASTICO 1/2 NEGRO", critico: 2, precio: 36.48 },
+        { desc: "RIBBON DE TINTA GRANDE ZEBRA", critico: 7, precio: 152.00 },
+        { desc: "RIBBON DE TINTA CHICO ZEBRA", critico: 3, precio: 56.00 },
+        { desc: "ETIQUETAS COLORES 8x4", critico: 2, precio: 245.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (3000)", critico: 5, precio: 310.00 },
+        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 }
+    ];
+
+    window.onload = function() {
+        obtenerDatosDashboard();
+    };
+
+    function obtenerDatosDashboard() {
+        const fetchUrl = `${urlAppsScript}?action=obtener_resumen_dashboard`;
+
+        fetch(fetchUrl)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('spinner-1').style.display = 'none';
+                document.getElementById('spinner-2').style.display = 'none';
+
+                if(!data || !data.datos || data.datos.length === 0) {
+                    document.getElementById('fecha-gasto').textContent = "No hay datos de inventario.";
+                    return;
+                }
+
+                let sumasInventario = {};
+                data.datos.forEach(reg => {
+                    if(reg.fisico !== "") {
+                        if(!sumasInventario[reg.producto]) sumasInventario[reg.producto] = 0;
+                        sumasInventario[reg.producto] += parseFloat(reg.fisico);
+                    }
+                });
+
+                let valorTotalNeto = 0;
+                let contadorCriticos = 0;
+
+                catalogo.forEach(cat => {
+                    let cantidadActual = sumasInventario[cat.desc] || 0;
+                    valorTotalNeto += (cantidadActual * cat.precio);
+                    if(cantidadActual > 0 && cantidadActual <= cat.critico) {
+                        contadorCriticos++;
+                    }
+                });
+
+                const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+                document.getElementById('kpi-gasto').textContent = formatter.format(valorTotalNeto);
+                
+                let partes = data.fecha.split('-');
+                if(partes.length === 3) {
+                    document.getElementById('fecha-gasto').textContent = `Corte al: ${partes[2]}/${partes[1]}/${partes[0]}`;
+                }
+                document.getElementById('kpi-criticos').textContent = contadorCriticos;
+            })
+            .catch(err => {
+                document.getElementById('spinner-1').style.display = 'none';
+                document.getElementById('spinner-2').style.display = 'none';
+                document.getElementById('fecha-gasto').textContent = "Error de conexión";
+            });
+    }
 </script>
 </body>
 </html>
