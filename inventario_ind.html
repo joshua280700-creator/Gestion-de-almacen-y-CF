@@ -13,7 +13,6 @@
             --danger: #dc3545;
             --border: #dee2e6;
             
-            /* Colores de las Áreas */
             --c-alm: #2E7D32; 
             --c-prod: #F9A825; 
             --c-cf1: #1565C0; 
@@ -25,8 +24,7 @@
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: #333;}
         
-        /* BARRA DE NAVEGACIÓN COMPARTIDA */
-        .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;}
         .nav-links { display: flex; gap: 15px; }
         .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 14px; font-weight: bold;}
         .nav-links a:hover, .nav-links a.active { background-color: var(--primary); }
@@ -34,7 +32,7 @@
 
         .main-content { padding: 15px; }
 
-        .header { background-color: var(--primary); color: white; padding: 12px 20px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .header { background-color: var(--primary); color: white; padding: 12px 20px; border-radius: 0 0 6px 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
         .header h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;}
         .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
         .header-info { text-align: right; font-size: 12px; }
@@ -96,7 +94,6 @@
         .btn-guardar { background-color: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; float: right; margin-top: 15px; transition: 0.2s; box-sizing: border-box;}
         .btn-guardar:hover { background-color: #153a5c; }
 
-        /* MEDIA QUERIES PARA PANTALLAS CHICAS (MÓVIL) */
         @media (max-width: 768px) {
             .navbar { flex-direction: column; gap: 10px; }
             .nav-links { flex-wrap: wrap; justify-content: center; }
@@ -124,7 +121,6 @@
 </head>
 <body>
 
-    <!-- NAVBAR PARA ECOSISTEMA -->
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
@@ -211,6 +207,24 @@
     </div>
 
 <script>
+    // === PROTECCIÓN DE SESIÓN Y LOGOUT ===
+    window.addEventListener('DOMContentLoaded', (event) => {
+        // Verificamos si existe el paquete de sesión
+        const sesion = localStorage.getItem("wms_session");
+        if (!sesion) {
+            window.location.href = "login.html"; // Si no hay, lo patea al login
+        }
+
+        const btnLogout = document.querySelector('.btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                localStorage.removeItem("wms_session");
+                window.location.href = "login.html";
+            });
+        }
+    });
+    // =====================================
+
     const urlInventarios = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec";
 
     const productos = [
