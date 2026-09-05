@@ -17,7 +17,6 @@
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: #333;}
         
-        /* BARRA DE NAVEGACIÓN COMPARTIDA */
         .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
         .nav-links { display: flex; gap: 15px; }
         .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 14px; font-weight: bold;}
@@ -86,7 +85,6 @@
 </head>
 <body>
 
-    <!-- NAVBAR PARA ECOSISTEMA -->
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
@@ -145,7 +143,6 @@
                     </tr>
                 </thead>
                 <tbody id="tabla-body">
-                    <!-- Filas inyectadas por JS -->
                 </tbody>
             </table>
         </div>
@@ -161,6 +158,24 @@
     </div>
 
 <script>
+    // === PROTECCIÓN DE SESIÓN Y LOGOUT ===
+    window.addEventListener('DOMContentLoaded', (event) => {
+        // Verificamos si existe el paquete de sesión
+        const sesion = localStorage.getItem("wms_session");
+        if (!sesion) {
+            window.location.href = "login.html"; // Si no hay, lo patea al login
+        }
+
+        const btnLogout = document.querySelector('.btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                localStorage.removeItem("wms_session");
+                window.location.href = "login.html";
+            });
+        }
+    });
+    // =====================================
+
     const urlAppsScript = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec";
 
     const catalogo = [
