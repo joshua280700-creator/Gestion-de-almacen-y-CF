@@ -4,19 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Analítico - Vegxpress</title>
-    <!-- LIBRERÍA PARA GRÁFICAS -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --bg-color: #f0f2f5;
-            --primary: #1F4E78;
-            --success: #28a745;
-            --danger: #dc3545;
-            --warning: #ffc107;
-            --info: #17a2b8;
-            --border: #dee2e6;
-        }
-
+        :root { --bg-color: #f0f2f5; --primary: #1F4E78; --success: #28a745; --danger: #dc3545; --warning: #ffc107; --border: #dee2e6; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: #333;}
         
         .navbar { background-color: #112a42; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;}
@@ -27,10 +17,18 @@
 
         .main-content { padding: 15px; max-width: 1200px; margin: 0 auto;}
 
-        .header { background-color: var(--primary); color: white; padding: 12px 20px; border-radius: 0 0 6px 6px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .header { background-color: var(--primary); color: white; padding: 12px 20px; border-radius: 0 0 6px 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
         .header h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px;}
         .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
         
+        /* BARRA DE FILTROS FECHAS */
+        .filtros-bar { background: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;}
+        .form-group { display: flex; flex-direction: column; gap: 5px;}
+        .form-group label { font-size: 12px; font-weight: bold; color: #555; text-transform: uppercase;}
+        .form-group input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; color: #333; outline: none;}
+        .btn-filtrar { background-color: var(--primary); color: white; border: none; padding: 9px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .btn-filtrar:hover { background-color: #153a5c;}
+
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; border-top: 4px solid var(--primary); position: relative;}
         .card.card-danger { border-top-color: var(--danger); }
@@ -41,17 +39,15 @@
         .card-value { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 5px;}
         .card-subtitle { font-size: 12px; color: #888;}
 
-        .loading-spinner { position: absolute; top: 20px; right: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        .loading-spinner { position: absolute; top: 20px; right: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* PANELES DE GRÁFICAS */
         .charts-container { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 20px; }
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column;}
         .panel-header { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px;}
         
-        .chart-wrapper { position: relative; height: 250px; width: 100%; display: flex; justify-content: center;}
+        .chart-wrapper { position: relative; height: 250px; width: 100%; display: flex; justify-content: center; align-items: center;}
 
-        /* TABLA DE INVENTARIO */
         table { width: 100%; border-collapse: collapse; font-size: 12px;}
         th { background-color: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid var(--border); color: #555; position: sticky; top: 0;}
         td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle;}
@@ -84,7 +80,19 @@
             </div>
         </div>
 
-        <!-- TARJETAS SUPERIORES -->
+        <!-- BARRA DE RANGOS DE FECHA -->
+        <div class="filtros-bar">
+            <div class="form-group">
+                <label>Desde:</label>
+                <input type="date" id="fecha-inicio">
+            </div>
+            <div class="form-group">
+                <label>Hasta:</label>
+                <input type="date" id="fecha-fin">
+            </div>
+            <button class="btn-filtrar" onclick="obtenerDatosDashboard()">🔍 Aplicar Filtro</button>
+        </div>
+
         <div class="dashboard-grid">
             <div class="card card-success">
                 <div class="loading-spinner" id="spinner-1"></div>
@@ -102,13 +110,12 @@
 
             <div class="card card-warning">
                 <div class="loading-spinner" id="spinner-3"></div>
-                <div class="card-title">Consumo (Últimos 7 días)</div>
+                <div class="card-title">Consumo en Rango</div>
                 <div class="card-value" id="kpi-consumo">0</div>
-                <div class="card-subtitle">Piezas totales trasladadas a producción</div>
+                <div class="card-subtitle" id="rango-consumo">Piezas trasladadas</div>
             </div>
         </div>
 
-        <!-- ZONA DE GRÁFICAS -->
         <div class="charts-container">
             <div class="panel">
                 <div class="panel-header">📊 Top 10: Insumos con Mayor Stock Físico</div>
@@ -118,14 +125,13 @@
             </div>
             
             <div class="panel">
-                <div class="panel-header">📈 Top 5: Más Consumidos (Semana)</div>
+                <div class="panel-header">📈 Top 5: Más Consumidos (Periodo)</div>
                 <div class="chart-wrapper">
                     <canvas id="chartConsumo"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- ZONA DE TABLA DE INVENTARIO -->
         <div class="panel">
             <div class="panel-header">📦 Resumen General de Inventario</div>
             <div class="table-scroll">
@@ -140,7 +146,7 @@
                     </thead>
                     <tbody id="body-stock-actual">
                         <tr>
-                            <td colspan="4" style="text-align: center; color: #888;">Cargando inventario...</td>
+                            <td colspan="4" style="text-align: center; color: #888;">Ingresa un rango de fechas y aplica el filtro...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -149,7 +155,7 @@
     </div>
 
 <script>
-    // === 1. PROTECCIÓN DE SESIÓN ===
+    // === PROTECCIÓN DE SESIÓN ===
     window.addEventListener('DOMContentLoaded', (event) => {
         const sesion = localStorage.getItem("wms_session");
         if (!sesion) { window.location.href = "login.html"; }
@@ -162,16 +168,18 @@
         }
     });
 
-    // === 2. RELOJ ===
     setInterval(() => {
         const ahora = new Date();
         document.getElementById('reloj-actual').textContent = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }, 1000);
 
-    // === 3. CONEXIÓN Y DATOS ===
-    // ⚠️ RECUERDA PONER TU NUEVA URL AQUÍ ⚠️
+    // PEGA AQUÍ TU NUEVA URL GENERADA AL IMPLEMENTAR
     const urlAppsScript = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec"; 
     
+    // Variables para las gráficas (necesarias para poder destruirlas y volver a dibujarlas sin bug visual)
+    let chartStockInstance = null;
+    let chartConsumoInstance = null;
+
     const catalogo = [
         { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
         { desc: "CAJA IFCO 6413", critico: 1000, precio: 1.18 },
@@ -193,15 +201,39 @@
         { desc: "RIBBON DE TINTA CHICO ZEBRA", critico: 3, precio: 56.00 },
         { desc: "ETIQUETAS COLORES 8x4", critico: 2, precio: 245.00 },
         { desc: "ETIQUETAS BLANCAS 4x2 (3000)", critico: 5, precio: 310.00 },
-        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 }
+        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 },
+        { desc: "CAJA PLASTICA MORELIA", critico: 500, precio: 15.00 },
+        { desc: "TARIMA SEGUNDA", critico: 50, precio: 150.00 },
+        { desc: "TARIMA REFORZADA AZUL", critico: 30, precio: 300.00 },
+        { desc: "CAJA LIMONERA", critico: 600, precio: 18.00 }
     ];
 
     window.onload = function() {
+        // Colocar fechas por defecto (Últimos 7 días hasta hoy)
+        const hoy = new Date();
+        const hace7Dias = new Date();
+        hace7Dias.setDate(hoy.getDate() - 7);
+
+        document.getElementById('fecha-fin').valueAsDate = hoy;
+        document.getElementById('fecha-inicio').valueAsDate = hace7Dias;
+
         obtenerDatosDashboard();
     };
 
     function obtenerDatosDashboard() {
-        const fetchUrl = `${urlAppsScript}?action=obtener_resumen_dashboard`;
+        const fInicio = document.getElementById('fecha-inicio').value;
+        const fFin = document.getElementById('fecha-fin').value;
+
+        if(!fInicio || !fFin) {
+            alert("Selecciona las fechas de inicio y fin.");
+            return;
+        }
+
+        document.getElementById('spinner-1').style.display = 'block';
+        document.getElementById('spinner-2').style.display = 'block';
+        document.getElementById('spinner-3').style.display = 'block';
+
+        const fetchUrl = `${urlAppsScript}?action=obtener_resumen_dashboard&inicio=${fInicio}&fin=${fFin}`;
 
         fetch(fetchUrl)
             .then(res => res.json())
@@ -210,13 +242,21 @@
                 document.getElementById('spinner-2').style.display = 'none';
                 document.getElementById('spinner-3').style.display = 'none';
 
+                let fFormatInit = fInicio.split('-').reverse().join('/');
+                let fFormatFin = fFin.split('-').reverse().join('/');
+                document.getElementById('rango-consumo').textContent = `Del ${fFormatInit} al ${fFormatFin}`;
+
                 if(!data || !data.datos || data.datos.length === 0) {
-                    document.getElementById('fecha-gasto').textContent = "No hay datos.";
-                    document.getElementById('body-stock-actual').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888;">No hay datos de inventario.</td></tr>`;
+                    document.getElementById('fecha-gasto').textContent = "Sin inventario en este rango.";
+                    document.getElementById('kpi-gasto').textContent = "$0.00";
+                    document.getElementById('kpi-criticos').textContent = "0";
+                    document.getElementById('body-stock-actual').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888;">No hay inventario capturado en las fechas seleccionadas.</td></tr>`;
+                    actualizarGraficaStock([]); 
+                    actualizarGraficaConsumo([]);
                     return;
                 }
 
-                // --- 1. PROCESAR INVENTARIO ACTUAL ---
+                // --- 1. PROCESAR INVENTARIO (Del último día encontrado en el rango) ---
                 let sumasInventario = {};
                 data.datos.forEach(reg => {
                     if(reg.fisico !== "") {
@@ -250,84 +290,91 @@
                     `;
                 });
 
-                // KPIs
                 const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
                 document.getElementById('kpi-gasto').textContent = formatter.format(valorTotalNeto);
-                let partes = data.fecha.split('-');
-                if(partes.length === 3) document.getElementById('fecha-gasto').textContent = `Corte al: ${partes[2]}/${partes[1]}/${partes[0]}`;
+                
+                let divisor = data.fecha.includes('/') ? '/' : '-';
+                let partes = data.fecha.split(divisor);
+                if(partes.length === 3) {
+                    if(partes[0].length === 4) { 
+                        document.getElementById('fecha-gasto').textContent = `Stock calculado al: ${partes[2]}/${partes[1]}/${partes[0]}`;
+                    } else { 
+                        document.getElementById('fecha-gasto').textContent = `Stock calculado al: ${partes[0]}/${partes[1]}/${partes[2]}`;
+                    }
+                }
+                
                 document.getElementById('kpi-criticos').textContent = contadorCriticos;
                 document.getElementById('body-stock-actual').innerHTML = htmlTablaStock;
 
-                // --- 2. PROCESAR CONSUMO (ÚLTIMOS 7 DÍAS) ---
-                const hace7Dias = new Date();
-                hace7Dias.setDate(hace7Dias.getDate() - 7);
+                // --- 2. PROCESAR CONSUMO (Sumatoria de traslados en el rango) ---
                 let consumoSemana = {};
                 let totalPiezasConsumidas = 0;
 
-                if (data.traslados) {
+                if (data.traslados && data.traslados.length > 0) {
                     data.traslados.forEach(t => {
-                        let [y, m, d] = t.fecha.split('-');
-                        let fechaTras = new Date(y, m - 1, d);
-                        if(fechaTras >= hace7Dias) {
-                            if(!consumoSemana[t.producto]) consumoSemana[t.producto] = 0;
-                            let cant = parseFloat(t.cantidad);
-                            consumoSemana[t.producto] += cant;
-                            totalPiezasConsumidas += cant;
-                        }
+                        if(!consumoSemana[t.producto]) consumoSemana[t.producto] = 0;
+                        let cant = parseFloat(t.cantidad);
+                        consumoSemana[t.producto] += cant;
+                        totalPiezasConsumidas += cant;
                     });
                 }
                 document.getElementById('kpi-consumo').textContent = totalPiezasConsumidas;
 
-                // --- 3. DIBUJAR GRÁFICA DE STOCK (BARRAS) ---
-                let stockArr = Object.keys(sumasInventario).map(k => ({ prod: k, cant: sumasInventario[k] }));
-                stockArr.sort((a,b) => b.cant - a.cant); // Ordenar mayor a menor
-                let topStock = stockArr.slice(0, 10); // Tomar solo los 10 primeros
-
-                new Chart(document.getElementById('chartStock'), {
-                    type: 'bar',
-                    data: {
-                        // Cortamos los nombres largos para que se vea bien la gráfica
-                        labels: topStock.map(d => d.prod.substring(0, 15) + '...'),
-                        datasets: [{
-                            label: 'Piezas Físicas',
-                            data: topStock.map(d => d.cant),
-                            backgroundColor: '#1F4E78',
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                });
-
-                // --- 4. DIBUJAR GRÁFICA DE CONSUMO (DONA) ---
-                let consArr = Object.keys(consumoSemana).map(k => ({ prod: k, cant: consumoSemana[k] }));
-                consArr.sort((a,b) => b.cant - a.cant);
-                let topConsumo = consArr.slice(0, 5); // Tomar los 5 más gastados
-
-                // Si no hay datos de consumo, mostrar gráfica vacía
-                if(topConsumo.length === 0) {
-                    topConsumo = [{prod: "Sin movimientos", cant: 1}];
-                }
-
-                new Chart(document.getElementById('chartConsumo'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: topConsumo.map(d => d.prod.substring(0, 20)),
-                        datasets: [{
-                            data: topConsumo.map(d => d.cant),
-                            backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745', '#6c757d']
-                        }]
-                    },
-                    options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: {size: 10} } } } }
-                });
-
+                // --- 3. ACTUALIZAR GRÁFICAS ---
+                actualizarGraficaStock(sumasInventario);
+                actualizarGraficaConsumo(consumoSemana);
             })
             .catch(err => {
-                console.error(err);
                 document.getElementById('spinner-1').style.display = 'none';
                 document.getElementById('spinner-2').style.display = 'none';
                 document.getElementById('spinner-3').style.display = 'none';
                 document.getElementById('fecha-gasto').textContent = "Error de conexión";
             });
+    }
+
+    function actualizarGraficaStock(sumasInv) {
+        let stockArr = Object.keys(sumasInv).map(k => ({ prod: k, cant: sumasInv[k] }));
+        stockArr = stockArr.filter(item => item.cant > 0); 
+        stockArr.sort((a,b) => b.cant - a.cant); 
+        let topStock = stockArr.slice(0, 10); 
+        if (topStock.length === 0) topStock = [{prod: "Sin datos", cant: 0}];
+
+        if(chartStockInstance) chartStockInstance.destroy(); // Eliminar gráfica anterior
+
+        chartStockInstance = new Chart(document.getElementById('chartStock'), {
+            type: 'bar',
+            data: {
+                labels: topStock.map(d => d.prod.substring(0, 15) + '...'),
+                datasets: [{
+                    label: 'Piezas Físicas',
+                    data: topStock.map(d => d.cant),
+                    backgroundColor: '#1F4E78',
+                    borderRadius: 4
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    function actualizarGraficaConsumo(sumasCons) {
+        let consArr = Object.keys(sumasCons).map(k => ({ prod: k, cant: sumasCons[k] }));
+        consArr.sort((a,b) => b.cant - a.cant);
+        let topConsumo = consArr.slice(0, 5); 
+        if(topConsumo.length === 0) topConsumo = [{prod: "Sin movimientos", cant: 1}];
+
+        if(chartConsumoInstance) chartConsumoInstance.destroy(); // Eliminar gráfica anterior
+
+        chartConsumoInstance = new Chart(document.getElementById('chartConsumo'), {
+            type: 'doughnut',
+            data: {
+                labels: topConsumo.map(d => d.prod.substring(0, 20)),
+                datasets: [{
+                    data: topConsumo.map(d => d.cant),
+                    backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745', '#6c757d']
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: {size: 10} } } } }
+        });
     }
 </script>
 </body>
