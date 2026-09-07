@@ -88,7 +88,8 @@
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
-            <a href="recepcion.html">Recepción</a>
+            <!-- Enlace corregido hacia el Dashboard -->
+            <a href="recepcion.html">Dashboard</a>
             <a href="inventario_ind.html">Inv. IND</a>
             <a href="alerta_stock.html" class="active">Alertas Stock</a>
         </div>
@@ -160,11 +161,8 @@
 <script>
     // === PROTECCIÓN DE SESIÓN Y LOGOUT ===
     window.addEventListener('DOMContentLoaded', (event) => {
-        // Verificamos si existe el paquete de sesión
         const sesion = localStorage.getItem("wms_session");
-        if (!sesion) {
-            window.location.href = "login.html"; // Si no hay, lo patea al login
-        }
+        if (!sesion) { window.location.href = "login.html"; }
 
         const btnLogout = document.querySelector('.btn-logout');
         if (btnLogout) {
@@ -174,10 +172,11 @@
             });
         }
     });
-    // =====================================
 
+    // ⚠️ PEGA AQUÍ TU URL DEFINITIVA DE GOOGLE APPS SCRIPT ⚠️
     const urlAppsScript = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec";
 
+    // Catálogo completo actualizado
     const catalogo = [
         { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
         { desc: "CAJA IFCO 6413", critico: 1000, precio: 1.18 },
@@ -199,7 +198,11 @@
         { desc: "RIBBON DE TINTA CHICO ZEBRA", critico: 3, precio: 56.00 },
         { desc: "ETIQUETAS COLORES 8x4", critico: 2, precio: 245.00 },
         { desc: "ETIQUETAS BLANCAS 4x2 (3000)", critico: 5, precio: 310.00 },
-        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 }
+        { desc: "ETIQUETAS BLANCAS 4x2 (1500)", critico: 2, precio: 130.74 },
+        { desc: "CAJA PLASTICA MORELIA", critico: 500, precio: 15.00 },
+        { desc: "TARIMA SEGUNDA", critico: 50, precio: 150.00 },
+        { desc: "TARIMA REFORZADA AZUL", critico: 30, precio: 300.00 },
+        { desc: "CAJA LIMONERA", critico: 600, precio: 18.00 }
     ];
 
     let fechasSemana = [];
@@ -368,6 +371,7 @@
         }
     }
 
+    // === NUEVA FUNCIÓN PARA SINCRONIZAR INVENTARIO Y TRASLADOS ===
     function sincronizarDatos() {
         const btn = document.querySelector('.btn-accion');
         btn.innerText = "⏳ Sincronizando...";
@@ -378,28 +382,56 @@
         fetch(fetchUrl)
             .then(res => res.json())
             .then(data => {
+                // Limpiar la tabla antes de rellenar
                 document.querySelectorAll('.inv-dia').forEach(inp => inp.value = "");
+                document.querySelectorAll('.tras-dia').forEach(inp => inp.value = "");
                 
-                let sumas = {};
-                data.forEach(reg => {
-                    if(reg.fisico !== "") {
-                        if(!sumas[reg.producto]) sumas[reg.producto] = {};
-                        if(!sumas[reg.producto][reg.fecha]) sumas[reg.producto][reg.fecha] = 0;
-                        sumas[reg.producto][reg.fecha] += parseFloat(reg.fisico);
-                    }
-                });
+                // Agrupar Inventario
+                let sumasInv = {};
+                if (data.inventario) {
+                    data.inventario.forEach(reg => {
+                        if(reg.fisico !== "") {
+                            if(!sumasInv[reg.producto]) sumasInv[reg.producto] = {};
+                            if(!sumasInv[reg.producto][reg.fecha]) sumasInv[reg.producto][reg.fecha] = 0;
+                            sumasInv[reg.producto][reg.fecha] += parseFloat(reg.fisico);
+                        }
+                    });
+                }
 
+                // Agrupar Traslados
+                let sumasTras = {};
+                if (data.traslados) {
+                    data.traslados.forEach(reg => {
+                        if(reg.cantidad !== "") {
+                            if(!sumasTras[reg.producto]) sumasTras[reg.producto] = {};
+                            if(!sumasTras[reg.producto][reg.fecha]) sumasTras[reg.producto][reg.fecha] = 0;
+                            sumasTras[reg.producto][reg.fecha] += parseFloat(reg.cantidad);
+                        }
+                    });
+                }
+
+                // Rellenar las celdas
                 catalogo.forEach((p, idx) => {
                     const row = document.getElementById(`row-${idx}`);
-                    if(sumas[p.desc]) {
+                    
+                    if(sumasInv[p.desc]) {
                         for(let i=0; i<6; i++) {
                             let fechaDia = fechasSemana[i];
-                            if(sumas[p.desc][fechaDia] !== undefined) {
-                                const inpInv = row.querySelector(`.inv-dia[data-dia="${i}"]`);
-                                inpInv.value = sumas[p.desc][fechaDia];
+                            if(sumasInv[p.desc][fechaDia] !== undefined) {
+                                row.querySelector(`.inv-dia[data-dia="${i}"]`).value = sumasInv[p.desc][fechaDia];
                             }
                         }
                     }
+
+                    if(sumasTras[p.desc]) {
+                        for(let i=0; i<6; i++) {
+                            let fechaDia = fechasSemana[i];
+                            if(sumasTras[p.desc][fechaDia] !== undefined) {
+                                row.querySelector(`.tras-dia[data-dia="${i}"]`).value = sumasTras[p.desc][fechaDia];
+                            }
+                        }
+                    }
+                    
                     calcularFila(idx); 
                 });
 
