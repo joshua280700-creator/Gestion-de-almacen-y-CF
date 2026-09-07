@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Recepción - Vegxpress</title>
+    <title>Dashboard Analítico - Vegxpress</title>
+    <!-- LIBRERÍA PARA GRÁFICAS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-color: #f0f2f5;
@@ -29,7 +31,7 @@
         .header h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px;}
         .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
         
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; border-top: 4px solid var(--primary); position: relative;}
         .card.card-danger { border-top-color: var(--danger); }
         .card.card-success { border-top-color: var(--success); }
@@ -42,48 +44,22 @@
         .loading-spinner { position: absolute; top: 20px; right: 20px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Estructura de paneles 2 columnas */
-        .paneles-container { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
-        
+        /* PANELES DE GRÁFICAS */
+        .charts-container { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 20px; }
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column;}
-        .panel-header { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        .panel-header { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px;}
         
-        .btn-action { background-color: var(--info); color: white; border: none; padding: 8px 15px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s;}
-        .btn-action:hover { background-color: #117a8b; }
-        .btn-primary { background-color: var(--primary); color: white;}
-        .btn-primary:hover { background-color: #153a5c;}
-        .btn-success { background-color: var(--success); color: white;}
-        .btn-success:hover { background-color: #218838;}
+        .chart-wrapper { position: relative; height: 250px; width: 100%; display: flex; justify-content: center;}
 
+        /* TABLA DE INVENTARIO */
         table { width: 100%; border-collapse: collapse; font-size: 12px;}
         th { background-color: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid var(--border); color: #555; position: sticky; top: 0;}
         td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle;}
-        
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;}
-        .badge-descargando { background-color: #ffeeba; color: #856404; }
-        .badge-completado { background-color: #c3e6cb; color: #155724; }
-
-        /* MODALES */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;}
-        .modal-box { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;}
-        .modal-box.large { max-width: 800px; }
-        .modal-close { position: absolute; top: 15px; right: 15px; font-size: 20px; cursor: pointer; color: #888; font-weight: bold;}
-        .modal-close:hover { color: #333; }
-        .modal-title { font-size: 18px; font-weight: bold; color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;}
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #555;}
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;}
-        
-        .audit-table th { background-color: var(--primary); color: white; position: relative;}
-        .audit-table input[type="number"] { width: 80px; padding: 5px; text-align: center; font-weight: bold;}
-        .dif-span { font-weight: bold; font-size: 14px; }
-        
-        /* Contenedor scroll para el inventario */
-        .table-scroll { overflow-y: auto; flex-grow: 1; max-height: 350px; border-bottom: 1px solid var(--border);}
+        .table-scroll { overflow-y: auto; max-height: 350px; border-bottom: 1px solid var(--border);}
         
         @media (max-width: 900px) {
-            .paneles-container { grid-template-columns: 1fr; }
+            .charts-container { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -92,7 +68,7 @@
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
-            <a href="recepcion.html" class="active">Recepción</a>
+            <a href="recepcion.html" class="active">Dashboard</a>
             <a href="inventario_ind.html">Inv. IND</a>
             <a href="alerta_stock.html">Alertas Stock</a>
         </div>
@@ -101,13 +77,14 @@
 
     <div class="main-content">
         <div class="header">
-            <h1><span class="logo">Vegxpress</span> | DASHBOARD & RECEPCIÓN</h1>
+            <h1><span class="logo">Vegxpress</span> | DASHBOARD DIRECTIVO</h1>
             <div style="text-align: right; font-size: 12px;">
                 <div id="reloj-actual" style="font-weight: bold; font-size: 14px;">--:--</div>
                 <div>Nuevo León, México</div>
             </div>
         </div>
 
+        <!-- TARJETAS SUPERIORES -->
         <div class="dashboard-grid">
             <div class="card card-success">
                 <div class="loading-spinner" id="spinner-1"></div>
@@ -124,136 +101,49 @@
             </div>
 
             <div class="card card-warning">
-                <div class="card-title">Proveedores en Andén</div>
-                <div class="card-value" id="kpi-proveedores">1</div>
-                <div class="card-subtitle">En proceso de descarga o auditoría</div>
+                <div class="loading-spinner" id="spinner-3"></div>
+                <div class="card-title">Consumo (Últimos 7 días)</div>
+                <div class="card-value" id="kpi-consumo">0</div>
+                <div class="card-subtitle">Piezas totales trasladadas a producción</div>
             </div>
         </div>
 
-        <!-- CONTENEDOR DE PANELES (ARRIBOS E INVENTARIO) -->
-        <div class="paneles-container">
-            <!-- PANEL IZQUIERDO: ARRIBOS -->
+        <!-- ZONA DE GRÁFICAS -->
+        <div class="charts-container">
             <div class="panel">
-                <div class="panel-header">
-                    <span>🚛 Registro de Arribos y Recepción de Material</span>
-                    <div>
-                        <button class="btn-action btn-primary" onclick="abrirModal('modal-ingreso')">+ Nuevo Ingreso</button>
-                    </div>
-                </div>
-                
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Hora</th>
-                                <th>Proveedor</th>
-                                <th>Tipo de Carga</th>
-                                <th>Factura</th>
-                                <th>Estado</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-arribos">
-                            <tr id="fila-1">
-                                <td>10:15 AM</td>
-                                <td>Empaques NAYLEA</td>
-                                <td>Cajas Plásticas</td>
-                                <td>FAC-88902</td>
-                                <td><span class="badge badge-descargando" id="estado-1">Descargando</span></td>
-                                <td><button class="btn-action" id="btn-audit-1" style="font-size: 11px; padding: 4px 8px;" onclick="abrirAuditoria(1, 'Empaques NAYLEA', 'FAC-88902')">Auditar Carga</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="panel-header">📊 Top 10: Insumos con Mayor Stock Físico</div>
+                <div class="chart-wrapper">
+                    <canvas id="chartStock"></canvas>
                 </div>
             </div>
-
-            <!-- PANEL DERECHO: INVENTARIO ACTUAL -->
+            
             <div class="panel">
-                <div class="panel-header">
-                    <span>📦 Inventario Actual de Insumos</span>
-                </div>
-                
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th style="text-align: center;">Stock</th>
-                                <th style="text-align: center;">Mínimo</th>
-                                <th style="text-align: center;">Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="body-stock-actual">
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: #888;">Cargando inventario...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="panel-header">📈 Top 5: Más Consumidos (Semana)</div>
+                <div class="chart-wrapper">
+                    <canvas id="chartConsumo"></canvas>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- MODAL 1: NUEVO INGRESO -->
-    <div class="modal-overlay" id="modal-ingreso">
-        <div class="modal-box">
-            <div class="modal-close" onclick="cerrarModal('modal-ingreso')">&times;</div>
-            <div class="modal-title">Registrar Proveedor en Andén</div>
-            <div class="form-group">
-                <label>Proveedor / Transportista</label>
-                <input type="text" id="nuevo-prov" placeholder="Ej. Cartones Monterrey">
-            </div>
-            <div class="form-group">
-                <label>Tipo de Carga</label>
-                <select id="nuevo-tipo">
-                    <option value="Material de Empaque (Cajas)">Material de Empaque (Cajas)</option>
-                    <option value="Insumos (Flejes, Etiquetas)">Insumos (Flejes, Etiquetas)</option>
-                    <option value="Tarimas">Tarimas</option>
-                    <option value="Mixto">Mixto</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>No. de Factura o Remisión</label>
-                <input type="text" id="nueva-fac" placeholder="Ej. REM-1092">
-            </div>
-            <button class="btn-action btn-primary" style="width: 100%; margin-top: 10px;" onclick="guardarIngreso()">Registrar Llegada</button>
-        </div>
-    </div>
-
-    <!-- MODAL 2: AUDITORÍA -->
-    <div class="modal-overlay" id="modal-auditoria">
-        <div class="modal-box large">
-            <div class="modal-close" onclick="cerrarModal('modal-auditoria')">&times;</div>
-            <div class="modal-title">Auditoría de Carga (Ciega)</div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 14px; background: #f8f9fa; padding: 10px; border-radius: 6px;">
-                <div><strong>Proveedor:</strong> <span id="audit-prov">---</span></div>
-                <div><strong>Factura:</strong> <span id="audit-fac">---</span></div>
-                <input type="hidden" id="audit-id-fila">
-            </div>
-            <div class="table-scroll" style="max-height: 250px;">
-                <table class="audit-table">
+        <!-- ZONA DE TABLA DE INVENTARIO -->
+        <div class="panel">
+            <div class="panel-header">📦 Resumen General de Inventario</div>
+            <div class="table-scroll">
+                <table>
                     <thead>
                         <tr>
-                            <th>Cód</th>
-                            <th>Producto Esperado</th>
-                            <th style="text-align: center;">Cant. Factura</th>
-                            <th style="text-align: center;">Conteo Físico</th>
-                            <th style="text-align: center;">Diferencia</th>
+                            <th>Producto</th>
+                            <th style="text-align: center;">Stock Físico</th>
+                            <th style="text-align: center;">Límite Crítico</th>
+                            <th style="text-align: center;">Estado</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="body-stock-actual">
                         <tr>
-                            <td>A101</td>
-                            <td>CAJA PASTICA NAYLEA</td>
-                            <td style="text-align: center; color: #555;">500</td>
-                            <td style="text-align: center;"><input type="number" id="audit-fisico-1" oninput="calcularAuditoria(1, 500)"></td>
-                            <td style="text-align: center;"><span class="dif-span" id="audit-dif-1">-</span></td>
+                            <td colspan="4" style="text-align: center; color: #888;">Cargando inventario...</td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button class="btn-action btn-success" onclick="aprobarAuditoria()">✔ Aprobar Ingreso al Inventario</button>
             </div>
         </div>
     </div>
@@ -278,87 +168,9 @@
         document.getElementById('reloj-actual').textContent = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }, 1000);
 
-    // === 3. MODALES Y OPERACIÓN ===
-    function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-
-    let contadorFilas = 1;
-
-    function guardarIngreso() {
-        const prov = document.getElementById('nuevo-prov').value.trim();
-        const tipo = document.getElementById('nuevo-tipo').value;
-        const fac = document.getElementById('nueva-fac').value.trim();
-
-        if(!prov || !fac) { alert("Llena el Proveedor y la Factura."); return; }
-
-        contadorFilas++;
-        const ahora = new Date();
-        const hora = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-        const tbody = document.getElementById('tabla-arribos');
-        const nuevaFila = document.createElement('tr');
-        nuevaFila.id = `fila-${contadorFilas}`;
-        
-        nuevaFila.innerHTML = `
-            <td>${hora}</td>
-            <td>${prov}</td>
-            <td>${tipo}</td>
-            <td>${fac}</td>
-            <td><span class="badge badge-descargando" id="estado-${contadorFilas}">Descargando</span></td>
-            <td><button class="btn-action" id="btn-audit-${contadorFilas}" style="font-size: 11px; padding: 4px 8px;" onclick="abrirAuditoria(${contadorFilas}, '${prov}', '${fac}')">Auditar Carga</button></td>
-        `;
-        
-        tbody.appendChild(nuevaFila);
-        document.getElementById('kpi-proveedores').textContent = document.querySelectorAll('.badge-descargando').length;
-        document.getElementById('nuevo-prov').value = "";
-        document.getElementById('nueva-fac').value = "";
-        cerrarModal('modal-ingreso');
-    }
-
-    function abrirAuditoria(idFila, proveedor, factura) {
-        document.getElementById('audit-prov').textContent = proveedor;
-        document.getElementById('audit-fac').textContent = factura;
-        document.getElementById('audit-id-fila').value = idFila;
-        document.getElementById('audit-fisico-1').value = "";
-        document.getElementById('audit-dif-1').textContent = "-";
-        document.getElementById('audit-dif-1').style.color = "#333";
-        abrirModal('modal-auditoria');
-    }
-
-    function calcularAuditoria(idInput, esperado) {
-        const fisicoVal = document.getElementById(`audit-fisico-${idInput}`).value;
-        const spanDif = document.getElementById(`audit-dif-${idInput}`);
-        
-        if (fisicoVal === "") { spanDif.textContent = "-"; spanDif.style.color = "#333"; return; }
-        const diferencia = parseFloat(fisicoVal) - esperado;
-        
-        if (diferencia === 0) {
-            spanDif.textContent = "✔ OK"; spanDif.style.color = "var(--success)";
-        } else if (diferencia > 0) {
-            spanDif.textContent = `+${diferencia}`; spanDif.style.color = "var(--warning)";
-        } else {
-            spanDif.textContent = diferencia; spanDif.style.color = "var(--danger)";
-        }
-    }
-
-    function aprobarAuditoria() {
-        const idFila = document.getElementById('audit-id-fila').value;
-        if(document.getElementById('audit-fisico-1').value === "") { alert("Ingresa el conteo físico."); return; }
-
-        const badge = document.getElementById(`estado-${idFila}`);
-        badge.className = "badge badge-completado";
-        badge.textContent = "Completado";
-
-        const btn = document.getElementById(`btn-audit-${idFila}`);
-        btn.textContent = "Ver Detalle";
-        btn.style.backgroundColor = "#6c757d";
-        btn.onclick = null;
-
-        document.getElementById('kpi-proveedores').textContent = document.querySelectorAll('.badge-descargando').length;
-        cerrarModal('modal-auditoria');
-    }
-
-    // === 4. LÓGICA DEL DASHBOARD (FINANZAS, CRÍTICOS Y TABLA DE STOCK) ===
-    const urlAppsScript = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec"; 
+    // === 3. CONEXIÓN Y DATOS ===
+    // ⚠️ RECUERDA PONER TU NUEVA URL AQUÍ ⚠️
+    const urlAppsScript = "TU_NUEVA_URL_AQUI"; 
     
     const catalogo = [
         { desc: "CAJA PASTICA NAYLEA", critico: 800, precio: 15.50 },
@@ -396,14 +208,15 @@
             .then(data => {
                 document.getElementById('spinner-1').style.display = 'none';
                 document.getElementById('spinner-2').style.display = 'none';
+                document.getElementById('spinner-3').style.display = 'none';
 
                 if(!data || !data.datos || data.datos.length === 0) {
-                    document.getElementById('fecha-gasto').textContent = "No hay datos de inventario.";
+                    document.getElementById('fecha-gasto').textContent = "No hay datos.";
                     document.getElementById('body-stock-actual').innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888;">No hay datos de inventario.</td></tr>`;
                     return;
                 }
 
-                // 1. Agrupar cantidades totales
+                // --- 1. PROCESAR INVENTARIO ACTUAL ---
                 let sumasInventario = {};
                 data.datos.forEach(reg => {
                     if(reg.fisico !== "") {
@@ -416,27 +229,16 @@
                 let contadorCriticos = 0;
                 let htmlTablaStock = '';
 
-                // 2. Procesar catálogo para KPIs y Tabla de Stock
                 catalogo.forEach(cat => {
                     let cantidadActual = sumasInventario[cat.desc] || 0;
-                    
-                    // Sumas y alertas (Tarjetas superiores)
                     valorTotalNeto += (cantidadActual * cat.precio);
-                    if(cantidadActual > 0 && cantidadActual <= cat.critico) {
-                        contadorCriticos++;
-                    }
+                    if(cantidadActual > 0 && cantidadActual <= cat.critico) contadorCriticos++;
 
-                    // Generar filas para la nueva tabla de Stock Actual
                     let estadoHtml = '';
-                    if (cantidadActual === 0) {
-                        estadoHtml = '<span class="badge" style="background:#e7e6e6; color:#333;">Sin Stock</span>';
-                    } else if (cantidadActual <= cat.critico) {
-                        estadoHtml = '<span class="badge" style="background:#f5c6cb; color:#721c24;">Crítico</span>';
-                    } else if (cantidadActual <= (cat.critico * 1.3)) {
-                        estadoHtml = '<span class="badge" style="background:#ffeeba; color:#856404;">Alerta</span>';
-                    } else {
-                        estadoHtml = '<span class="badge" style="background:#c3e6cb; color:#155724;">Óptimo</span>';
-                    }
+                    if (cantidadActual === 0) estadoHtml = '<span class="badge" style="background:#e7e6e6; color:#333;">Sin Stock</span>';
+                    else if (cantidadActual <= cat.critico) estadoHtml = '<span class="badge" style="background:#f5c6cb; color:#721c24;">Crítico</span>';
+                    else if (cantidadActual <= (cat.critico * 1.3)) estadoHtml = '<span class="badge" style="background:#ffeeba; color:#856404;">Alerta</span>';
+                    else estadoHtml = '<span class="badge" style="background:#c3e6cb; color:#155724;">Óptimo</span>';
 
                     htmlTablaStock += `
                         <tr>
@@ -448,24 +250,83 @@
                     `;
                 });
 
-                // 3. Imprimir KPIs
+                // KPIs
                 const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
                 document.getElementById('kpi-gasto').textContent = formatter.format(valorTotalNeto);
-                
                 let partes = data.fecha.split('-');
-                if(partes.length === 3) {
-                    document.getElementById('fecha-gasto').textContent = `Corte al: ${partes[2]}/${partes[1]}/${partes[0]}`;
-                }
+                if(partes.length === 3) document.getElementById('fecha-gasto').textContent = `Corte al: ${partes[2]}/${partes[1]}/${partes[0]}`;
                 document.getElementById('kpi-criticos').textContent = contadorCriticos;
-
-                // 4. Imprimir la Tabla de Stock
                 document.getElementById('body-stock-actual').innerHTML = htmlTablaStock;
+
+                // --- 2. PROCESAR CONSUMO (ÚLTIMOS 7 DÍAS) ---
+                const hace7Dias = new Date();
+                hace7Dias.setDate(hace7Dias.getDate() - 7);
+                let consumoSemana = {};
+                let totalPiezasConsumidas = 0;
+
+                if (data.traslados) {
+                    data.traslados.forEach(t => {
+                        let [y, m, d] = t.fecha.split('-');
+                        let fechaTras = new Date(y, m - 1, d);
+                        if(fechaTras >= hace7Dias) {
+                            if(!consumoSemana[t.producto]) consumoSemana[t.producto] = 0;
+                            let cant = parseFloat(t.cantidad);
+                            consumoSemana[t.producto] += cant;
+                            totalPiezasConsumidas += cant;
+                        }
+                    });
+                }
+                document.getElementById('kpi-consumo').textContent = totalPiezasConsumidas;
+
+                // --- 3. DIBUJAR GRÁFICA DE STOCK (BARRAS) ---
+                let stockArr = Object.keys(sumasInventario).map(k => ({ prod: k, cant: sumasInventario[k] }));
+                stockArr.sort((a,b) => b.cant - a.cant); // Ordenar mayor a menor
+                let topStock = stockArr.slice(0, 10); // Tomar solo los 10 primeros
+
+                new Chart(document.getElementById('chartStock'), {
+                    type: 'bar',
+                    data: {
+                        // Cortamos los nombres largos para que se vea bien la gráfica
+                        labels: topStock.map(d => d.prod.substring(0, 15) + '...'),
+                        datasets: [{
+                            label: 'Piezas Físicas',
+                            data: topStock.map(d => d.cant),
+                            backgroundColor: '#1F4E78',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+
+                // --- 4. DIBUJAR GRÁFICA DE CONSUMO (DONA) ---
+                let consArr = Object.keys(consumoSemana).map(k => ({ prod: k, cant: consumoSemana[k] }));
+                consArr.sort((a,b) => b.cant - a.cant);
+                let topConsumo = consArr.slice(0, 5); // Tomar los 5 más gastados
+
+                // Si no hay datos de consumo, mostrar gráfica vacía
+                if(topConsumo.length === 0) {
+                    topConsumo = [{prod: "Sin movimientos", cant: 1}];
+                }
+
+                new Chart(document.getElementById('chartConsumo'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: topConsumo.map(d => d.prod.substring(0, 20)),
+                        datasets: [{
+                            data: topConsumo.map(d => d.cant),
+                            backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745', '#6c757d']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: {size: 10} } } } }
+                });
+
             })
             .catch(err => {
+                console.error(err);
                 document.getElementById('spinner-1').style.display = 'none';
                 document.getElementById('spinner-2').style.display = 'none';
+                document.getElementById('spinner-3').style.display = 'none';
                 document.getElementById('fecha-gasto').textContent = "Error de conexión";
-                document.getElementById('body-stock-actual').innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--danger);">Error al conectar con la base de datos.</td></tr>`;
             });
     }
 </script>
