@@ -32,15 +32,22 @@
 
         .main-content { padding: 15px; }
 
-        .header { background-color: var(--primary); color: white; padding: 12px 20px; border-radius: 0 0 6px 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .header { background-color: var(--primary); color: white; padding: 12px 20px; border-radius: 0 0 6px 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 10px;}
         .header h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;}
         .header .logo { font-style: italic; font-weight: 900; letter-spacing: 1px; color: #a4d233; }
         .header-info { text-align: right; font-size: 12px; }
 
+        /* NUEVO: BARRA DE ESTADO DE CONEXIÓN */
+        .status-bar { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3);}
+        .dot { height: 10px; width: 10px; background-color: #28a745; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #28a745;}
+        .dot.offline { background-color: #dc3545; box-shadow: 0 0 5px #dc3545;}
+        .dot.syncing { background-color: #ffc107; box-shadow: 0 0 5px #ffc107; animation: blink 1s infinite;}
+        @keyframes blink { 50% { opacity: 0.4; } }
+
         .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); align-items: center; justify-content: space-between;}
         .control-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;}
         label { font-weight: 600; font-size: 13px; color: #555; }
-        select, input[type="date"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box;}
+        select, input[type="date"] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box; max-width: 100%;}
         
         .btn-buscar { background-color: #17a2b8; color: white; border: none; padding: 7px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; box-sizing: border-box;}
         .btn-buscar:hover { background-color: #138496; }
@@ -54,7 +61,7 @@
         .status-badge.loaded { background-color: var(--success); color: white;}
 
         .table-container { background: white; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: auto; max-height: 70vh; position: relative;}
-        table { width: 100%; border-collapse: collapse; min-width: 1500px; font-size: 12px;}
+        table { width: 100%; border-collapse: collapse; min-width: 1550px; font-size: 12px;}
         
         thead { position: sticky; top: 0; z-index: 10; }
         th { padding: 8px 4px; text-align: center; border: 1px solid var(--border); font-weight: 700; text-transform: uppercase; font-size: 11px;}
@@ -87,12 +94,10 @@
         .dif-alert { color: white; background-color: var(--danger); font-size: 12px;} 
         
         .total-cell { font-weight: bold; font-size: 13px; background-color: #f8f9fa !important; color: #333;}
+        .status-cell { font-size: 16px; min-width: 40px; background-color: #f8f9fa !important;} /* Nueva columna */
 
         .hidden-area { display: none !important; }
         .compact-view table { min-width: auto; width: 100%; }
-
-        .btn-guardar { background-color: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; float: right; margin-top: 15px; transition: 0.2s; box-sizing: border-box;}
-        .btn-guardar:hover { background-color: #153a5c; }
 
         @media (max-width: 768px) {
             .navbar { flex-direction: column; gap: 10px; }
@@ -105,7 +110,7 @@
             .control-group { width: 100%; display: grid; grid-template-columns: 1fr; gap: 10px; }
             .control-group.doble { grid-template-columns: 1fr 1fr; align-items: end;}
             
-            select, input[type="date"], .btn-buscar, .file-upload-wrapper, .file-upload-btn, .btn-guardar { width: 100%; margin: 0;}
+            select, input[type="date"], .btn-buscar, .file-upload-wrapper, .file-upload-btn { width: 100%; margin: 0;}
             
             th.col-producto, td.col-producto { 
                 min-width: 120px; 
@@ -124,7 +129,7 @@
     <div class="navbar">
         <div style="font-weight: 900; font-style: italic; color: #a4d233; font-size: 18px;">Vegxpress WMS</div>
         <div class="nav-links">
-            <a href="recepcion.html">Recepción</a>
+            <a href="recepcion.html">Dashboard</a>
             <a href="inventario_ind.html" class="active">Inv. IND</a>
             <a href="alerta_stock.html">Alertas Stock</a>
         </div>
@@ -134,6 +139,10 @@
     <div class="main-content">
         <div class="header">
             <h1><span class="logo">Vegxpress</span> | INVENTARIO IND</h1>
+            <div class="status-bar">
+                <span class="dot" id="led-conexion"></span>
+                <span id="texto-conexion">En línea</span>
+            </div>
             <div class="header-info">
                 <div>Depto: <strong>Capturista de Producción</strong></div>
             </div>
@@ -143,25 +152,36 @@
             <div class="control-group doble">
                 <div>
                     <label>Fecha:</label>
-                    <input type="date" id="fecha-inventario">
+                    <input type="date" id="fecha-inventario" onchange="cargarMemoriaLocal()">
                 </div>
                 <div>
                     <button type="button" class="btn-buscar" onclick="buscarPorFecha()">🔍 Cargar Guardado</button>
                 </div>
             </div>
             
-            <div class="control-group">
-                <label>Filtro:</label>
-                <select id="area-selector" onchange="filtrarArea()">
-                    <option value="todas">Ver Todas las Áreas</option>
-                    <option value="alm">Almacén IND</option>
-                    <option value="prod">Producción</option>
-                    <option value="cf1">Cuarto Frío 1</option>
-                    <option value="cf24">Cuartos Fríos 2-4</option>
-                    <option value="cf5">Cuarto Frío 5</option>
-                    <option value="desc">Descarga</option>
-                    <option value="huerto">Huerto Basal</option>
-                </select>
+            <!-- CONTENEDOR DE FILTROS -->
+            <div style="display: flex; gap: 15px; flex-grow: 1; flex-wrap: wrap;">
+                <div class="control-group" style="flex-grow: 1; min-width: 150px;">
+                    <label>Área:</label>
+                    <select id="area-selector" onchange="filtrarArea()">
+                        <option value="todas">Ver Todas las Áreas</option>
+                        <option value="alm">Almacén IND</option>
+                        <option value="prod">Producción</option>
+                        <option value="cf1">Cuarto Frío 1</option>
+                        <option value="cf24">Cuartos Fríos 2-4</option>
+                        <option value="cf5">Cuarto Frío 5</option>
+                        <option value="desc">Descarga</option>
+                        <option value="huerto">Huerto Basal</option>
+                    </select>
+                </div>
+                
+                <div class="control-group" style="flex-grow: 1; min-width: 200px;">
+                    <label>Insumo:</label>
+                    <select id="insumo-selector" onchange="filtrarProducto()">
+                        <option value="todos">Ver Todos los Insumos</option>
+                        <!-- Se llena con JS -->
+                    </select>
+                </div>
             </div>
             
             <div class="control-group doble" style="grid-template-columns: 2fr 1fr; align-items: center;">
@@ -187,6 +207,7 @@
                         <th colspan="3" class="area-group area-desc h-desc">DESCARGA</th>
                         <th colspan="3" class="area-group area-huerto h-huerto">HUERTO BASAL</th>
                         <th rowspan="2" class="h-total">TOTAL<br>FÍSICO</th>
+                        <th rowspan="2" class="h-total">ESTADO</th> <!-- NUEVO -->
                     </tr>
                     <tr class="sub-header">
                         <th class="area-group area-alm">FÍS</th><th class="area-group area-alm">ORC</th><th class="area-group area-alm">DIF</th>
@@ -202,19 +223,16 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- EL BOTÓN GUARDAR FUE ELIMINADO PARA EL AUTO-GUARDADO -->
 
-        <button class="btn-guardar" onclick="guardarInventario()">💾 Guardar Inventario Físico</button>
     </div>
 
 <script>
-    // === PROTECCIÓN DE SESIÓN Y LOGOUT ===
+    // === PROTECCIÓN DE SESIÓN ===
     window.addEventListener('DOMContentLoaded', (event) => {
-        // Verificamos si existe el paquete de sesión
         const sesion = localStorage.getItem("wms_session");
-        if (!sesion) {
-            window.location.href = "login.html"; // Si no hay, lo patea al login
-        }
-
+        if (!sesion) { window.location.href = "login.html"; }
         const btnLogout = document.querySelector('.btn-logout');
         if (btnLogout) {
             btnLogout.addEventListener('click', () => {
@@ -223,8 +241,8 @@
             });
         }
     });
-    // =====================================
 
+    // ⚠️ RECUERDA PEGAR AQUÍ TU URL ACTUALIZADA ⚠️
     const urlInventarios = "https://script.google.com/macros/s/AKfycbygzLV189IQqgsqjN_v5uBbyT2Gpuy5d1WPMMcsvE9_FzAEb4Wd4-K-Ex1BdyI8aFakOA/exec";
 
     const productos = [
@@ -271,8 +289,23 @@
 
     window.onload = function() {
         document.getElementById('fecha-inventario').valueAsDate = new Date();
+        construirFiltroInsumos();
         renderizarTabla();
+        cargarMemoriaLocal();
+        
+        // El motor que revisa cada 5 segundos si hay cosas por guardar en la nube
+        setInterval(sincronizarEnSegundoPlano, 5000);
     };
+
+    function construirFiltroInsumos() {
+        const select = document.getElementById('insumo-selector');
+        productos.forEach(p => {
+            let opt = document.createElement('option');
+            opt.value = p.cod;
+            opt.textContent = p.desc;
+            select.appendChild(opt);
+        });
+    }
 
     function renderizarTabla() {
         const tbody = document.getElementById('tabla-body');
@@ -286,7 +319,7 @@
             areasKeys.forEach(area => {
                 html += `
                     <td class="area-group area-${area}">
-                        <input type="number" class="in-fisico" data-area="${area}" oninput="calcularFila('${prod.cod}', '${area}')">
+                        <input type="number" class="in-fisico" data-area="${area}" oninput="calcularFila('${prod.cod}', '${area}')" onchange="registrarCambioAutoGuardado('${prod.cod}', '${area}')">
                     </td>
                     <td class="area-group area-${area}">
                         <input type="text" class="in-oracle" data-area="${area}" value="-" readonly tabindex="-1">
@@ -298,6 +331,7 @@
             });
 
             html += `<td class="total-cell" id="total-${prod.cod}">0</td>
+                     <td class="status-cell" id="status-${prod.cod}"></td>
                      </tr>`;
         });
         tbody.innerHTML = html;
@@ -335,6 +369,7 @@
         document.getElementById(`total-${codigo}`).textContent = sumaTotal === 0 ? "0" : sumaTotal;
     }
 
+    // === FILTROS ===
     function filtrarArea() {
         const seleccion = document.getElementById('area-selector').value;
         const container = document.getElementById('main-container');
@@ -354,6 +389,19 @@
         }
     }
 
+    function filtrarProducto() {
+        const seleccion = document.getElementById('insumo-selector').value;
+        productos.forEach(p => {
+            const tr = document.getElementById(`row-${p.cod}`);
+            if (seleccion === 'todos' || seleccion === p.cod) {
+                tr.style.display = "";
+            } else {
+                tr.style.display = "none";
+            }
+        });
+    }
+
+    // === LÓGICA DE ORACLE (No auto-guarda por sí solo hasta que haya un físico) ===
     function procesarExcelOracle(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -390,7 +438,6 @@
                 }
             });
 
-            let actualizados = 0;
             for(let row = 8; row < jsonOracle.length; row++) {
                 const rowData = jsonOracle[row];
                 const articuloCod = String(rowData[0]).trim(); 
@@ -408,9 +455,13 @@
                                 inOracle.classList.add('updated'); 
                                 
                                 calcularFila(articuloCod, areaKey);
+                                // Si ya había un dato físico escrito, actualiza la diferencia y lo mete a la cola de guardado
+                                const inFisico = tr.querySelector(`.in-fisico[data-area="${areaKey}"]`);
+                                if(inFisico.value.trim() !== "") {
+                                    registrarCambioAutoGuardado(articuloCod, areaKey);
+                                }
                             }
                         });
-                        actualizados++;
                     }
                 }
             }
@@ -420,6 +471,150 @@
         reader.readAsArrayBuffer(file);
     }
 
+    // === MOTOR OFFLINE Y AUTO-GUARDADO SILENCIOSO ===
+    
+    let colaSincronizacion = JSON.parse(localStorage.getItem('wms_sync_queue')) || [];
+    let memoriaPantalla = JSON.parse(localStorage.getItem('wms_pantalla_inv')) || {};
+
+    function cargarMemoriaLocal() {
+        const fecha = document.getElementById('fecha-inventario').value;
+        
+        productos.forEach(prod => {
+            const tr = document.getElementById(`row-${prod.cod}`);
+            const icon = document.getElementById(`status-${prod.cod}`);
+            icon.innerHTML = "";
+
+            areasKeys.forEach(area => {
+                const input = tr.querySelector(`.in-fisico[data-area="${area}"]`);
+                input.value = "";
+                
+                if(memoriaPantalla[fecha] && memoriaPantalla[fecha][prod.cod] && memoriaPantalla[fecha][prod.cod][area] !== undefined) {
+                    input.value = memoriaPantalla[fecha][prod.cod][area];
+                }
+                calcularFila(prod.cod, area);
+            });
+        });
+    }
+
+    // Se dispara cada que escribes un número y pasas a la siguiente casilla (onchange)
+    function registrarCambioAutoGuardado(codigo, areaKey) {
+        const fecha = document.getElementById('fecha-inventario').value;
+        const tr = document.getElementById(`row-${codigo}`);
+        const fisicoInput = tr.querySelector(`.in-fisico[data-area="${areaKey}"]`);
+        const oracleInput = tr.querySelector(`.in-oracle[data-area="${areaKey}"]`);
+        const icon = document.getElementById(`status-${codigo}`);
+        
+        const prod = productos.find(p => p.cod === codigo);
+        let fisicoVal = fisicoInput.value.trim();
+
+        // 1. Respaldar en la memoria visual local (para que si recargan, sigan ahí)
+        if(!memoriaPantalla[fecha]) memoriaPantalla[fecha] = {};
+        if(!memoriaPantalla[fecha][codigo]) memoriaPantalla[fecha][codigo] = {};
+        memoriaPantalla[fecha][codigo][areaKey] = fisicoVal;
+        localStorage.setItem('wms_pantalla_inv', JSON.stringify(memoriaPantalla));
+
+        // Si el usuario borró el número y la dejó vacía, no enviamos guardar de esto
+        if(fisicoVal === "") {
+            icon.innerHTML = "";
+            return; 
+        }
+
+        let oracleVal = oracleInput.value === "-" ? 0 : parseFloat(oracleInput.value);
+        let fisicoNum = parseFloat(fisicoVal);
+        let diferencia = fisicoNum - oracleVal;
+        let nombreArea = oracleMap[areaKey] || areaKey;
+
+        icon.innerHTML = "⏳"; // Indicador visual en la fila de que se puso en cola
+
+        let nuevoRegistro = {
+            fecha: fecha,
+            area: nombreArea,
+            codigo: prod.cod,
+            producto: prod.desc,
+            fisico: fisicoNum,
+            oracle: oracleVal,
+            diferencia: diferencia,
+            idFilaUI: codigo 
+        };
+
+        // Buscar si ya estaba en cola (por si lo corrigió antes de que el sistema lo enviara)
+        let existeEnCola = colaSincronizacion.findIndex(item => item.fecha === fecha && item.producto === prod.desc && item.area === nombreArea);
+        
+        if(existeEnCola >= 0) {
+            colaSincronizacion[existeEnCola] = nuevoRegistro;
+        } else {
+            colaSincronizacion.push(nuevoRegistro);
+        }
+
+        // Guardar la cola en el disco duro del navegador por si se va la luz
+        localStorage.setItem('wms_sync_queue', JSON.stringify(colaSincronizacion));
+        
+        // Intentar enviarlo a Google
+        sincronizarEnSegundoPlano();
+    }
+
+    let sincronizando = false;
+
+    function sincronizarEnSegundoPlano() {
+        if(sincronizando || colaSincronizacion.length === 0) return;
+
+        sincronizando = true;
+        const led = document.getElementById('led-conexion');
+        const txt = document.getElementById('texto-conexion');
+        
+        led.className = "dot syncing";
+        txt.textContent = "Guardando en la nube...";
+
+        const payload = {
+            action: "guardar_inventario_ind",
+            registros: colaSincronizacion
+        };
+
+        fetch(urlInventarios, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if(res.status === "success") {
+                // Poner la palomita en todas las filas que se enviaron en este paquete
+                colaSincronizacion.forEach(item => {
+                    let icon = document.getElementById(`status-${item.idFilaUI}`);
+                    if(icon) icon.innerHTML = "✅";
+                });
+
+                // Vaciamos la cola
+                colaSincronizacion = [];
+                localStorage.setItem('wms_sync_queue', JSON.stringify(colaSincronizacion));
+
+                led.className = "dot";
+                txt.textContent = "Sistema en línea (Guardado)";
+            } else {
+                marcarOffline();
+            }
+            sincronizando = false;
+        })
+        .catch(err => {
+            marcarOffline();
+            sincronizando = false;
+        });
+    }
+
+    function marcarOffline() {
+        const led = document.getElementById('led-conexion');
+        const txt = document.getElementById('texto-conexion');
+        led.className = "dot offline";
+        txt.textContent = "Sin red (Guardando en el dispositivo)";
+
+        // Pintamos el disquete de "Guardado Local" en las filas afectadas
+        colaSincronizacion.forEach(item => {
+            let icon = document.getElementById(`status-${item.idFilaUI}`);
+            if(icon) icon.innerHTML = "💾";
+        });
+    }
+
+    // === CARGAR DESDE GOOGLE SHEETS ===
     function buscarPorFecha() {
         const fechaInv = document.getElementById('fecha-inventario').value;
         if (!fechaInv) {
@@ -429,11 +624,13 @@
 
         const badge = document.getElementById('oracle-status');
         badge.style.display = 'inline-block';
-        badge.textContent = "Buscando...";
+        badge.textContent = "Descargando nube...";
         badge.className = "status-badge";
 
+        // Limpiamos pantalla
         document.querySelectorAll('.in-fisico').forEach(inp => inp.value = "");
         document.querySelectorAll('.in-oracle').forEach(inp => { inp.value = "-"; inp.classList.remove('updated'); });
+        document.querySelectorAll('.status-cell').forEach(cell => cell.innerHTML = "");
         
         productos.forEach(prod => {
             areasKeys.forEach(area => calcularFila(prod.cod, area));
@@ -445,10 +642,13 @@
             .then(response => response.json())
             .then(data => {
                 if(data.length === 0) {
-                    badge.textContent = "Sin datos en esa fecha";
+                    badge.textContent = "Sin datos en la nube";
                     badge.className = "status-badge";
                     return;
                 }
+
+                // Cargar datos a la tabla y reescribir memoria local
+                if(!memoriaPantalla[fechaInv]) memoriaPantalla[fechaInv] = {};
 
                 data.forEach(registro => {
                     const cod = registro.codigo;
@@ -461,6 +661,9 @@
                         
                         if (inFisico && registro.fisico !== "") {
                             inFisico.value = registro.fisico;
+                            // Sincronizar con la memoria local
+                            if(!memoriaPantalla[fechaInv][cod]) memoriaPantalla[fechaInv][cod] = {};
+                            memoriaPantalla[fechaInv][cod][areaKey] = registro.fisico;
                         }
                         
                         if (inOracle) {
@@ -470,9 +673,11 @@
                         }
                         
                         calcularFila(cod, areaKey);
+                        document.getElementById(`status-${cod}`).innerHTML = "☁️"; // Indicador de que vino de la nube
                     }
                 });
 
+                localStorage.setItem('wms_pantalla_inv', JSON.stringify(memoriaPantalla));
                 badge.textContent = `¡Datos cargados!`;
                 badge.className = "status-badge loaded";
             })
@@ -480,86 +685,6 @@
                 badge.textContent = "Error de conexión";
                 badge.className = "status-badge";
             });
-    }
-
-    function guardarInventario() {
-        const btn = document.querySelector('.btn-guardar');
-        btn.disabled = true;
-        btn.innerText = "⏳ Guardando...";
-
-        const fechaInv = document.getElementById('fecha-inventario').value;
-        if (!fechaInv) {
-            alert("Por favor selecciona la fecha del inventario.");
-            btn.disabled = false;
-            btn.innerText = "💾 Guardar Inventario Físico";
-            return;
-        }
-
-        let registrosGuardar = [];
-
-        productos.forEach(prod => {
-            const tr = document.getElementById(`row-${prod.cod}`);
-            
-            areasKeys.forEach(area => {
-                const fisicoInput = tr.querySelector(`.in-fisico[data-area="${area}"]`);
-                const oracleInput = tr.querySelector(`.in-oracle[data-area="${area}"]`);
-                
-                let fisicoVal = fisicoInput.value.trim();
-                let tieneDatosOracle = oracleInput.classList.contains('updated');
-                
-                if (fisicoVal !== "" || tieneDatosOracle) {
-                    let oracleVal = oracleInput.value === "-" ? 0 : parseFloat(oracleInput.value);
-                    let fisicoNum = fisicoVal !== "" ? parseFloat(fisicoVal) : "";
-                    let diferencia = fisicoVal !== "" ? (fisicoNum - oracleVal) : "";
-                    let nombreArea = oracleMap[area] || area;
-
-                    registrosGuardar.push({
-                        fecha: fechaInv,
-                        area: nombreArea,
-                        codigo: prod.cod,
-                        producto: prod.desc,
-                        fisico: fisicoNum,
-                        oracle: oracleVal,
-                        diferencia: diferencia
-                    });
-                }
-            });
-        });
-
-        if (registrosGuardar.length === 0) {
-            alert("No has cargado el Excel ni capturado valores físicos para guardar.");
-            btn.disabled = false;
-            btn.innerText = "💾 Guardar Inventario Físico";
-            return;
-        }
-
-        const payload = {
-            action: "guardar_inventario_ind",
-            registros: registrosGuardar
-        };
-
-        fetch(urlInventarios, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payload)
-        })
-        .then(response => response.json())
-        .then(res => {
-            if(res.status === "success") {
-                alert(`¡Éxito! Se guardaron ${registrosGuardar.length} registros en la base de datos.`);
-                btn.innerText = "✅ Guardado";
-                setTimeout(() => { window.location.reload(); }, 2000);
-            } else {
-                alert("Error de Google Sheets: Verifica que la pestaña se llame 'Inventario_IND'");
-                btn.disabled = false;
-                btn.innerText = "💾 Guardar Inventario Físico";
-            }
-        })
-        .catch(err => {
-            alert("Error de red o conexión bloqueada.");
-            btn.disabled = false;
-            btn.innerText = "💾 Guardar Inventario Físico";
-        });
     }
 </script>
 </body>
